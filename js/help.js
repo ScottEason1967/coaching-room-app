@@ -142,7 +142,7 @@ const plans = params => {
     steps: [
       strip,
       st('Tap **New match plan**. If a review is outstanding the app asks for it first. ' + GATE, '[data-act="newM"]'),
-      st('Tap a match to open it. The row shows the opponent, the date and, once played, the score. The pill says whether it is waiting for a review. “Example” marks the starter plan built from your Hudl notes.', '[href^="#/match/"]')
+      st('Tap a match to open it. The row shows the opponent, the date and, once played, the score. The pill says whether it is waiting for a review. “Example” marks the starter plan.', '[href^="#/match/"]')
     ]
   };
   if (tab === 'reviews') return {

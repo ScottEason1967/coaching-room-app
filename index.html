@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Coaching Room">
-<meta name="description" content="Joe's coaching app: game model, tactics board, sessions, match plans and reviews.">
+<meta name="description" content="Coaching app: game model, tactics board, sessions, match plans and reviews.">
 <title>The Coaching Room</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -17,6 +17,12 @@
 <link rel="preload" href="fonts/barlow-condensed-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/app.css">
 <script src="vendor/supabase.js" defer></script>
+<script>
+// Opened by double-clicking the file (file://)? Browsers refuse to load the app's modules from a file path, so say so instead of hanging on "Loading…".
+if (location.protocol === 'file:') document.addEventListener('DOMContentLoaded', function () {
+  document.getElementById('view').innerHTML = '<div style="max-width:560px;margin:40px auto;padding:20px;border:1px solid rgba(255,255,255,.15);border-radius:16px;color:#EEF2FA;font:15px/1.5 system-ui,sans-serif"><b style="font-size:18px">This app needs a web address</b><p>You have opened index.html as a file. Browsers will not run the app that way.</p><p>Either finish steps 1 and 2 in README.md (GitHub Pages) and open the address it gives you, or for a quick look on this PC open a command prompt in this folder and run:</p><pre style="background:rgba(0,0,0,.35);padding:10px;border-radius:8px;overflow:auto">python -m http.server 8765</pre><p>then open <b>http://localhost:8765/index.html</b></p></div>';
+});
+</script>
 <script type="module" src="js/app.js"></script>
 </head>
 <body>

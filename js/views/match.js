@@ -71,7 +71,7 @@ export default function matchView(el, [id], ctx) {
   };
 
   el.innerHTML = `<div class="split wide-right"><div class="stack">${chalJump()}
-    ${m.example ? `<div class="row nowrap small" style="gap:10px;color:var(--lamp-text);background:var(--lamp-soft);border:1px solid var(--lamp-line);border-radius:14px;padding:10px 12px"><span class="grow">Example plan built from your Hudl notes, to show how the challenge works. Set a date to make it real, or delete it.</span><button class="btn sm" data-act="unexample">Make it real</button></div>` : ''}
+    ${m.example ? `<div class="row nowrap small" style="gap:10px;color:var(--lamp-text);background:var(--lamp-soft);border:1px solid var(--lamp-line);border-radius:14px;padding:10px 12px"><span class="grow">Example plan, to show how the challenge works. Set a date to make it real, or delete it.</span><button class="btn sm" data-act="unexample">Make it real</button></div>` : ''}
     ${played && !m.cancelled ? (() => { const rv = S.reviewOf(m), done = S.reviewDone(rv); return `<div class="challenge row between" id="reviewBar" style="flex-direction:row;align-items:center"><span class="small" style="color:var(--lamp-text)">${done ? 'Reviewed.' : rv ? 'Review started but not finished.' : m.date < today() ? 'This match has been played. Review it.' : 'Match day. Review it after the game.'}</span><button class="btn sm lamp" data-act="review">${done ? 'Open review' : rv ? 'Finish review' : 'Review'}</button></div>`; })() : ''}
     ${m.cancelled ? `<div class="card row between"><span class="small">Marked as didn’t happen.</span><button class="btn sm" data-act="uncancel">Undo</button></div>` : ''}
     <div class="card stack tight">

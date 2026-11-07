@@ -62,6 +62,7 @@ export function load() {
   try { const r = localStorage.getItem(KEY); if (r) db = JSON.parse(r); } catch (e) { console.error(e); }
   db.recs ||= {}; db.dirty ||= {}; db.meta ||= {};
   if (!db.meta.seeded) { seed(); db.meta.seeded = true; persist(); }
+  tidySeed();
   if (!db.meta.activeTeam || !get(db.meta.activeTeam)) db.meta.activeTeam = (teams()[0] || {}).id || null;
 }
 export const meta = () => db.meta;
@@ -102,6 +103,22 @@ export function label(r) {
   const k = { session: r.theme, match: r.opponent && 'v ' + r.opponent, drill: r.name, board: r.name, principle: r.title, player: r.name, team: r.name, review: 'review', cpd: r.title, coach: 'your profile', block: r.title }[r.kind];
   return (k || r.kind) + (r.date ? ' (' + r.date + ')' : '');
 }
+// One-off clean-up of wording from the first version's starter data, for copies already saved on a
+// device or in the cloud. Only touches text that is still exactly as it was seeded.
+const OLD_NOTE = 'From Scott’s description of how Thornaby play. Joe to rewrite in his own words.';
+const OLD_SRC = 'Example built from Joe’s Hudl notes on Chester-le-Street v Stockport.';
+export function tidySeed() {
+  const fix = [];
+  ['pr-1', 'pr-2', 'pr-3'].forEach(id => { const r = db.recs[id]; if (r && r.note === OLD_NOTE) { r.note = 'A starting point. Rewrite it in your own words, then mark it agreed.'; fix.push(r); } });
+  const t = db.recs['t-thornaby'];
+  if (t && t.roles && Object.values(t.roles).some(v => typeof v === 'string' && v.includes(' (Joe to write the detail.)'))) {
+    Object.keys(t.roles).forEach(k => { if (typeof t.roles[k] === 'string') t.roles[k] = t.roles[k].replace(' (Joe to write the detail.)', ''); }); fix.push(t);
+  }
+  const m = db.recs['mt-cls']; if (m && m.src === OLD_SRC) { m.src = ''; fix.push(m); }
+  fix.forEach(r => put(r, { quiet: true }));
+  return fix.length;
+}
+
 export function applyRemote(rows) {
   let n = 0, lost = 0;
   rows.forEach(row => {
@@ -118,7 +135,7 @@ export function applyRemote(rows) {
     db.recs[row.id] = { ...(row.data || {}), id: row.id, kind: row.kind, team: row.team_id || null, upd: rt, del: !!row.deleted };
     delete db.dirty[row.id]; n++;
   });
-  if (n) { persist(); if (db.meta.activeTeam && !get(db.meta.activeTeam)) db.meta.activeTeam = (teams()[0] || {}).id || null; emit('remote'); }
+  if (n) { tidySeed(); persist(); if (db.meta.activeTeam && !get(db.meta.activeTeam)) db.meta.activeTeam = (teams()[0] || {}).id || null; emit('remote'); }
   if (lost) emit('conflict');
   return n;
 }
@@ -214,10 +231,10 @@ function seed() {
   seedPut({ id: 'coach', kind: 'coach', name: 'Joe', initials: 'JE', ratings: {}, ratingLog: [] });
   seedPut({ id: T, kind: 'team', name: 'Thornaby FC Women', short: 'Thornaby', club: 'Thornaby FC', season: '2026/27', formation: '4-3-3 (6 + two 8s)', order: 0, identity: '',
     style: { build: 'play out from back', press: '', restdef: '' },
-    roles: { '6': 'Holding midfielder. The constant central option. (Joe to write the detail.)', '8': 'Two 8s play higher than the 6 but keep their defensive duties. (Joe to write the detail.)' } });
+    roles: { '6': 'Holding midfielder. The constant central option.', '8': 'Two 8s play higher than the 6 but keep their defensive duties.' } });
   const pos = [['GK', 1], ['RB', 2], ['CB', 5], ['CB', 4], ['LB', 3], ['6', 6], ['8', 8], ['8', 10], ['RW', 7], ['LW', 11], ['CF', 9], ['GK', 13], ['CB', 15], ['FB', 12], ['CM', 14], ['CM', 16], ['W', 17], ['CF', 18]];
   pos.forEach(([p, n]) => seedPut({ id: 'pl-' + n, kind: 'player', team: T, num: n, name: 'Player ' + n, short: '', pos: p, pos2: '', foot: '', notes: '', goals: [], obs: [] }));
-  const note = 'From Scott’s description of how Thornaby play. Joe to rewrite in his own words.';
+  const note = 'A starting point. Rewrite it in your own words, then mark it agreed.';
   seedPut({ id: 'pr-1', kind: 'principle', team: T, phase: 'ip', order: 0, status: 'draft', note, title: 'Play out from the back', why: 'We build through the goalkeeper and centre-backs rather than going long by default.', subs: [], history: [] });
   seedPut({ id: 'pr-2', kind: 'principle', team: T, phase: 'ip', order: 1, status: 'draft', note, title: 'Keep the ball', why: 'We are a passing, possession team. We move the ball to move the opponent.', subs: [], history: [] });
   seedPut({ id: 'pr-3', kind: 'principle', team: T, phase: 'ip', order: 2, status: 'draft', note, title: 'The 6 links, the 8s go', why: 'One holding midfielder stays as the central link. The two 8s play higher but keep their defensive duties.', subs: [], history: [] });
@@ -247,7 +264,7 @@ function seed() {
     interventions: ['qa', 'obs'], players: 7, minutes: 12 });
 
   seedPut({ id: 'mt-cls', kind: 'match', team: T, opponent: 'Chester-le-Street', example: true, date: '', ko: '', venue: '', comp: '',
-    src: 'Example built from Joe’s Hudl notes on Chester-le-Street v Stockport.',
+    src: '',
     tags: { formation: '4-3-3', build: 'long/direct', press: 'individual/unorganised', aerial: 'weak', transition: 'slow/blunt', setpiece: 'average' },
     opp: { ip: 'Little interest in playing out. GK has a big kick. Throw-ins mostly long and down the line. Want fast breaks but nobody high enough and not enough quality. Midfield barely touch it: go long or lose it.',
       op: 'Two modes: sit in a 4-5-1 with one screening, or press as individuals with no organisation. Don’t engage once the ball is in their defensive third. CBs slow and dive in; poor in 1v1s. Full-backs weak.',

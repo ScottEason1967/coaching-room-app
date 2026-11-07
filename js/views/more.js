@@ -21,7 +21,7 @@ export default function more(el, params, ctx) {
         .map(([h, ic, t, s]) => `<a class="item" href="${h}"><span class="badge-num" style="background:var(--surface2);color:var(--accent)">${icon(ic, 'style="width:20px;height:20px"')}</span><span class="grow"><span class="t" style="display:block">${t}</span><span class="s">${esc(s)}</span></span>${icon('chev', 'style="width:18px;height:18px;color:var(--muted)"')}</a>`).join('')}
       <button class="item" data-act="startHere"><span class="badge-num" style="background:var(--surface2);color:var(--accent)">${icon('flag', 'style="width:20px;height:20px"')}</span><span class="grow"><span class="t" style="display:block">Start here</span><span class="s">The first-week set-up list and how the loop works</span></span>${icon('chev', 'style="width:18px;height:18px;color:var(--muted)"')}</button>
     </div>
-    <p class="tiny muted">The Coaching Room · working title · built for Joe, November 2026.</p></div>`;
+    <p class="tiny muted">The Coaching Room</p></div>`;
   bindFields(el, c, () => save());
   actions(el, { startHere: () => { S.setMeta('startHereDone', false); location.hash = '#/home'; } });
   return () => save.flush();
@@ -62,7 +62,7 @@ export function pathwayView(el, params, ctx) {
   const selfs = S.all('review').filter(r => (r.self || '').trim()).sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 8);
   const rung = (name, now, hrs, txt) => `<div class="card stack tight" style="${now ? 'border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)' : ''}"><div class="row between"><div class="h2">${name}</div>${now ? '<span class="pill">Enrolled</span>' : ''}</div><div class="tiny muted">${hrs}</div><div class="small" style="color:var(--text2)">${txt}</div></div>`;
   el.innerHTML = `<div class="stack">
-    <p class="lead">Four UEFA licences. Joe is enrolled on the C. This page keeps the destination in view and builds the evidence as you go, from what you already do in the app.</p>
+    <p class="lead">Four UEFA licences, from the C to the Pro. This page keeps the destination in view and builds the evidence as you go, from what you already do in the app.</p>
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
       ${rung('UEFA C', true, 'At least 60 hours of course', 'Plan, deliver and review sessions that give players a positive experience. The FA assesses six competencies in four themes (below). You need to be coaching a team.')}
       ${rung('UEFA B', false, 'At least 120 hours · in England, 12 months after the C', 'The FA’s modules: developing a game model, coaching approach, individual tactics. The UEFA syllabus includes a player profiling system and a personal coaching logbook.')}
@@ -181,7 +181,7 @@ export function cloudView(el, params, ctx) {
   let body;
   if (!cloud.configured()) {
     body = `<div class="card stack tight"><div class="h3">This device only</div>
-      <p class="small muted" style="margin:0">Everything is saved in this browser on this device. To have the same data on Joe’s phone, iPad and laptop, and to switch on player and staff links, connect a free Supabase database once. The README file that came with the app walks through it step by step (about 15 minutes). Until then, use backups below to move data between devices.</p></div>`;
+      <p class="small muted" style="margin:0">Everything is saved in this browser on this device. To have the same data on your phone, iPad and laptop, and to switch on player and staff links, connect a free Supabase database once. The README file that came with the app walks through it step by step (about 15 minutes). Until then, use backups below to move data between devices.</p></div>`;
   } else if (!cloud.signedIn()) {
     body = `<div class="card stack"><div class="h3">Sign in</div><p class="small muted" style="margin:0">Use the same email and password on every device.</p>
       <label class="field"><span>Email</span><input type="email" id="cE" autocomplete="username" inputmode="email"></label>
