@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A1020">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>The Coaching Room</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/app.css">
+<style>
+  .vp{max-width:760px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(40px + env(safe-area-inset-bottom,0px));position:relative;z-index:1}
+  .pinbox{display:flex;gap:10px;justify-content:center}
+  .pinbox input{width:58px;height:68px;text-align:center;font-family:var(--display);font-size:34px;font-weight:700;border-radius:14px;padding:0}
+  .job{background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:var(--r);padding:16px}
+  @media print{
+    body{background:#fff!important;color:#111!important}
+    .glow,.noprint,#vpComments{display:none!important}
+    .vp{max-width:none;padding:0}
+    .card,.job{background:#fff!important;border:1px solid #bbb!important;color:#111!important;break-inside:avoid}
+    .muted,.small.muted,.tiny.muted{color:#444!important}
+    .pill{background:#eee!important;color:#111!important}
+    .h1,.h2,.h3{color:#111!important}
+  }
+</style>
+<script src="vendor/supabase.js" defer></script>
+<script type="module" src="js/view.js"></script>
+</head>
+<body>
+<div class="glow" aria-hidden="true"></div>
+<main class="vp" id="vp"><p class="muted" style="text-align:center;padding:40px 0">Loading…</p></main>
+</body>
+</html>
