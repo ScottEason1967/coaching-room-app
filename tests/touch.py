@@ -51,6 +51,9 @@ async def main():
         a=await center(pg,'[data-id="u0"] circle:nth-child(2)'); await tap(cdp,a); await pg.wait_for_timeout(300)
         await pg.select_option('#swap','pl-13'); await pg.wait_for_timeout(900)
         r=await rec(pg,'bd-shape'); print('GK swapped to', [i['pid'] for i in r['frames'][-1]['items'] if i['id']=='u0'])
+        allf=[[i['pid'] for i in f['items'] if i.get('kind')=='us' and i['pid'] in ('pl-1','pl-13')] for f in r['frames']]
+        print('swap made on the last frame applies to every frame:', all(x==['pl-13'] for x in allf), allf)
+        assert all(x==['pl-13'] for x in allf), 'swap did not reach every frame'
         await pg.click('[data-act="print"]'); await pg.wait_for_timeout(300); print('print called', await pg.evaluate('window.__printed'), 'print area svgs', await pg.evaluate("document.querySelectorAll('#print svg').length"))
         # 7 drill: add disc and drag it
         await pg.goto(U+'#/drill/dr-rondo'); await pg.wait_for_timeout(500)

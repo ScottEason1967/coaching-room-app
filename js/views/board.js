@@ -206,11 +206,12 @@ export default function boardView(el, [id], ctx) {
       const p = S.get(it.pid);
       box.innerHTML = `<div class="row nowrap"><span class="badge-num">${esc(p ? p.num : '?')}</span><div class="grow"><div class="h3">${esc(p ? p.name : 'Unassigned')}</div><div class="tiny muted">${esc(p ? p.pos : it.role || '')}</div></div></div>
         <label class="field"><span>Swap for</span><select id="swap"><option value="">Choose a player</option>${S.players(T).filter(x => x.id !== it.pid).map(x => `<option value="${x.id}">${esc(x.num)} · ${esc(x.name)}${x.pos ? ` (${esc(x.pos)})` : ''}${onPitch.has(x.id) ? ' · on pitch' : ''}</option>`).join('')}</select></label>
-        <p class="tiny muted" style="margin:0">Swapping changes this frame and every later frame. If she’s already on, the two swap places.</p>
+        <p class="tiny muted" style="margin:0">Swapping changes every frame of this board. If she’s already on, the two swap places.</p>
         <button class="btn sm" data-act="rm">${icon('x')}Take off the pitch</button>${benchHtml}`;
       box.querySelector('#swap').onchange = e => {
         const nid = e.target.value; if (!nid) return; const oid = it.pid;
-        b.frames.slice(fi).forEach(f2 => f2.items.forEach(x => { if (x.kind !== 'us') return; if (x.id === it.id) x.pid = nid; else if (x.pid === nid) x.pid = oid; }));
+        // The same person in every frame: a board shows one team moving, so a swap applies to all of it.
+        b.frames.forEach(f2 => f2.items.forEach(x => { if (x.kind !== 'us') return; if (x.id === it.id || (oid && x.pid === oid)) x.pid = nid; else if (x.pid === nid) x.pid = oid; }));
         cv.o.changed(); cv.render(); renderInsp();
       };
     } else if (it.kind === 'opp' || it.kind === 'text') {
