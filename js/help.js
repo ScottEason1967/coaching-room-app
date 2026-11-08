@@ -150,7 +150,7 @@ const training = params => {
     steps: [
       strip,
       st('**Create your own**: draw the area, cones and players, write how it works and how you will coach it. It is saved as yours.', '#newDrill'),
-      st('**Pick from the library**: 36 practices from top coaches, sorted by what they train. **Add to my drills** copies one in for you to change.', '#pickDrill'),
+      st('**Pick from the library**: 36 practices from top coaches, sorted by what they train. **Edit and save as my own** opens a copy for you to change; it joins your drills when you tap **Save as my drill**. The library version never changes.', '#pickDrill'),
       st('**My drills** shows the diagram, type, minutes and linked principles. The pill says **Ready** or how many must-dos are left. Tap one to open it.', when(T() && S.drills().length, '[href^="#/drill/"]'))
     ]
   };
@@ -267,7 +267,7 @@ const drill = () => ({
     st('**Four corners**: only fill in the corners you are developing on purpose (technical / tactical, physical, psychological, social) and say how.', 'corners.tech'),
     st('**How you plan to intervene**: tap at least one style, from Command to Trial and error. Mixing styles reaches more players.', '#interventions'),
     chalStep('Drill check'),
-    st('**Duplicate** makes a copy to change. **Delete drill** removes it, and sessions that used it show it as missing.', '[data-act="dup"]')
+    st('**Save as a new drill** makes a separate copy, so you can try a variation without changing this one. **Delete drill** removes it, and sessions that used it show it as missing.', when(true, '[data-act="dup"]'))
   ]
 });
 
@@ -476,10 +476,10 @@ const ideas = params => ({
   title: 'Practice ideas',
   purpose: 'Whole sessions and single practices from top-level coaches, sorted by what they train. Each one is written up in plain words with a diagram, coaching points, questions and progressions, and a link to the coach’s original.',
   steps: [
-    st('**Train one of your principles**: tap a principle and the list shows ideas that train it. If it says **tag it**, the app asks what the principle is about first: one tap from a short list.', '#ideaFilter'),
+    st('**Train one of your principles**: tap a principle and the list shows ideas that train it. Principles whose wording doesn’t say what they train are listed separately underneath: tap one and choose from a short list, once.', '#ideaFilter'),
     st('**Or pick what to work on**: the same list of themes under each moment of the game, if you want to browse.'),
     st('**Whole sessions** are three or four practices in order, from a warm-up through to a game. Open one and **Plan a session from this** creates the session with every practice in it.', params[0] === 's' ? '' : '#ideaSessions'),
-    st('**Practices**: open one to see the full write-up. **Add to my drills** copies it into your library, linked to your principles with the same theme, so you can change anything.', '#ideaDrills'),
+    st('**Practices**: open one to see the full write-up. **Edit and save as my own** gives you a copy to change, linked to your principles with the same theme. The library version never changes.', '#ideaDrills'),
     st(params[0] === 's' ? 'You came here from a session, so anything you pick goes straight into that session.' : 'Coming from a session’s **Add a practice** brings you here with the session’s principles already picked.'),
     st('Numbers and sizes are the coach’s, or our suggestion where they didn’t give one. Change them to suit your squad.')
   ]
@@ -489,7 +489,7 @@ const idea = params => ({
   purpose: 'The full write-up of one practice or session idea, and where it comes from.',
   steps: [
     st('Read the **Set-up**, **How it works** and **Coaching points**. The questions, “I step in when” and “success looks like” are ready for your session plan.'),
-    st('**Add to my drills** puts it in your library with the diagram, linked to your principles that share its theme. If it is already there, the button opens it instead.', '#addD'),
+    st('**Edit and save as my own** opens a copy with the diagram, linked to your principles that share its theme. Change what you like, then tap **Save as my drill**. Do it again and you get a second, separate copy. The library version never changes.', '#addD'),
     st('**Where it comes from** names the coach and links to their original session. The diagram is our layout.', '#ideaSrc')
   ]
 });

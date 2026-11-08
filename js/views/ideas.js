@@ -19,9 +19,11 @@ function linkFor(T, tpl, extra = []) {
   if (!tpl.general) S.principles(T).forEach(p => { if (tpl.themes.includes(themeOf(p))) ids.add(p.id); });
   return [...ids];
 }
-// One drill per template in the library: reuse it if it is already there.
-function drillFromTemplate(tpl, T, pids) {
-  const have = S.drills().find(d => d.tplId === tpl.id);
+// Copy a library practice into Joe's drills. The library itself never changes. A copy he has not
+// touched is reused, so planning from templates twice doesn't pile up duplicates; one he has edited
+// is his and is never reused or overwritten.
+function drillFromTemplate(tpl, T, pids, { draft = false } = {}) {
+  const have = draft ? null : S.drills().find(d => d.tplId === tpl.id && d.tplPristine);
   if (have) {
     const cur = new Set(S.drillLinks(have, T)); pids.forEach(x => cur.add(x));
     have.links = { ...(have.links || {}), [T]: [...cur] }; S.put(have); return { d: have, existed: true };
@@ -32,7 +34,7 @@ function drillFromTemplate(tpl, T, pids) {
     prog: tpl.prog, reg: tpl.reg, transition: tpl.transition || '', questions: tpl.questions || '', stepIn: tpl.stepIn || '', success: tpl.success || '',
     direction: /rondo|Warm-up/i.test(tpl.name + tpl.type) && !/goal/i.test(tpl.how) ? 'non' : 'dir',
     corners: { ...(tpl.corners || {}) }, interventions: [], players: tpl.players, minutes: tpl.minutes,
-    links: pids.length ? { [T]: pids } : {}, src: tpl.src
+    links: pids.length ? { [T]: pids } : {}, src: tpl.src, tplPristine: !draft, ...(draft ? { draft: true } : {})
   });
   return { d, existed: false };
 }
@@ -73,7 +75,7 @@ export default function ideasView(el, params, ctx) {
   const suffix = sess ? `/s/${sess.id}` : prin ? `/p/${prin.id}` : '';
   ctx.setTop({ back: sess ? '#/session/' + sess.id : prin ? '#/principle/' + prin.id : '#/training/' + (only || 'drills'), title: only === 'sessions' ? 'Session templates' : only === 'drills' ? 'Drill library' : 'Practice ideas', sub: sess ? 'Adding to a session' : prin ? 'For: ' + (prin.title || 'principle') : 'From top-level coaching' });
 
-  const pChip = p => { const pt = themeOf(p); return `<button class="chip ${pt && pt === th ? 'on' : ''}" data-act="pick" data-arg="${p.id}">${esc(p.title || 'Untitled')}${pt ? '' : ' <span class="muted">· tag it</span>'}</button>`; };
+  const pChip = p => { const pt = themeOf(p); return `<button class="chip ${pt && pt === th ? 'on' : ''}" data-act="pick" data-arg="${p.id}">${esc(p.title || 'Untitled')}</button>`; };
   const drills = drillsForTheme(th), sessions = sessionsForTheme(th);
   const inLib = new Set(S.drills().map(d => d.tplId).filter(Boolean));
 
@@ -81,7 +83,8 @@ export default function ideasView(el, params, ctx) {
     ${sess ? `<div class="banner small">Pick a practice or a whole session and it goes into the session for ${esc(S.get(sess.id) ? new Date(sess.date + 'T12:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '')}.</div>` : ''}
     <div class="card stack tight" id="ideaFilter">
       <div class="label">Train one of your principles</div>
-      ${ps.length ? PHASE_KEYS.filter(k => ps.some(p => p.phase === k)).map(k => `<div class="tiny muted">${PHASES[k].lab}</div><div class="chips">${ps.filter(p => p.phase === k).map(pChip).join('')}</div>`).join('') : '<div class="small muted">No principles yet. <a href="#/model">Write your game model</a> and the ideas sort themselves by it.</div>'}
+      ${ps.length ? PHASE_KEYS.filter(k => ps.some(p => p.phase === k && themeOf(p))).map(k => `<div class="tiny muted">${PHASES[k].lab}</div><div class="chips">${ps.filter(p => p.phase === k && themeOf(p)).map(pChip).join('')}</div>`).join('') : '<div class="small muted">No principles yet. <a href="#/model">Write your game model</a> and the ideas sort themselves by it.</div>'}
+      ${ps.some(p => !themeOf(p)) ? `<div class="tiny muted" style="margin-top:4px">The app can’t tell what these train from their wording. Tap one to choose, and its ideas show here:</div><div class="chips">${ps.filter(p => !themeOf(p)).map(pChip).join('')}</div>` : ''}
       <div class="label" style="margin-top:6px">Or pick what to work on</div>
       ${PHASE_KEYS.map(k => `<div class="tiny muted">${PHASES[k].lab}</div><div class="chips">${themesFor(k).map(t => `<button class="chip ${t === th ? 'on' : ''}" data-act="theme" data-arg="${t}">${esc(THEMES[t].lab)}</button>`).join('')}</div>`).join('')}
     </div>
@@ -130,7 +133,7 @@ export function ideaView(el, [tid, kind, cid], ctx) {
       <div class="card stack tight"><div class="small">${esc(st.why)}</div><div class="chips">${themeChips(st.themes)}</div><div class="tiny muted">Based on: ${esc(st.src)}</div></div>
       <div class="list">${st.parts.map((pid, i) => { const p = tplById(pid); return p ? `<a class="item" href="#/idea/${p.id}${suffix}">${drillSvg(tplDrill(p), { style: 'width:84px;height:60px;border-radius:8px;flex:none' })}<span class="grow"><span class="t" style="display:block">${i + 1}. ${esc(p.name)}</span><span class="s">${esc(p.type)} · ${p.minutes} min · ${esc(p.src.who)}</span></span></a>` : ''; }).join('')}</div>
       <div class="row"><button class="btn pri" data-act="useS" id="useS">${icon('plus')}${sess ? 'Add these practices to the session' : 'Plan a session from this'}</button></div>
-      <p class="tiny muted" style="margin:0">Each practice goes into your drills, linked to any of your principles with the same theme, ready for you to edit.</p></div>`;
+      <p class="tiny muted" style="margin:0">Each practice goes into your drills as your own copy, linked to any of your principles with the same theme. The library version never changes.</p></div>`;
     actions(el, {
       useS: () => {
         const extra = sess ? (sess.principleIds || []) : [];
@@ -147,13 +150,12 @@ export function ideaView(el, [tid, kind, cid], ctx) {
   }
 
   ctx.setTop({ back, title: t.name, sub: t.type });
-  const have = S.drills().find(d => d.tplId === t.id);
   const sec = (lab, txt) => txt ? `<div class="stack tight"><div class="label">${lab}</div><div class="small" style="white-space:pre-line">${esc(txt)}</div></div>` : '';
   el.innerHTML = `<div class="split wide-right"><div class="stack">
       <div class="card" style="padding:8px">${drillSvg(tplDrill(t), { style: 'width:100%;max-height:60vh;border-radius:12px' })}</div>
       <div class="row" style="gap:8px">
         ${sess ? `<button class="btn pri" data-act="addS" id="addS">${icon('plus')}Add to this session</button>` : ''}
-        <button class="btn ${sess ? '' : 'pri'}" data-act="addD" id="addD">${icon('plus')}${have ? 'Open in your drills' : 'Add to my drills'}</button>
+        <button class="btn ${sess ? '' : 'pri'}" data-act="addD" id="addD">${icon('pen')}Edit and save as my own</button>
       </div>
     </div><div class="stack">
       <div class="card stack tight">
@@ -176,8 +178,7 @@ export function ideaView(el, [tid, kind, cid], ctx) {
   actions(el, {
     addS: () => { const { d } = drillFromTemplate(t, T, linkFor(T, t, sess.principleIds || [])); addBlocks(sess, [d]); toast('Added to the session'); location.hash = '#/session/' + sess.id; },
     addD: () => {
-      const { d, existed } = drillFromTemplate(t, T, linkFor(T, t, prin ? [prin.id] : []));
-      if (!existed) { const n = (d.links && d.links[T] || []).length; toast(n ? `Added, linked to ${n} of your principles` : 'Added to your drills. Link it to a principle on the drill page'); }
+      const { d } = drillFromTemplate(t, T, linkFor(T, t, prin ? [prin.id] : []), { draft: true });
       location.hash = '#/drill/' + d.id;
     }
   });

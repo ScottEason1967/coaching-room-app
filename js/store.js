@@ -127,6 +127,9 @@ export function tidySeed() {
   fix.forEach(r => put(r, { quiet: true }));
   // The example rondo and example match were planted in Joe's own lists at set-up. The practice library
   // replaces them, so they go, unless he has turned them into something of his own.
+  // Library copies opened for editing but never saved: gone after a day.
+  const cut = new Date(Date.now() - 864e5).toISOString();
+  Object.values(db.recs).forEach(r => { if (r.kind === 'drill' && r.draft && !r.del && (r.upd || '') < cut) del(r.id); });
   if (!db.meta.examplesGone) {
   db.meta.examplesGone = true;
   const rd = db.recs['dr-rondo']; if (rd && !rd.del && rd.name === 'Example: 5v2 rondo') { del('dr-rondo'); fix.push(rd); }
@@ -182,7 +185,8 @@ export const players = t => all('player', t).sort((a, b) => (+a.num || 999) - (+
 export const playerMap = t => Object.fromEntries(players(t).map(p => [p.id, { num: p.num, name: p.name, short: p.short, pos: p.pos }]));
 export const principles = t => all('principle', t).sort((a, b) => PHASE_KEYS.indexOf(a.phase) - PHASE_KEYS.indexOf(b.phase) || (a.order || 0) - (b.order || 0));
 export const boards = t => all('board', t).sort((a, b) => (b.upd || '').localeCompare(a.upd || ''));
-export const drills = () => all('drill').sort((a, b) => (b.upd || '').localeCompare(a.upd || ''));
+// Drafts are library copies being edited that have not been saved as Joe's own yet: kept out of every list.
+export const drills = () => all('drill').filter(d => !d.draft).sort((a, b) => (b.upd || '').localeCompare(a.upd || ''));
 export const sessions = t => all('session', t).sort((a, b) => (b.date || '9').localeCompare(a.date || '9'));
 export const matches = t => all('match', t).sort((a, b) => (b.date || '9').localeCompare(a.date || '9'));
 export const reviews = t => all('review', t).sort((a, b) => (b.date || '').localeCompare(a.date || ''));

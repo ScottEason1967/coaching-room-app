@@ -49,15 +49,26 @@ with sync_playwright() as p:
     pg.click('#ideaDrills .card >> nth=0'); pg.wait_for_timeout(600)
     pg.screenshot(path='shots/idea-detail.png', full_page=True)
     check('detail shows source link', pg.query_selector('#ideaSrc a[href^="https://"]') is not None)
+    tpl_url = pg.url
     pg.click('#addD'); pg.wait_for_timeout(800)
+    dr = G(pg, "S.all('drill').find(d => d.tplId && d.draft)")
+    check('Edit and save as my own opens a draft copy, not yet in my drills', bool(dr) and G(pg, "S.drills().filter(d => d.tplId).length") == 0 and pg.query_selector('#draftBar') is not None)
+    pg.fill('[data-f="name"]', 'My version'); pg.wait_for_timeout(600)
+    pg.click('#saveDraft'); pg.wait_for_timeout(600)
     d = G(pg, "S.drills().find(d => d.tplId)")
-    check('Add to my drills creates a drill from the template', bool(d) and len(d['items']) > 3 and d['src']['who'])
+    check('Save as my drill keeps it, with my changes', bool(d) and d['name'] == 'My version' and not d.get('draft') and len(d['items']) > 3 and d['src']['who'])
     check('new drill is linked to the matching principle', bool(d) and len((d.get('links') or {}).get('t-thornaby', [])) > 0)
     check('drill page shows the credit', pg.query_selector('#drillSrc') is not None)
     pg.screenshot(path='shots/idea-drill.png')
-    # adding again doesn't duplicate
-    pg.go_back(); pg.wait_for_timeout(500); pg.click('#addD'); pg.wait_for_timeout(600)
-    check('adding twice reuses the same drill', G(pg, "S.drills().filter(d => d.tplId).length") == 1)
+    # the library practice is untouched and a second edit makes a second, separate copy
+    pg.goto(tpl_url); pg.wait_for_timeout(600)
+    check('library page still shows the original name', 'My version' not in pg.inner_text('#view'))
+    pg.click('#addD'); pg.wait_for_timeout(700); pg.click('#saveDraft'); pg.wait_for_timeout(600)
+    check('a second copy is saved as new, the first is not overwritten', G(pg, "S.drills().filter(d => d.tplId).map(d => d.name).sort().join('|')") == 'Centre-back step-in|My version' or G(pg, "S.drills().filter(d => d.tplId).length") == 2)
+    # discard leaves nothing behind
+    pg.goto(tpl_url); pg.wait_for_timeout(500); pg.click('#addD'); pg.wait_for_timeout(600)
+    pg.click('[data-act="discard"]'); pg.wait_for_timeout(600)
+    check('Discard leaves no copy', G(pg, "S.all('drill').filter(d => d.tplId && !d.del).length") == 2)
     # whole session from an idea
     pg.goto(U + '#/idea/s-press'); pg.wait_for_timeout(600)
     pg.click('#useS'); pg.wait_for_timeout(1200)
