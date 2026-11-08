@@ -38,7 +38,11 @@ with sync_playwright() as p:
     check('20 players, no examples left', len(ps) == 20 and not any(n.startswith('Player ') for _, n, _ in ps))
     check('captain mark stripped', any(n == 'Jen Knowles' for _, n, _ in ps))
     check('no made-up positions', all(pos == '' for _, _, pos in ps))
-    check('list says Position not set', 'Position not set' in pg.inner_text('body'))
+    check('every player has a position dropdown, all blank', len(pg.query_selector_all('#squadList select[data-pos]')) == 20 and all(x == '' for x in pg.eval_on_selector_all('#squadList select[data-pos]', 'els => els.map(e => e.value)')))
+    pg.select_option('#squadList select[data-pos] >> nth=0', 'GK'); pg.wait_for_timeout(600)
+    check('picking a position in the list saves it', pg.evaluate("import('./js/store.js').then(S => S.players(S.team().id).find(p => p.num === 1).pos)") == 'GK')
+    opts = pg.eval_on_selector('#squadList select[data-pos]', 'e => [...e.options].map(o => o.value)')
+    check('dropdown offers only the fixed list', opts == ['', 'GK', 'RB', 'CB', 'LB', 'FB', '6', '8', 'CM', '10', 'RW', 'LW', 'W', 'CF'])
     pg.screenshot(path='shots/squad-imported.png')
     nums = sorted(n for n, _, _ in ps)
     check('squad numbers kept', nums == [1,2,3,4,5,6,7,8,9,11,12,14,15,16,17,18,19,21,23,24])
@@ -46,11 +50,12 @@ with sync_playwright() as p:
     got = pg.evaluate("""import('./js/views/squad.js').then(M => [
       M.parseSquad('1 Elen Valentine 2 Isabelle Moore 24 Jen Knowles (c)'),
       M.parseSquad('6 Brooke Newton 8\\n9 Sophie Curle CF'),
-      M.parseSquad('19\\tmarina boni\\r\\n4. Liv Little')])""")
+      M.parseSquad('19\\tmarina boni\\r\\n4. Liv Little'), M.parseSquad('7 Jane Smith ST\\n5 Amy Jones RWB')])""")
     print('  ', got)
     check('joined-up list split into players with their numbers', [(r['num'], r['name']) for r in got[0]] == [(1,'Elen Valentine'),(2,'Isabelle Moore'),(24,'Jen Knowles')])
     check('numeric position at end of line kept', got[1][0]['pos'] == '8' and got[1][1] == {'num': 9, 'name': 'Sophie Curle', 'pos': 'CF'})
     check('tabs, CRLF and "4." handled', [(r['num'], r['name']) for r in got[2]] == [(19,'marina boni'),(4,'Liv Little')])
+    check('typed positions mapped onto the dropdown list', [r['pos'] for r in got[3]] == ['CF', 'RB'])
     # the mess: one player with the whole list as her name, plus others; replace fixes it
     pg.evaluate("""import('./js/store.js').then(S => { const T = S.team().id; S.players(T).forEach(p => S.del(p.id));
       S.create('player', T, { num: 1, name: 'Elen Valentine 2 Isabelle Moore 3 Hannah Robson', short: '', pos: 'GK', pos2: '', foot: '', notes: '', goals: [], obs: [] });

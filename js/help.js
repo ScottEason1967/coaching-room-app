@@ -348,7 +348,8 @@ const squad = () => ({
   purpose: 'Your players for this team. Each has a number, a position, development goals and, if you want, a private page of her own.',
   loop: `Squad feeds the Session step (focus players and their goals) and the Match step (the squad and each instruction): ${LOOP}.`,
   steps: [
-    st('**Paste a list** sets up the whole squad at once. One player per line: number, name, position, for example `7 Jane Smith RW`. If a number already exists, that player’s name and position are replaced, so you can swap the dummy names in one go.', '[data-act="import"]'),
+    st('**Paste a list** sets up the whole squad at once: number then name, for example `7 Jane Smith`. Each player keeps her squad number. Check the line under the box says how many players it found. Leave **Replace the whole squad** ticked to clear out anyone not on the list.', '[data-act="import"]'),
+    st('**Position** is the dropdown on each row. Every position comes from the same list, so the board can put the right player in the right slot.', '#squadList select[data-pos]'),
     st('**Add player** adds one: number, name and position.', '[data-act="add"]'),
     st('Tap a player to open her page: goals, notes and her link. The green **Link** tag means she has a player page.', '[href^="#/player/"]'),
     st('**Player pages** (the box on the right, below the list on a phone): tick what goes on every page: agreed principles, the keys to winning for the next match, and boards marked “show on player pages”. Her number, goals and her own match instruction are always on. Your private notes never are.', '[data-o="principles"]'),

@@ -6,6 +6,11 @@ import { shareSheet, refreshPlayers } from './sharing.js';
 import * as cloud from '../cloud.js';
 
 const POS = ['GK', 'RB', 'CB', 'LB', 'FB', '6', '8', 'CM', '10', 'RW', 'LW', 'W', 'CF'];
+// Every position comes from this one list, so the squad stays consistent.
+export const posOptions = cur => `<option value="" ${cur ? '' : 'selected'}>Position…</option>` + POS.concat(cur && !POS.includes(cur) ? [cur] : []).map(x => `<option ${x === cur ? 'selected' : ''}>${esc(x)}</option>`).join('');
+// Positions typed in a pasted list are mapped onto the same list; anything else is ignored.
+const POS_MAP = { ST: 'CF', 9: 'CF', DM: '6', AM: '10', RWB: 'RB', LWB: 'LB', RM: 'RW', LM: 'LW' };
+const toPos = x => { const u = String(x || '').toUpperCase(); return POS.includes(u) ? u : (POS_MAP[u] || ''); };
 
 export default function squad(el, params, ctx) {
   const t = S.team(); const T = t.id; ctx.setTop({});
@@ -14,8 +19,9 @@ export default function squad(el, params, ctx) {
   el.innerHTML = `<div class="split wide-right"><div class="stack">
     <div class="row between"><div><div class="h1">Squad</div><div class="small muted" style="margin-top:4px">${ps.length} players · ${esc(t.name)}</div></div>
       <div class="row" style="gap:8px"><button class="btn" data-act="import">Paste a list</button><button class="btn pri" data-act="add">${icon('plus')}Add player</button></div></div>
-    ${ps.length ? `<div class="list">${ps.map(p => { const g = (p.goals || []).filter(x => x.status === 'on').length;
-      return `<a class="item" href="#/player/${p.id}">${avatar(S.photoOf(p.id), 40, `<span class="badge-num" style="${p.pos === 'GK' ? 'background:#2FB67A' : ''}">${esc(p.num)}</span>`)}<span class="grow"><span class="t" style="display:block">${S.photoOf(p.id) ? `<span class="muted">${esc(p.num)}</span> ` : ''}${esc(p.name)}</span><span class="s">${p.pos ? esc(p.pos) : 'Position not set'}${p.pos2 ? ' / ' + esc(p.pos2) : ''}${g ? ` · ${g} goal${g > 1 ? 's' : ''} on the go` : ' · no development goal'}</span></span>${p.share && p.share.token ? `<span class="pill ${p.share.enabled === false ? 'grey' : 'good'}">${icon('link', 'style="width:12px;height:12px"')}Link</span>` : ''}</a>`; }).join('')}</div>` : '<div class="empty">No players yet.</div>'}
+    ${ps.length ? `<div class="list" id="squadList">${ps.map(p => { const g = (p.goals || []).filter(x => x.status === 'on').length;
+      return `<div class="item" style="cursor:default"><a class="row nowrap grow" style="gap:12px;color:inherit;text-decoration:none;min-width:0" href="#/player/${p.id}">${avatar(S.photoOf(p.id), 40, `<span class="badge-num" style="${p.pos === 'GK' ? 'background:#2FB67A' : ''}">${esc(p.num)}</span>`)}<span class="grow" style="min-width:0"><span class="t" style="display:block">${S.photoOf(p.id) ? `<span class="muted">${esc(p.num)}</span> ` : ''}${esc(p.name)}</span><span class="s">${g ? `${g} goal${g > 1 ? 's' : ''} on the go` : 'No development goal'}</span></span>${p.share && p.share.token ? `<span class="pill ${p.share.enabled === false ? 'grey' : 'good'}">${icon('link', 'style="width:12px;height:12px"')}Link</span>` : ''}</a>
+        <select data-pos="${p.id}" aria-label="Position for ${esc(p.name)}" style="width:auto;min-width:96px;flex:none">${posOptions(p.pos)}</select></div>`; }).join('')}</div>` : '<div class="empty">No players yet.</div>'}
   </div>
   <div class="stack">
     <div class="card stack tight"><div class="h3">Player pages</div>
@@ -28,6 +34,7 @@ export default function squad(el, params, ctx) {
       <p class="tiny muted" style="margin:0">If any players are under 18, check your club’s safeguarding policy before sending links (for example, send through a parent).</p>
     </div>
   </div></div>`;
+  el.querySelectorAll('[data-pos]').forEach(sel => sel.onchange = () => { const p = S.get(sel.dataset.pos); if (!p) return; p.pos = sel.value; S.put(p); toast(p.name + ': ' + (sel.value || 'position not set')); });
   el.querySelectorAll('[data-o]').forEach(c => c.onchange = () => { t.playerShare = { ...opt, ...(t.playerShare || {}), [c.dataset.o]: c.checked }; S.put(t); });
   actions(el, {
     add: () => addSheet(T),
@@ -43,7 +50,7 @@ function addSheet(T) {
   const used = new Set(S.players(T).map(p => +p.num)); let n = 1; while (used.has(n)) n++;
   const el = sheet(`<div class="stack"><div class="h2">Add player</div>
     <div class="row nowrap"><label class="field" style="width:90px"><span>Number</span><input type="number" inputmode="numeric" id="apN" value="${n}"></label><label class="field grow"><span>Name</span><input type="text" id="apM" autofocus></label></div>
-    <label class="field"><span>Position</span><select id="apP">${POS.map(p => `<option>${p}</option>`).join('')}</select></label>
+    <label class="field"><span>Position</span><select id="apP">${posOptions('')}</select></label>
     <div class="row" style="justify-content:flex-end"><button class="btn" id="apX">Cancel</button><button class="btn pri" id="apS">Add</button></div></div>`);
   el.querySelector('#apX').onclick = closeSheet;
   el.querySelector('#apS').onclick = () => {
@@ -67,7 +74,7 @@ export function parseSquad(text) {
       if (!m) return;
       const name = m[2].replace(/\s*\((c|capt?)\)\s*$/i, '').trim();
       if (!name || /\d/.test(name)) return;
-      out.push({ num: +m[1], name, pos: (m[3] || '').toUpperCase() });
+      out.push({ num: +m[1], name, pos: toPos(m[3]) });
     });
   });
   return out;
@@ -75,7 +82,7 @@ export function parseSquad(text) {
 
 function importSheet(T, ctx) {
   const el = sheet(`<div class="stack"><div class="h2">Paste a squad list</div>
-    <p class="small muted" style="margin:0">Number, name, and position if you know it. One player per line is best, for example:<br><code>7 Jane Smith RW</code><br>Each player keeps her squad number. A player with no position shows “Position not set” until you pick one.</p>
+    <p class="small muted" style="margin:0">Number, name, and position if you know it. One player per line is best, for example:<br><code>7 Jane Smith RW</code><br>Each player keeps her squad number. Positions are picked from the dropdown on the squad list, so leave them out if you’re not sure.</p>
     <textarea id="imT" style="min-height:200px" placeholder="1 Name Surname GK"></textarea>
     <div class="tiny muted" id="imP">Nothing pasted yet.</div>
     <label class="check"><input type="checkbox" id="imR" checked> Replace the whole squad with this list (anyone not on it is removed)</label>
@@ -123,7 +130,7 @@ export function playerView(el, [id], ctx) {
     <div class="card stack tight">
       <div class="row nowrap"><label class="field" style="width:90px"><span>Number</span><input type="number" inputmode="numeric" data-f="num"></label><label class="field grow"><span>Name</span><input type="text" data-f="name"></label></div>
       <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-        <label class="field"><span>Position</span><select data-f="pos">${p.pos ? '' : '<option value="" selected>Not set</option>'}${POS.concat(!p.pos || POS.includes(p.pos) ? [] : [p.pos]).map(x => `<option ${x === p.pos ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+        <label class="field"><span>Position</span><select data-f="pos">${posOptions(p.pos)}</select></label>
         <label class="field"><span>Also plays</span><select data-f="pos2"><option value="">—</option>${POS.map(x => `<option ${x === p.pos2 ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
         <label class="field"><span>Name on the board</span><input type="text" data-f="short" maxlength="12" placeholder="Short name"></label>
         <label class="field"><span>Foot</span><select data-f="foot"><option value="">—</option>${['Right', 'Left', 'Both'].map(x => `<option ${x === p.foot ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
