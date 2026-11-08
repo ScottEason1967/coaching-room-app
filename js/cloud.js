@@ -6,7 +6,8 @@ import { debounce } from './util.js';
 
 let sb = null, user = null, busy = false, again = false;
 const st = { state: 'off', last: null, err: '' };
-const subs = new Set();
+const subs = new Set(), authSubs = new Set();
+export const onAuth = fn => authSubs.add(fn);
 export const onStatus = fn => subs.add(fn);
 const emit = () => subs.forEach(f => { try { f(st); } catch (e) {} });
 export const status = () => st;
@@ -24,6 +25,7 @@ export async function init() {
   try { const { data } = await sb.auth.getSession(); user = data.session ? data.session.user : null; } catch (e) { user = null; }
   sb.auth.onAuthStateChange((ev, session) => {
     const was = user && user.id; user = session ? session.user : null;
+    authSubs.forEach(f => { try { f(ev, user); } catch (e) { console.error(e); } });
     if (!user) set('signedout'); else if (user.id !== was) sync();
   });
   st.last = store.meta().lastSync || null;
@@ -55,7 +57,15 @@ export async function resetPassword(em) {
   const { error } = await sb.auth.resetPasswordForEmail(em.trim(), { redirectTo: location.href.split('#')[0] });
   if (error) throw error;
 }
-export async function signOut() { await sb.auth.signOut(); user = null; set('signedout'); }
+export async function signOut() { await sb.auth.signOut(); user = null; set('signedout'); authSubs.forEach(f => { try { f('SIGNED_OUT', null); } catch (e) {} }); }
+export async function setPassword(pw) {
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) throw error;
+}
+// A session is saved on this device but could not be checked (usually: no signal at the ground, and
+// the hour-long access token has run out). Let the app open; sync resumes when the token refreshes.
+// If the session turns out to be dead, Supabase clears it and signs out, and the sign-in screen shows.
+export function savedSession() { try { return !!localStorage.getItem('coachingroom.auth'); } catch (e) { return false; } }
 
 export async function sync({ pushOnly } = {}) {
   if (!sb || !user) return;
@@ -63,6 +73,10 @@ export async function sync({ pushOnly } = {}) {
   if (!navigator.onLine) return set('offline');
   busy = true; set('syncing');
   try {
+    // A different account signed in on this device: the data here belongs to the last account and
+    // must not be pushed into this one. Clear it, then pull this account's data.
+    const m = store.meta();
+    if (m.syncUser && m.syncUser !== user.id) { store.resetLocal(); store.setMeta('syncUser', user.id); store.setMeta('cursor', null); store.setMeta('photoCursor', null); }
     await push();
     if (!pushOnly) await pull();
     st.last = new Date().toISOString(); store.setMeta('lastSync', st.last);
@@ -133,6 +147,25 @@ async function pull() {
     store.setMeta('cursor', cursor);
     if (data.length < 500) break;
   }
+  await pullPhotos();
+}
+
+// Players add or remove their own photo from their player page. The photo lives on the link, not in
+// the player record, so nothing Joe edits can overwrite it, and deleting the link takes it away.
+async function pullPhotos() {
+  let q = sb.from('shares').select('ref_id,photo,photo_at').eq('kind', 'player').not('photo_at', 'is', null).order('photo_at', { ascending: true }).limit(500);
+  let since = store.meta().photoCursor;
+  if (since) { since = new Date(new Date(since).getTime() - 30000).toISOString(); q = q.gt('photo_at', since); }
+  const { data, error } = await q;
+  if (error) { console.warn('photos', error.message); return; }   // the photo columns are missing until the updated schema.sql is run
+  if (!data || !data.length) return;
+  store.setPhotos(data.map(r => [r.ref_id, r.photo || null]));
+  store.setMeta('photoCursor', data[data.length - 1].photo_at);
+}
+export async function removePlayerPhoto(token) {
+  needCloud();
+  const { error } = await sb.from('shares').update({ photo: null }).eq('token', token);   // the database stamps photo_at
+  if (error) throw error;
 }
 
 /* ---------- Shared links ---------- */

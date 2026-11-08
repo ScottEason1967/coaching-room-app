@@ -26,7 +26,7 @@ async def main():
         # ---- TEST 1: sign in on a fresh device, then edit WITHOUT reloading. Does it push on its own?
         A=await device(b)
         await A.goto(U+'index.html#/cloud'); await A.wait_for_timeout(400)
-        await A.fill('#cE','joe@example.com'); await A.fill('#cP','correct-horse-1'); await A.click('#cUp'); await A.wait_for_timeout(1000)
+        await A.fill('#cE','joe@example.com'); await A.fill('#cP','correct-horse-1'); srv.op_signup({'email':'joe@example.com','password':'correct-horse-1'}); await A.click('#cIn'); await A.wait_for_timeout(1000)
         await A.goto(U+'index.html#/player/pl-9'); await A.wait_for_timeout(300)
         await A.fill('[data-f="name"]','Beth Smith'); await A.wait_for_timeout(3000)   # debounce 400 + pushSoon 1500
         print('T1 after sign-in (no reload), edit then wait 3s: server rows =', len(srv.items), '| local dirty =', await dirty(A))

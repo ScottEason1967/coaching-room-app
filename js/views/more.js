@@ -2,7 +2,7 @@
 import * as S from '../store.js';
 import * as cloud from '../cloud.js';
 import { CPD_TYPES, PHASES } from '../store.js';
-import { esc, icon, today, fmtD, fmtDY, fmtAgo, bindFields, actions, debounce, confirmSheet, toast, sheet, closeSheet, shareFile } from '../util.js';
+import { esc, icon, today, fmtD, fmtDY, fmtAgo, bindFields, actions, debounce, confirmSheet, toast, sheet, closeSheet, shareFile, pickImage, avatar, logoImg, teamBadge } from '../util.js';
 import { FORMATIONS } from '../pitch.js';
 import { sessionStats } from '../challenges.js';
 
@@ -11,7 +11,8 @@ export default function more(el, params, ctx) {
   const save = debounce(() => S.put(c), 400);
   const st = cloud.status();
   el.innerHTML = `<div class="stack" style="max-width:720px">
-    <div class="card row nowrap" style="gap:14px"><span class="badge-num" style="width:56px;height:56px;font-size:24px;background:var(--surface2)">${esc(c.initials || 'JE')}</span>
+    <div class="card row nowrap" style="gap:14px;align-items:flex-start"><div class="stack tight" style="align-items:center;gap:6px">${avatar(c.photo, 72, `<span class="badge-num" style="width:72px;height:72px;font-size:28px;background:var(--surface2)">${esc(c.initials || 'JE')}</span>`)}
+        <button class="btn sm" data-act="photo" id="mePhoto">${c.photo ? 'Change' : 'Add photo'}</button>${c.photo ? '<button class="btn sm" data-act="unphoto" style="min-height:32px">Remove</button>' : ''}</div>
       <div class="grow row" style="gap:10px"><label class="field grow"><span>Your name</span><input type="text" data-f="name"></label><label class="field" style="width:90px"><span>Initials</span><input type="text" data-f="initials" maxlength="3"></label></div></div>
     <div class="list">
       ${[['#/pathway', 'ladder', 'Pathway: UEFA C to Pro', 'Where you are, the competences, and the evidence you’re building'],
@@ -23,7 +24,11 @@ export default function more(el, params, ctx) {
     </div>
     <p class="tiny muted">The Coaching Room</p></div>`;
   bindFields(el, c, () => save());
-  actions(el, { startHere: () => { S.setMeta('startHereDone', false); location.hash = '#/home'; } });
+  actions(el, {
+    startHere: () => { S.setMeta('startHereDone', false); location.hash = '#/home'; },
+    photo: async () => { const src = await pickImage({ max: 320, square: true }); if (!src) return; c.photo = src; S.put(c); ctx.refresh(); toast('Photo saved'); },
+    unphoto: () => { delete c.photo; S.put(c); ctx.refresh(); }
+  });
   return () => save.flush();
 }
 
@@ -129,7 +134,7 @@ export function teamsView(el, params, ctx) {
   const ts = S.teams(); const cur = S.team();
   el.innerHTML = `<div class="stack" style="max-width:720px">
     <p class="lead" style="margin:0">Each team has its own squad, game model, boards, sessions, matches and reviews. Your drill library, logbook and pathway stay with you.</p>
-    ${ts.length ? `<div class="list">${ts.map(t => `<a class="item" href="#/team/${t.id}"><span class="badge-num">${esc(t.name[0] || '?')}</span><span class="grow"><span class="t" style="display:block">${esc(t.name)}</span><span class="s">${esc([t.season, S.players(t.id).length + ' players', t.archived ? 'archived' : '', cur && cur.id === t.id ? 'current' : ''].filter(Boolean).join(' · '))}</span></span>${icon('chev', 'style="width:18px;height:18px;color:var(--muted)"')}</a>`).join('')}</div>` : '<div class="empty">No teams yet. Add the team you coach.</div>'}
+    ${ts.length ? `<div class="list">${ts.map(t => `<a class="item" href="#/team/${t.id}">${teamBadge(t, 40, 18)}<span class="grow"><span class="t" style="display:block">${esc(t.name)}</span><span class="s">${esc([t.season, S.players(t.id).length + ' players', t.archived ? 'archived' : '', cur && cur.id === t.id ? 'current' : ''].filter(Boolean).join(' · '))}</span></span>${icon('chev', 'style="width:18px;height:18px;color:var(--muted)"')}</a>`).join('')}</div>` : '<div class="empty">No teams yet. Add the team you coach.</div>'}
     <a class="btn pri" href="#/team/new">${icon('plus')}Add a team</a></div>`;
 }
 
@@ -156,6 +161,8 @@ export function teamView(el, [id], ctx) {
   const save = debounce(() => S.put(t), 400);
   const counts = ['player', 'principle', 'board', 'session', 'match', 'review'].map(k => [k, S.all(k, t.id).length]);
   el.innerHTML = `<div class="stack" style="max-width:620px"><div class="card stack">
+    <div class="row nowrap" style="gap:14px" id="teamLogo">${t.logo ? logoImg(t.logo, 72, 'border-radius:12px') : `<span class="badge-num" style="width:72px;height:72px;font-size:30px">${esc((t.name || '?')[0])}</span>`}
+      <div class="stack tight grow"><div class="label">Club badge</div><div class="row" style="gap:8px"><button class="btn sm" data-act="logo">${t.logo ? 'Change badge' : 'Add the club badge'}</button>${t.logo ? '<button class="btn sm" data-act="unlogo">Remove</button>' : ''}</div><div class="tiny muted">Shows on the team switcher, printouts and the player and staff pages. A PNG with a see-through background looks best.</div></div></div>
     <label class="field"><span>Team name</span><input type="text" data-f="name"></label>
     <div class="grid2"><label class="field"><span>Short name</span><input type="text" data-f="short"></label><label class="field"><span>Club</span><input type="text" data-f="club"></label></div>
     <div class="grid2"><label class="field"><span>Season</span><input type="text" data-f="season"></label><label class="field"><span>Base formation</span><select data-f="formation">${Object.keys(FORMATIONS).map(f => `<option ${f === t.formation ? 'selected' : ''}>${esc(f)}</option>`).join('')}</select></label></div>
@@ -165,6 +172,8 @@ export function teamView(el, [id], ctx) {
   bindFields(el, t, () => save());
   actions(el, {
     use: () => { S.setTeam(t.id); location.hash = '#/home'; },
+    logo: async () => { const src = await pickImage({ max: 256, square: false, logo: true }); if (!src) return; t.logo = src; S.put(t); ctx.refresh(); toast('Badge saved'); },
+    unlogo: () => { delete t.logo; S.put(t); ctx.refresh(); },
     del: async () => {
       if (!await confirmSheet('Delete ' + t.name + '?', 'This deletes its squad, game model, boards, sessions, matches and reviews on every device. Archiving keeps them. Your drill library is not affected.', 'Delete everything')) return;
       ['player', 'principle', 'board', 'session', 'match', 'review'].forEach(k => S.all(k, t.id).forEach(r => S.del(r.id)));

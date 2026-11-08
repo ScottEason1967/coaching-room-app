@@ -191,3 +191,43 @@ document.addEventListener('toggle', e => { if (e.target.tagName === 'DETAILS') a
 export function emptyState(text, btn) {
   return `<div class="empty">${esc(text)}${btn ? `<div style="margin-top:12px">${btn}</div>` : ''}</div>`;
 }
+
+/* ---------- Pictures (profile photo, team logo, player photos) ----------
+   Shrunk in the browser before saving: a phone photo is several MB, a 320 px JPEG is about 30 KB.
+   That keeps the records small enough to sync and to sit in the browser's storage. */
+export function pickImage(opts = {}) {
+  return new Promise(res => {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.style.display = 'none';
+    document.body.appendChild(inp);
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0]; inp.remove();
+      if (!f) return res(null);
+      try { res(await shrinkImage(f, opts)); } catch (e) { toast('That picture could not be read. Try a JPEG or PNG.'); res(null); }
+    };
+    inp.click();
+  });
+}
+export async function shrinkImage(file, { max = 320, square = true, logo = false } = {}) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = url; });
+    let sw = img.naturalWidth, sh = img.naturalHeight, sx = 0, sy = 0;
+    if (!sw || !sh) throw new Error('empty image');
+    if (square) { const s = Math.min(sw, sh); sx = (sw - s) / 2; sy = (sh - s) / 2; sw = sh = s; }
+    const k = Math.min(1, max / Math.max(sw, sh)), w = Math.max(1, Math.round(sw * k)), h = Math.max(1, Math.round(sh * k));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const draw = fill => { const g = c.getContext('2d'); g.clearRect(0, 0, w, h); if (fill) { g.fillStyle = '#121A2E'; g.fillRect(0, 0, w, h); } g.drawImage(img, sx, sy, sw, sh, 0, 0, w, h); };
+    if (logo) { draw(false); const png = c.toDataURL('image/png'); if (png.length < 150000) return png; }   // logos keep a see-through background
+    draw(true);
+    let q = 0.85, out = c.toDataURL('image/jpeg', q);
+    while (out.length > 120000 && q > 0.4) { q -= 0.15; out = c.toDataURL('image/jpeg', q); }
+    return out;
+  } finally { URL.revokeObjectURL(url); }
+}
+// A round picture, or the fallback (initials, number) when there is none.
+export const avatar = (src, size, fallback = '', style = '') => src
+  ? `<img class="avatar" src="${esc(src)}" alt="" width="${size}" height="${size}" style="width:${size}px;height:${size}px;${style}">`
+  : fallback;
+export const logoImg = (src, size, style = '') => src ? `<img class="logo" src="${esc(src)}" alt="" style="width:${size}px;height:${size}px;${style}">` : '';
+export const teamBadge = (t, size, fs) => t && t.logo ? logoImg(t.logo, size) : `<span class="badge-num" style="width:${size}px;height:${size}px;font-size:${fs}px">${esc(((t && t.name) || '?')[0])}</span>`;

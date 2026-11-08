@@ -15,6 +15,10 @@ Needs: Python 3, `pip install playwright` then `playwright install chromium`. Th
     python3 my_sync.py         # review (Nov 2026): sign-in-then-edit pushes; empty review does not clear the gate;
                                #   wrong device clock is flagged; an edit lost to last-write-wins is kept on the Cloud screen
     python3 my_flush.py        # review (Nov 2026): text typed just before the app is backgrounded is marked for sync
+    python3 gate.py            # sign-in screen (Nov 2026): nothing shows signed out, sign in/out, reset link, a second
+                               #   account on the same device never receives or pushes the first account's data
+    python3 pictures.py        # profile photo, club badge, player photos set by the player from her page (Nov 2026)
+    psql -h /tmp -p 5499 -U postgres -f pg_photos.sql              # player photo rules: her PIN only, JPEG only, size cap
     python3 help.py            # help layer (Nov 2026): every screen's ? guide opens at 390px, every Show me lands on a
                                #   control, the sheet fits the width, the top bar's three buttons fit
 

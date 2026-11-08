@@ -66,6 +66,15 @@ export function load() {
   if (!db.meta.activeTeam || !get(db.meta.activeTeam)) db.meta.activeTeam = (teams()[0] || {}).id || null;
 }
 export const meta = () => db.meta;
+// Another account signed in on this device: start again with nothing, then the pull fills it.
+export function resetLocal() { db = { recs: {}, dirty: {}, meta: { seeded: true } }; persist(); emit('remote'); }
+// Player photos come from the players themselves (via their link), keyed by player id.
+export const photoOf = id => ((db.meta.photos || {})[id]) || null;
+export function setPhotos(pairs) {
+  const ph = db.meta.photos ||= {};
+  pairs.forEach(([id, src]) => { if (src) ph[id] = src; else delete ph[id]; });
+  persist(); emit('remote');
+}
 export function setMeta(k, v) { db.meta[k] = v; persist(); }
 
 /* ---------- CRUD ---------- */

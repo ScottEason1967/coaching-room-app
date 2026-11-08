@@ -15,7 +15,7 @@ function doPrint(html) {
   const p = document.getElementById('print'); p.innerHTML = html;
   setTimeout(() => { try { window.print(); } catch (e) { console.error(e); } }, 120);
 }
-const head = (title, meta) => `<h1>${esc(title)}</h1><div class="meta">${meta}</div>`;
+const head = (title, meta, T) => { const lg = T && (S.get(T) || {}).logo; return `${lg ? `<img src="${esc(lg)}" alt="" style="float:right;width:56px;height:56px;object-fit:contain;margin-left:12px">` : ''}<h1>${esc(title)}</h1><div class="meta">${meta}</div>`; };
 const teamName = T => esc((S.get(T) || {}).name || '');
 
 export function boardHtml(b, pm) {
@@ -23,7 +23,7 @@ export function boardHtml(b, pm) {
     <table><tr><td style="width:62%;border:0;padding:0">${frameSvg(f, pm, { style: 'width:100%;max-height:120mm' })}</td><td style="border:0">${nl2br(f.notes)}</td></tr></table></div>`).join('');
 }
 export function printBoard(b) {
-  doPrint(head(b.name, `${teamName(b.team)} · ${b.frames.length} frame${b.frames.length === 1 ? '' : 's'}`) + boardHtml(b, S.playerMap(b.team)));
+  doPrint(head(b.name, `${teamName(b.team)} · ${b.frames.length} frame${b.frames.length === 1 ? '' : 's'}`, b.team) + boardHtml(b, S.playerMap(b.team)));
 }
 
 export function drillHtml(d, T, mins, talk) {
@@ -37,14 +37,14 @@ export function drillHtml(d, T, mins, talk) {
   </td></tr>
   <tr><td colspan="2"><b>Organisation:</b> ${nl2br(d.org)}<br><b>How it works:</b> ${nl2br(d.how)}${d.direction ? `<br><b>Direction:</b> ${esc(DIRECTION[d.direction] || d.direction)}` : ''}${d.transition ? `<br><b>Transition:</b> ${nl2br(d.transition)}` : ''}<br><b>Coaching points:</b> ${nl2br(d.points)}${d.success ? `<br><b>Success looks like:</b> ${nl2br(d.success)}` : ''}${d.questions ? `<br><b>Questions:</b> ${nl2br(d.questions)}` : ''}${d.stepIn ? `<br><b>Step in when:</b> ${nl2br(d.stepIn)}` : ''}<br><b>Progress:</b> ${nl2br(d.prog)}<br><b>Regress:</b> ${nl2br(d.reg)}${corners ? `<br><br>${corners}` : ''}</td></tr></table></div>`;
 }
-export function printDrill(d, T) { doPrint(head(d.name, teamName(T)) + drillHtml(d, T)); }
+export function printDrill(d, T) { doPrint(head(d.name, teamName(T), T) + drillHtml(d, T)); }
 
 export function sessionHtml(s) {
   const T = s.team; const st = sessionStats(s); const { kit, balls } = sessionKit(s);
   const ps = (s.principleIds || []).map(S.get).filter(Boolean); const blk = S.blockFor(T, s.date);
   const focus = (s.focusIds || []).map(S.get).filter(Boolean);
   const kitTxt = Object.entries(kit).map(([k, v]) => `${v} × ${esc(kitLabel(k))}`).concat(balls ? [`balls (at least ${Math.max(balls, 10)})`] : []).join(', ');
-  return head('Session: ' + (s.theme || ''), `${teamName(T)} · ${fmtDY(s.date)}${s.time ? ' · ' + esc(s.time) : ''}${s.venue ? ' · ' + esc(s.venue) : ''} · ${st.total} min · ball rolling ${st.rolling}%`)
+  return head('Session: ' + (s.theme || ''), `${teamName(T)} · ${fmtDY(s.date)}${s.time ? ' · ' + esc(s.time) : ''}${s.venue ? ' · ' + esc(s.venue) : ''} · ${st.total} min · ball rolling ${st.rolling}%`, T)
     + `<table><tr><th style="width:28%">Principles</th><td>${ps.map(p => esc(p.title)).join('; ') || '—'}</td></tr>
        ${blk ? `<tr><th>Block</th><td>${esc(blk.title)} · week ${S.weekOf(blk, s.date)} of ${blk.weeks}${(blk.weeksPlan || [])[S.weekOf(blk, s.date) - 1] ? ': ' + esc(blk.weeksPlan[S.weekOf(blk, s.date) - 1]) : ''}</td></tr>` : ''}
        ${s.lookFor ? `<tr><th>Looking for</th><td>${nl2br(s.lookFor)}</td></tr>` : ''}
@@ -63,7 +63,7 @@ export function matchHtml(m) {
   const rows = (arr) => arr.filter(x => x[1]).map(([l, v]) => `<tr><th style="width:28%">${l}</th><td>${nl2br(v)}</td></tr>`).join('');
   const boards = (m.boardIds || []).map(S.get).filter(Boolean);
   const squad = (m.squadIds || []).map(S.get).filter(Boolean);
-  return head('Match plan v ' + m.opponent, `${teamName(T)} · ${fmtDY(m.date)}${m.ko ? ' · ' + esc(m.ko) : ''}${m.venue ? ' · ' + esc(m.venue) : ''}${m.comp ? ' · ' + esc(m.comp) : ''}`)
+  return head('Match plan v ' + m.opponent, `${teamName(T)} · ${fmtDY(m.date)}${m.ko ? ' · ' + esc(m.ko) : ''}${m.venue ? ' · ' + esc(m.venue) : ''}${m.comp ? ' · ' + esc(m.comp) : ''}`, T)
     + `<h2>What wins us the game</h2><ol>${lines(p.keys).map(k => `<li>${esc(k)}</li>`).join('')}</ol>
        <h2>Their threat and our answer</h2><p>${nl2br(p.threat)}</p>
        ${p.first || p.planB || p.subs ? `<h2>Match management</h2><table>${rows([['First ten minutes', p.first], ['Plan B', p.planB], ['Substitutions', p.subs]])}</table>` : ''}
@@ -79,7 +79,7 @@ export function printMatch(m) { doPrint(matchHtml(m)); }
 // One card per player, to cut out or hand over.
 export function printInstructionCards(m) {
   const squad = (m.squadIds || []).map(S.get).filter(Boolean);
-  doPrint(head('Player instructions v ' + m.opponent, `${teamName(m.team)} · ${fmtDY(m.date)}`)
+  doPrint(head('Player instructions v ' + m.opponent, `${teamName(m.team)} · ${fmtDY(m.date)}`, m.team)
     + `<table>${squad.map(pl => `<tr class="avoid"><td style="padding:4mm"><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15pt;text-transform:uppercase">${esc(pl.num)} · ${esc(pl.name)}</div><div style="margin-top:2mm">${nl2br((m.instructions || {})[pl.id] || 'No individual instruction.')}</div><div style="margin-top:3mm;color:#555;font-size:9pt">Keys: ${lines((m.plan || {}).keys).map(esc).join(' · ')}</div></td></tr>`).join('')}</table>`);
 }
 

@@ -69,6 +69,20 @@ create table if not exists public.shares (
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
+-- Player photos (added Nov 2026). A player adds or removes her own photo from her page; it lives
+-- on her link, so nothing Joe edits overwrites it, and deleting the link deletes the photo.
+alter table public.shares add column if not exists photo text;
+alter table public.shares add column if not exists photo_at timestamptz;
+create or replace function public.shares_photo_at() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if new.photo is distinct from old.photo then new.photo_at := clock_timestamp(); end if;
+  return new;
+end $$;
+drop trigger if exists shares_photo_at on public.shares;
+create trigger shares_photo_at before update on public.shares
+  for each row execute function public.shares_photo_at();
+
 alter table public.shares enable row level security;
 drop policy if exists shares_select on public.shares;
 drop policy if exists shares_update on public.shares;
@@ -129,7 +143,7 @@ begin
   end if;
   update public.shares set fails = 0, locked_until = null where token = p_token;
   return jsonb_build_object('ok', true, 'kind', s.kind, 'title', s.title, 'data', s.data,
-                            'comments', s.comments, 'updated_at', s.updated_at);
+                            'comments', s.comments, 'updated_at', s.updated_at, 'photo', s.photo);
 end $$;
 
 -- Staff can leave a comment on a shared plan (needs the PIN too).
@@ -152,6 +166,25 @@ begin
   return jsonb_build_object('ok', true, 'comments', r);
 end $$;
 
+-- A player adds, changes or removes her own photo (needs the PIN). Small JPEGs only: the app
+-- shrinks the picture to 320 px before sending it.
+create or replace function public.set_share_photo(p_token text, p_pin text, p_photo text)
+returns jsonb language plpgsql security definer set search_path = public, extensions as $$
+declare
+  r jsonb;
+  k text;
+begin
+  r := public.open_share(p_token, p_pin);
+  if not coalesce((r->>'ok')::boolean, false) then return r; end if;
+  select kind into k from public.shares where token = p_token;
+  if k is distinct from 'player' then return jsonb_build_object('ok', false, 'reason', 'kind'); end if;
+  if p_photo is not null and (length(p_photo) > 200000 or p_photo !~ '^data:image/jpeg;base64,[A-Za-z0-9+/=]+$') then
+    return jsonb_build_object('ok', false, 'reason', 'photo');
+  end if;
+  update public.shares set photo = p_photo where token = p_token;
+  return jsonb_build_object('ok', true, 'photo', p_photo);
+end $$;
+
 revoke all on function public.save_share(text, text, text, text, jsonb, text, boolean) from public, anon;
 grant execute on function public.save_share(text, text, text, text, jsonb, text, boolean) to authenticated;
 revoke all on function public.open_share(text, text) from public;
@@ -159,3 +192,6 @@ grant execute on function public.open_share(text, text) to anon, authenticated;
 revoke all on function public.add_share_comment(text, text, text, text) from public;
 grant execute on function public.add_share_comment(text, text, text, text) to anon, authenticated;
 revoke all on function public.items_lww() from public, anon, authenticated;
+revoke all on function public.shares_photo_at() from public, anon, authenticated;
+revoke all on function public.set_share_photo(text, text, text) from public;
+grant execute on function public.set_share_photo(text, text, text) to anon, authenticated;

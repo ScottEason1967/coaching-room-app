@@ -361,6 +361,7 @@ const player = () => ({
   purpose: 'One player’s page: her details, the goals you have agreed with her, what you have seen in reviews and her private link.',
   loop: `Goals set here show up when you pick focus players in a session, and the notes you write in reviews come back here: ${LOOP}.`,
   steps: [
+    st('**Photo**: players add their own from their player page, if they want to. It is their choice: you cannot add one for them. If she adds one it shows here and in the squad list, and **Remove** takes it off if you need to. If any of your players are under 18, check the club’s rules on photos before you send links.', '#photoNote'),
     st('**Number**, **Name**, **Position**, **Also plays**, **Foot** and **Name on the board**. The last one is the short name (up to 12 letters) that shows under her on tactics boards.', 'short'),
     st('**Development goals**: tap **Add**, then write what she is working on and how you will work on it together. Agree it with her. Mark it **Working on it**, **Achieved** or **Parked**. She sees these on her page, except parked ones. Goals that are Working on it show next to her name when you pick focus players.', '[data-act="goal"]'),
     st('**Observations from reviews** collects the one-liners you write about her in session and match reviews. You do not type here.'),
@@ -421,6 +422,7 @@ const team = params => (params || [])[0] === 'new' ? {
   purpose: 'The details of one team.',
   loop: `Each team has its own loop: ${LOOP}.`,
   steps: [
+    st('**Add the club badge** puts it on the team switcher, printouts and the player and staff pages. A PNG with a see-through background looks best.', '#teamLogo'),
     st('**Team name**, **Short name**, **Club** and **Season**. The short name is used where space is tight.', 'name'),
     st('**Base formation** is the shape used for new boards and the Shape & roles tab.', 'formation'),
     st('**Archived** is for a team you no longer coach. It is kept for your records.', 'archived'),
@@ -435,7 +437,7 @@ const cloudGuide = () => {
     purpose: 'Cloud sync keeps the same data on your phone, iPad and laptop, and switches on player and staff links. Until it is set up, everything is saved on this device only.',
     loop: `Sync does not change the loop, it protects it: ${LOOP}.`,
     steps: [
-      st(on ? (signed ? 'You are signed in. This card shows your email, the sync state and how many changes are waiting to upload.' : '**Sign in** with the same email and password on every device. **Create account** is for the first time. **Forgot password** sends a reset link.') : 'This screen says **This device only** until the one-off Supabase set-up is done. The README walks through it (about 15 minutes). Until then use Backup below to move data between devices.', when(on && !signed, '#cE')),
+      st(on ? (signed ? 'You are signed in. This card shows your email, the sync state and how many changes are waiting to upload. **Sign out** takes you back to the sign-in screen and hides everything until you sign in again.' : 'This device has a saved sign-in but could not check it, usually because there is no signal. Your changes are saved here and go up once it reconnects. **Sign in** again if it does not.') : 'This screen says **This device only** until the one-off Supabase set-up is done. The README walks through it (about 15 minutes). Until then use Backup below to move data between devices.', when(on && !signed, '#cE')),
       st('The dot at the top right shows sync at a glance: green is synced, yellow is syncing or not signed in, red is a problem, grey is offline or this device only. Tap it to come to this screen.', '[aria-label^="Sync:"]'),
       st('**Sync now** sends your changes and fetches anyone else’s. It happens by itself too. If you are offline, changes are saved and go up when you are back online.', when(signed, '#cSync')),
       st('**Download backup** saves everything as one file. Keep a copy somewhere safe. **Restore from file** (next to it) puts a backup back in; newer copies already here are kept.', '#bEx'),
@@ -450,7 +452,8 @@ const more = () => ({
   purpose: 'Your own details, and the screens that are not in the bottom menu.',
   loop: `${LOOP}. More holds the pathway, logbook, teams and cloud sync around it.`,
   steps: [
-    st('**Your name** and **Initials**. The initials show in the circle at the top right of every screen.', 'name'),
+    st('**Add photo** puts your picture in the circle at the top right of every screen. Without one, your initials show there.', '#mePhoto'),
+    st('**Your name** and **Initials**.', 'name'),
     st('**Pathway** is your road from UEFA C to Pro and the evidence you are building.', '.list [href="#/pathway"]'),
     st('**Coaching logbook** records CPD and coaching hours.', '.list [href="#/logbook"]'),
     st('**Teams** lists every team you coach.', '.list [href="#/teams"]'),

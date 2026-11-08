@@ -223,3 +223,10 @@ body.helpflash .flash{outline-color:var(--accent)!important}
 }
 
 .btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+
+/* Sign-in screen (shown before anything else when cloud sync is set up) */
+#gate{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:24px 18px calc(24px + var(--safe-b,0px));background:var(--bg);overflow:auto}
+#gate .gatebox{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px 20px}
+/* Pictures: profile, team logo, player photos */
+.avatar{border-radius:50%;object-fit:cover;display:block;flex:none;background:var(--surface2)}
+.logo{object-fit:contain;display:block;flex:none}

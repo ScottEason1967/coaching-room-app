@@ -1,7 +1,7 @@
 // Squad and player profiles: development goals, observations, player links.
 import * as S from '../store.js';
 import { GOAL_STATUS } from '../store.js';
-import { esc, icon, uid, today, fmtD, bindFields, actions, debounce, confirmSheet, sheet, closeSheet, toast } from '../util.js';
+import { esc, icon, uid, today, fmtD, bindFields, actions, debounce, confirmSheet, sheet, closeSheet, toast, avatar } from '../util.js';
 import { shareSheet, refreshPlayers } from './sharing.js';
 import * as cloud from '../cloud.js';
 
@@ -15,7 +15,7 @@ export default function squad(el, params, ctx) {
     <div class="row between"><div><div class="h1">Squad</div><div class="small muted" style="margin-top:4px">${ps.length} players · ${esc(t.name)}</div></div>
       <div class="row" style="gap:8px"><button class="btn" data-act="import">Paste a list</button><button class="btn pri" data-act="add">${icon('plus')}Add player</button></div></div>
     ${ps.length ? `<div class="list">${ps.map(p => { const g = (p.goals || []).filter(x => x.status === 'on').length;
-      return `<a class="item" href="#/player/${p.id}"><span class="badge-num" style="${p.pos === 'GK' ? 'background:#2FB67A' : ''}">${esc(p.num)}</span><span class="grow"><span class="t" style="display:block">${esc(p.name)}</span><span class="s">${esc(p.pos)}${p.pos2 ? ' / ' + esc(p.pos2) : ''}${g ? ` · ${g} goal${g > 1 ? 's' : ''} on the go` : ' · no development goal'}</span></span>${p.share && p.share.token ? `<span class="pill ${p.share.enabled === false ? 'grey' : 'good'}">${icon('link', 'style="width:12px;height:12px"')}Link</span>` : ''}</a>`; }).join('')}</div>` : '<div class="empty">No players yet.</div>'}
+      return `<a class="item" href="#/player/${p.id}">${avatar(S.photoOf(p.id), 40, `<span class="badge-num" style="${p.pos === 'GK' ? 'background:#2FB67A' : ''}">${esc(p.num)}</span>`)}<span class="grow"><span class="t" style="display:block">${S.photoOf(p.id) ? `<span class="muted">${esc(p.num)}</span> ` : ''}${esc(p.name)}</span><span class="s">${esc(p.pos)}${p.pos2 ? ' / ' + esc(p.pos2) : ''}${g ? ` · ${g} goal${g > 1 ? 's' : ''} on the go` : ' · no development goal'}</span></span>${p.share && p.share.token ? `<span class="pill ${p.share.enabled === false ? 'grey' : 'good'}">${icon('link', 'style="width:12px;height:12px"')}Link</span>` : ''}</a>`; }).join('')}</div>` : '<div class="empty">No players yet.</div>'}
   </div>
   <div class="stack">
     <div class="card stack tight"><div class="h3">Player pages</div>
@@ -83,7 +83,8 @@ export function playerView(el, [id], ctx) {
   const nm = S.nextMatch(T); const ins = nm ? (nm.instructions || {})[p.id] : '';
 
   el.innerHTML = `<div class="split wide-right"><div class="stack">
-    <div class="card row nowrap" style="gap:16px"><span class="display" style="font-size:64px;color:var(--accent);min-width:64px;text-align:center">${esc(p.num)}</span><div class="grow"><div class="h1" style="font-size:32px">${esc(p.name)}</div><div class="small muted">${esc(p.pos)}${p.pos2 ? ' / ' + esc(p.pos2) : ''}${p.foot ? ' · ' + esc(p.foot) + ' foot' : ''}</div></div></div>
+    <div class="card stack tight"><div class="row nowrap" style="gap:16px">${avatar(S.photoOf(p.id), 72)}<span class="display" style="font-size:64px;color:var(--accent);min-width:64px;text-align:center">${esc(p.num)}</span><div class="grow" style="min-width:0"><div class="h1" style="font-size:32px">${esc(p.name)}</div><div class="small muted">${esc(p.pos)}${p.pos2 ? ' / ' + esc(p.pos2) : ''}${p.foot ? ' · ' + esc(p.foot) + ' foot' : ''}</div></div></div>
+      <div class="row nowrap tiny muted" id="photoNote" style="gap:8px">${S.photoOf(p.id) ? `<span class="grow">She added this photo from her player page.</span><button class="btn sm" data-act="unphoto">Remove</button>` : `<span>Photo: players add their own from their player page, if they want to.${p.share && p.share.token ? '' : ' Create her link first.'}</span>`}</div></div>
     <div class="card stack tight">
       <div class="row nowrap"><label class="field" style="width:90px"><span>Number</span><input type="number" inputmode="numeric" data-f="num"></label><label class="field grow"><span>Name</span><input type="text" data-f="name"></label></div>
       <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
@@ -117,6 +118,11 @@ export function playerView(el, [id], ctx) {
 
   bindFields(el, p, (path) => { save(); if (path === 'name') ctx.setTop({ back: '#/squad', title: p.name, sub: '#' + p.num + ' · ' + p.pos }); });
   actions(el, {
+    unphoto: async () => {
+      if (!await confirmSheet('Remove her photo?', 'It comes off the squad list and her page. She can add one again from her page.', 'Remove', false)) return;
+      try { if (p.share && p.share.token) await cloud.removePlayerPhoto(p.share.token); S.setPhotos([[p.id, null]]); toast('Photo removed'); }
+      catch (e) { toast(e.message || 'Could not reach the cloud'); }
+    },
     goal: () => { p.goals.push({ id: uid(), text: '', how: '', status: 'on', set: today() }); S.put(p); ctx.refresh(); setTimeout(() => { const g = el.querySelectorAll('[data-f$=".text"]'); g[g.length - 1]?.focus(); }, 30); },
     gs: a => { const [i, k] = a.split(':'); p.goals[+i].status = k; if (k === 'done') p.goals[+i].done = today(); S.put(p); ctx.refresh(); },
     gdel: i => { p.goals.splice(+i, 1); S.put(p); ctx.refresh(); },

@@ -39,11 +39,11 @@ Open that address on Joe's phone to check it loads.
 
 This uses Supabase, a hosted database with logins.
 
-1. Go to supabase.com and sign up (free).
-2. **New project**. Name: `coaching-room`. Set a database password and keep it somewhere safe (you won't need it day to day). Region: London (eu-west-2) if offered.
+1. Go to supabase.com and sign in (or sign up, free).
+2. **New project**, even if you already have one for something else: the app creates tables called `items` and `shares`, and a project of its own keeps Joe's data and its rules separate. Name: `coaching-room`. Set a database password and keep it somewhere safe (you won't need it day to day). Region: London (eu-west-2) if offered. The free plan allows two live projects; if you already have two, pause one first or it will ask you to pay.
 3. When it's ready: **SQL Editor** > **New query**. Open `supabase/schema.sql` from this folder in Notepad, copy all of it, paste it in, press **Run**. It should say "Success". It's safe to run again.
-4. **Authentication** > **URL Configuration**. Set **Site URL** to your GitHub Pages address from step 2. This makes the confirmation email link come back to the app.
-5. **Project Settings** > **API** (may be under "Data API" and "API Keys"). Copy the **Project URL** and the **anon public** key.
+4. **Authentication** > **Sign In / Providers** > **Email**: turn off **Confirm email**. Joe is the only user, and this means creating the account signs him straight in, with no confirmation link to go wrong. (If you'd rather keep confirmation on, set **Authentication** > **URL Configuration** > **Site URL** to your GitHub Pages address from step 2 first, so the link in the email comes back to the app.) Set the Site URL anyway once the site is up: password-reset emails use it.
+5. **Project Settings** > **API** (may be under "Data API" and "API Keys"). Copy the **Project URL** and the key. Either the long **anon public** key or the newer **publishable** key (`sb_publishable_...`) works.
 6. Open `js/config.js` in Notepad and paste them between the quotes:
 
    ```js
@@ -55,8 +55,10 @@ This uses Supabase, a hosted database with logins.
 
    The anon key is designed to be public. The database rules (row level security) stop anyone reading data that isn't theirs, and the share table can only be read through the PIN check.
 7. Commit and push in GitHub Desktop. The site updates in a minute or two.
-8. On Joe's phone: open the app, tap **JE** (top right) > **Cloud sync and backup** > enter an email and password > **Create account**. Supabase sends a confirmation email; tap the link, then sign in.
+8. On Joe's phone: open the app, tap **JE** (top right) > **Cloud sync and backup** > enter an email and password > **Create account**. With Confirm email off it signs in at once and the dot at the top turns green. (With it on, Supabase sends a confirmation email; tap the link, then sign in.)
+   You can try this on your laptop first, before the site is on GitHub: fill in `js/config.js`, run the local server as in "What works straight away", and the Cloud screen should say **Not signed in** instead of **This device only**. Create the account there; that proves the database set-up worked.
 9. Sign in with the same email and password on the iPad and laptop.
+   Once cloud sync is set up, the app opens on a **sign-in screen** and shows nothing until someone signs in, so nobody can pick up a phone and edit a copy that never reaches the cloud. There is no Create account button on that screen: with sign-ups turned off (step 10), a new account is added in Supabase under **Authentication** > **Users** > **Add user**. A device that has signed in before still opens with no signal at the ground; changes upload when it reconnects.
 10. Once Joe's account works: Supabase > **Authentication** > **Sign In / Providers** (or "Settings") and turn off **Allow new users to sign up**. Nobody else needs an account. Players and staff use links, not logins.
 
 ### Things to know about Supabase
@@ -87,6 +89,14 @@ It then opens full screen, has its own icon, and works without signal. Changes m
 - Links are a copy of what was shared. Session and match links update themselves when Joe leaves the plan (if the device is online at that moment; otherwise open and leave the plan again). Board links and player pages do not: after changing a board press **Update now** in its link sheet, and after changing a match plan press **Update player pages** on the Match day tab.
 - A board marked "Show on player pages" sends every frame's coaching notes and the name and number of every player on it. Write those notes for the players, not about them.
 - **Under-18s:** if any players are under 18, check the club's safeguarding policy before sending links (for example, send through a parent).
+
+## Photos and the club badge
+
+- **Your photo**: More > **Add photo**. It replaces the initials in the top right.
+- **Club badge**: More > Teams > the team > **Add the club badge**. It shows on the team switcher, printouts and the player and staff pages.
+- **Player photos** are the player's choice. Each player can add, change or remove her own photo from her player page (the link and PIN). You can't add one for her, and you can remove one from her page in the app if you need to. Photos live with her link: delete the link and the photo goes too. If any players are under 18, check the club's rules on photos before sending links.
+- Pictures are shrunk on the phone before they're saved (a 320-pixel photo is about 30 KB), so they sync quickly.
+- **Player photos need the database updated once** (November 2026): Supabase > **SQL Editor** > **New query**, paste all of `supabase/schema.sql` again, **Run**. It only adds what's missing and keeps everything already there. Until it's done, everything else works, but a player who tries to add a photo gets "Could not save".
 
 ## Updating the app later
 

@@ -1,6 +1,6 @@
 // The page players and staff open from a link. Needs the PIN; shows only the snapshot Joe shared.
 import cfg from './config.js';
-import { esc, nl2br, fmtD, fmtAgo } from './util.js';
+import { esc, nl2br, fmtD, fmtAgo, shrinkImage } from './util.js';
 import { frameSvg, drillSvg } from './pitch.js';
 
 const vp = document.getElementById('vp');
@@ -62,10 +62,14 @@ const row = (l, v) => v ? `<div class="stack tight" style="padding:8px 0;border-
 
 function render() {
   const d = data.data || {}; const team = d.team || {}; let h = brand();
-  h += `<div class="eyebrow">${esc(team.name || '')}${team.season ? ' · ' + esc(team.season) : ''}</div>`;
+  h += `<div class="row nowrap" style="gap:10px">${team.logo ? `<img src="${esc(team.logo)}" alt="" style="width:40px;height:40px;object-fit:contain">` : ''}<div class="eyebrow">${esc(team.name || '')}${team.season ? ' · ' + esc(team.season) : ''}</div></div>`;
   if (data.kind === 'player') {
     const p = d.player || {};
-    h += `<div class="row nowrap" style="gap:16px;margin:8px 0 16px"><span class="display" style="font-size:72px;color:var(--accent);line-height:.9">${esc(p.num)}</span><div><div class="h1" style="font-size:36px">${esc(p.name)}</div><div class="small muted">${esc(p.pos || '')}</div></div></div><div class="stack">`;
+    h += `<div class="row nowrap" style="gap:16px;margin:8px 0 10px">${data.photo ? `<img class="avatar" src="${esc(data.photo)}" alt="" style="width:84px;height:84px">` : ''}<span class="display" style="font-size:72px;color:var(--accent);line-height:.9">${esc(p.num)}</span><div style="min-width:0"><div class="h1" style="font-size:36px">${esc(p.name)}</div><div class="small muted">${esc(p.pos || '')}</div></div></div>
+      <div class="card stack tight noprint" id="myPhoto" style="margin-bottom:14px"><div class="h3">Your photo</div>
+        <p class="small muted" style="margin:0">Optional, and your choice. If you add one, your coach sees it next to your name in the squad. Nobody else sees it, and you can remove it here at any time.</p>
+        <div class="row" style="gap:8px"><label class="btn sm" style="cursor:pointer">${data.photo ? 'Change my photo' : 'Add my photo'}<input type="file" accept="image/*" id="phIn" style="display:none"></label>${data.photo ? '<button class="btn sm" id="phDel">Remove my photo</button>' : ''}</div>
+        <div class="small" id="phM" role="status" style="color:var(--lamp-text);min-height:18px"></div></div><div class="stack">`;
     if (d.match) {
       h += `<div class="card stack tight"><div class="eyebrow">Next match</div><div class="h1" style="font-size:34px">v ${esc(d.match.opponent)}</div><div class="small muted">${fmtD(d.match.date)}${d.match.ko ? ' · ' + esc(d.match.ko) : ''}${d.match.venue ? ' · ' + esc(d.match.venue) : ''}</div>
         ${d.match.instruction ? `<div class="job stack tight" style="margin-top:8px"><div class="eyebrow" style="color:#8FB4FF">Your job</div><div style="font-size:16px">${nl2br(d.match.instruction)}</div></div>` : ''}
@@ -103,6 +107,18 @@ function render() {
   vp.querySelector('#rf').onclick = () => open(pin, true);
   vp.querySelector('#pr')?.addEventListener('click', () => window.print());
   vp.querySelector('#lo').onclick = () => { try { localStorage.removeItem(KEY); } catch (e) {} pin = null; data = null; pinScreen(); };
+  const phIn = vp.querySelector('#phIn'), phM = vp.querySelector('#phM');
+  const setPhoto = async src => {
+    phM.textContent = 'Saving…';
+    const { data: r, error } = await sb.rpc('set_share_photo', { p_token: tok, p_pin: pin, p_photo: src });
+    if (error || !r || !r.ok) { phM.textContent = r && r.reason === 'photo' ? 'That picture could not be used. Try another photo.' : 'Could not save. Check your signal and try again.'; return; }
+    data.photo = r.photo || null; render();
+  };
+  if (phIn) phIn.onchange = async () => {
+    const f = phIn.files && phIn.files[0]; if (!f) return;
+    try { await setPhoto(await shrinkImage(f, { max: 320, square: true })); } catch (e) { phM.textContent = 'That picture could not be read. Try a different photo.'; }
+  };
+  vp.querySelector('#phDel')?.addEventListener('click', () => { if (confirm('Remove your photo?')) setPhoto(null); });
   const cf = vp.querySelector('#cf');
   if (cf) cf.onsubmit = async e => {
     e.preventDefault(); const text = vp.querySelector('#ct').value.trim(); if (!text) return;

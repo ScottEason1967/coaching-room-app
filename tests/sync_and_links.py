@@ -24,7 +24,7 @@ async def main():
         A=await device(b,'phone',390,844); B=await device(b,'ipad',1194,834)
         await A.goto(U+'index.html#/cloud'); await A.wait_for_timeout(500)
         print('A cloud screen:', (await A.inner_text('#view'))[:60].replace('\n',' | '))
-        await A.fill('#cE','joe@example.com'); await A.fill('#cP','correct-horse-1'); await A.click('#cUp'); await A.wait_for_timeout(1200)
+        await A.fill('#cE','joe@example.com'); await A.fill('#cP','correct-horse-1'); srv.op_signup({'email':'joe@example.com','password':'correct-horse-1'}); await A.click('#cIn'); await A.wait_for_timeout(1200)
         print('A after sign-up:', (await A.inner_text('#view'))[:90].replace('\n',' | '))
         # A edits: rename player, delete a seed player, create a session
         await A.goto(U+'index.html#/player/pl-9'); await A.wait_for_timeout(300)

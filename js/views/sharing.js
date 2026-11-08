@@ -8,7 +8,7 @@ import { esc, icon, token, pin4, sheet, closeSheet, toast, shareText, fmtD, fmtA
 import { sessionStats, sessionKit } from '../challenges.js';
 import { kitLabel } from '../print.js';
 
-const teamInfo = T => { const t = S.get(T) || {}; return { name: t.name || '', season: t.season || '' }; };
+const teamInfo = T => { const t = S.get(T) || {}; return { name: t.name || '', season: t.season || '', logo: t.logo || '' }; };
 const drillOut = (d, T) => ({ name: d.name, type: d.type, w: d.w, h: d.h, preset: d.preset, items: d.items || [], arrows: d.arrows || [], objective: d.objective, org: d.org, how: d.how, points: d.points, prog: d.prog, reg: d.reg, players: d.players, transition: d.transition || '', success: d.success || '', questions: d.questions || '', principles: S.drillLinks(d, T).map(S.get).filter(Boolean).map(p => p.title) });
 const boardOut = b => ({ name: b.name, type: b.type, frames: b.frames.map(f => ({ name: f.name, phase: f.phase, notes: f.notes, items: f.items, arrows: f.arrows })) });
 function playersFor(boards, T) {
