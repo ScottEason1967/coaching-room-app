@@ -2,7 +2,7 @@
 import * as S from '../store.js';
 import { PHASES } from '../store.js';
 import { esc, icon, uid, clone, actions, sheet, closeSheet, confirmSheet, toast, debounce, shareFile, fmtAgo } from '../util.js';
-import { Canvas, FORMATIONS, BOARD_SC, boardItem, pitchFull, frameSvg, boardViewBox, ARROWS, svgToPng } from '../pitch.js';
+import { Canvas, FORMATIONS, OPP_SHAPES, BOARD_SC, boardItem, pitchFull, frameSvg, boardViewBox, ARROWS, svgToPng } from '../pitch.js';
 import { printBoard } from '../print.js';
 import { shareSheet } from './sharing.js';
 
@@ -257,20 +257,30 @@ export default function boardView(el, [id], ctx) {
 
   function shapeSheet() {
     const t = S.get(T);
+    const chip = (attr, f, on) => `<button class="btn sm ${on ? 'on' : ''}" ${attr}="${esc(f)}" style="min-width:76px">${esc(f.replace(' (6 + two 8s)', '').replace(' (block)', ' block'))}</button>`;
+    const hasOpp = fr().items.some(i => i.kind === 'opp');
     const s = sheet(`<div class="stack"><div class="h2">Shapes</div>
-      <label class="field"><span>Put our team in</span><select id="sU">${Object.keys(FORMATIONS).map(f => `<option ${f === t.formation ? 'selected' : ''}>${esc(f)}</option>`).join('')}</select></label>
-      <button class="btn pri" id="sUgo">Set our shape</button>
-      <p class="tiny muted" style="margin:0">Keeps the same players on the pitch where it can, and moves them into position. Arrows and the ball stay.</p>
-      <label class="field"><span>Opposition shape</span><select id="sO">${Object.keys(FORMATIONS).map(f => `<option>${esc(f)}</option>`).join('')}</select></label>
-      <div class="row"><button class="btn" id="sOgo">Add or reset opposition</button><button class="btn danger" id="sOclr">Remove opposition</button></div>
+      <div class="stack tight"><div class="label">Opponents: one tap puts all eleven on</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap" id="oppShapes">${Object.keys(OPP_SHAPES).map(f => chip('data-opp', f, false)).join('')}</div>
+        <div class="row" style="gap:8px"><label class="check small"><input type="checkbox" id="sOpos" checked> Show positions (CB, ST…) on them</label></div>
+        ${hasOpp ? '<button class="btn sm danger" id="sOclr" style="align-self:flex-start">Take the opponents off</button>' : ''}</div>
+      <div class="stack tight" style="border-top:1px solid var(--line);padding-top:12px"><div class="label">Our team</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap" id="usShapes">${Object.keys(FORMATIONS).map(f => chip('data-us', f, f === t.formation)).join('')}</div>
+        <p class="tiny muted" style="margin:0">Keeps the same players on the pitch where it can and moves them into position. Arrows and the ball stay.</p></div>
+      <p class="tiny muted" style="margin:0">Changes this frame only. Put the shapes on first, then use <b>Next frame</b> to show the movement.</p>
       <button class="btn" id="sX">Close</button></div>`);
-    s.querySelector('#sUgo').onclick = () => {
+    s.querySelectorAll('[data-us]').forEach(btn => btn.onclick = () => {
       const f = fr(); const cur = f.items.filter(i => i.kind === 'us').map(i => i.pid).filter(Boolean);
-      const xi = autoXI(T, s.querySelector('#sU').value, cur.length >= 11 ? cur : null);
+      const xi = autoXI(T, btn.dataset.us, cur.length >= 11 ? cur : null);
       f.items = f.items.filter(i => i.kind !== 'us').concat(xi); cv.o.changed(); cv.render(); closeSheet(); renderInsp();
-    };
-    s.querySelector('#sOgo').onclick = () => { const f = fr(); f.items = f.items.filter(i => i.kind !== 'opp').concat((FORMATIONS[s.querySelector('#sO').value] || []).map((c, i) => ({ id: 'o' + i, kind: 'opp', label: String(i + 1), x: 68 - c[1], y: 105 - c[2] }))); cv.o.changed(); cv.render(); closeSheet(); };
-    s.querySelector('#sOclr').onclick = () => { const f = fr(); f.items = f.items.filter(i => i.kind !== 'opp'); cv.o.changed(); cv.render(); closeSheet(); };
+    });
+    s.querySelectorAll('[data-opp]').forEach(btn => btn.onclick = () => {
+      const pos = s.querySelector('#sOpos').checked;
+      const f = fr();
+      f.items = f.items.filter(i => i.kind !== 'opp').concat((OPP_SHAPES[btn.dataset.opp] || []).map((c, i) => ({ id: 'o' + i, kind: 'opp', label: pos ? c[0] : String(i + 1), x: 68 - c[1], y: 105 - c[2] })));
+      cv.o.changed(); cv.render(); closeSheet(); toast('Opponents in a ' + btn.dataset.opp);
+    });
+    s.querySelector('#sOclr')?.addEventListener('click', () => { const f = fr(); f.items = f.items.filter(i => i.kind !== 'opp'); cv.o.changed(); cv.render(); closeSheet(); });
     s.querySelector('#sX').onclick = closeSheet;
   }
 
