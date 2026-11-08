@@ -4,6 +4,7 @@ import { PHASES, PHASE_KEYS, POP, popsFor } from '../store.js';
 import { esc, icon, uid, fmtDY, fmtD, today, bindFields, actions, debounce, sheet, closeSheet, confirmSheet, toast, clone } from '../util.js';
 import { FORMATIONS } from '../pitch.js';
 import { modelChallenges, principleEvidence, box, chalJump, paintChal } from '../challenges.js';
+import { THEMES, themesFor, themeOf, themeGuessed, drillsForTheme, sessionsForTheme } from '../templates.js';
 
 const pad = n => String(n).padStart(2, '0');
 function evidenceLine(p, T) {
@@ -103,6 +104,9 @@ export function principleView(el, [id], ctx) {
       <label class="field"><span>When: the trigger or cue that tells players it’s on</span><input type="text" data-f="trigger" placeholder="e.g. Keeper has it in her hands and their front two are split"></label>
       <label class="field"><span>If it’s not on: what we do instead</span><input type="text" data-f="ifNot" placeholder="e.g. Go long to the 9 and squeeze up for the second ball"></label>
       <div class="field"><span>Principles of play it expresses <span class="muted">(course language)</span></span><div class="chips">${pops.map(k => `<button class="chip ${p.pops.includes(k) ? 'on' : ''}" data-act="pop" data-arg="${k}">${POP[k].lab}</button>`).join('')}</div></div>
+      <div class="field" id="themeRow"><span>Practice ideas: what is it about? <span class="muted">(links it to sessions from top coaches)</span></span>
+        <div class="row" style="gap:8px;align-items:center"><select data-f="theme" id="thSel" style="flex:1;min-width:0"><option value="">${themeGuessed(p) ? 'Best guess: ' + esc(THEMES[themeOf(p)].lab) : 'Not set'}</option>${themesFor(p.phase).map(k => `<option value="${k}" ${p.theme === k ? 'selected' : ''}>${esc(THEMES[k].lab)}</option>`).join('')}<option value="none" ${p.theme === 'none' ? 'selected' : ''}>None of these</option></select>
+        ${themeOf(p) ? `<a class="btn sm" href="#/ideas/p/${p.id}" id="ideasFor">${icon('book')}${drillsForTheme(themeOf(p)).length + sessionsForTheme(themeOf(p)).length} ideas</a>` : ''}</div></div>
       <label class="field"><span>Picture: a board that shows it</span><select data-f="boardId"><option value="">None yet</option>${bds.map(b => `<option value="${b.id}" ${b.id === p.boardId ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select></label>
       ${p.boardId && S.get(p.boardId) ? `<a class="tiny" href="#/board/${p.boardId}">Open the board</a>` : ''}
     </div>
@@ -131,7 +135,7 @@ export function principleView(el, [id], ctx) {
     </div>
   </div></div>`;
 
-  bindFields(el, p, (path) => { save(); if (path === 'phase') { save.flush(); ctx.refresh(); } });
+  bindFields(el, p, (path) => { save(); if (path === 'phase' || path === 'theme') { if (path === 'phase' && p.theme && THEMES[p.theme] && THEMES[p.theme].phase !== p.phase) p.theme = ''; save.flush(); ctx.refresh(); } });
   const snap = reason => { p.history.push({ at: today(), title: p.title, why: p.why, subs: clone(p.subs), reason }); };
   actions(el, {
     clearNote: () => { delete p.note; S.put(p); ctx.refresh(); },

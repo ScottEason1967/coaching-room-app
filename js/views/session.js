@@ -9,9 +9,8 @@ import { pickDrill } from './drill.js';
 import { reviewGate, startReview } from './review.js';
 import { shareSheet, refreshIfShared } from './sharing.js';
 
-export function newSession() {
-  const T = S.team().id;
-  reviewGate(T, () => {
+// A new session on the next sensible date. extra: fields to set (blocks, principleIds, theme).
+export function createSession(T, extra = {}) {
     const taken = new Set(S.sessions(T).map(s => s.date));
     // Default to the team's usual training night: the next free date whose weekday matches one of
     // the last few sessions. With no history it is today.
@@ -21,9 +20,11 @@ export function newSession() {
     while (taken.has(d)) d = addDays(d, 1);
     const lc = S.lastChange(T);
     const blk = S.blockFor(T, d);
-    const s = S.create('session', T, { date: d, time: '', venue: '', length: 90, theme: '', principleIds: blk ? (blk.principleIds || []).slice() : [], blocks: [], injuryPrev: false, addresses: false, addressesHow: '', matchPrep: false, lookFor: '', focusIds: [], focusHow: '', staff: '', notes: '', fromReview: lc ? lc.id : null });
-    location.hash = '#/session/' + s.id;
-  }, 'plan a new session');
+    return S.create('session', T, { date: d, time: '', venue: '', length: 90, theme: '', principleIds: blk ? (blk.principleIds || []).slice() : [], blocks: [], injuryPrev: false, addresses: false, addressesHow: '', matchPrep: false, lookFor: '', focusIds: [], focusHow: '', staff: '', notes: '', fromReview: lc ? lc.id : null, ...extra });
+}
+export function newSession() {
+  const T = S.team().id;
+  reviewGate(T, () => { const s = createSession(T); location.hash = '#/session/' + s.id; }, 'plan a new session');
 }
 
 export default function sessionView(el, [id], ctx) {
@@ -116,7 +117,7 @@ export default function sessionView(el, [id], ctx) {
     add: () => pickDrill(T, (d, isNew) => {
       s.blocks.push({ id: uid(), drillId: d.id, minutes: +d.minutes || 15, talk: 3, note: '' }); S.put(s);
       if (isNew) { if (s.principleIds.length) { d.links = { ...(d.links || {}), [T]: s.principleIds.slice() }; S.put(d); } location.hash = '#/drill/' + d.id + '/' + s.id; } else ctx.refresh();
-    }),
+    }, s.id),
     up: i => { i = +i; [s.blocks[i - 1], s.blocks[i]] = [s.blocks[i], s.blocks[i - 1]]; S.put(s); ctx.refresh(); },
     rm: i => { s.blocks.splice(+i, 1); S.put(s); ctx.refresh(); },
     review: () => startReview('session', s),

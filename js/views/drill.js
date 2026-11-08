@@ -33,9 +33,10 @@ export default function drillView(el, [id, fromSession], ctx) {
   const ps = S.principles(T); const linked = new Set(S.drillLinks(d, T));
   const usedIn = S.sessions(T).filter(s => (s.blocks || []).some(b => b.drillId === d.id));
 
+  const cr = d.src && d.src.who ? `<div class="tiny muted" id="drillSrc">Based on a session by <b>${esc(d.src.who)}</b>${d.src.role ? ' (' + esc(d.src.role) + ')' : ''}${d.src.url ? ` · <a href="${esc(d.src.url)}" target="_blank" rel="noopener">see the original</a>` : ''}${d.src.note ? '. ' + esc(d.src.note) : ''}</div>` : '';
   el.innerHTML = `<div class="split wide-right"><div class="stack">${chalJump()}
     <div class="card stack tight">
-      <label class="field"><span>Name</span><input type="text" data-f="name"></label>
+      <label class="field"><span>Name</span><input type="text" data-f="name"></label>${cr}
       <div class="grid2">
         <label class="field"><span>Practice type</span><select data-f="type">${DRILL_TYPES.map(x => `<option ${x === d.type ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
         <label class="field"><span>Area</span><select id="area">${Object.entries(AREAS).map(([k, a]) => `<option value="${k}" ${k === (d.area || d.preset) ? 'selected' : ''}>${a[0]}</option>`).join('')}</select></label>
@@ -162,10 +163,11 @@ export default function drillView(el, [id, fromSession], ctx) {
 }
 
 // Pick a drill from the library (used by the session planner).
-export function pickDrill(T, onPick) {
+export function pickDrill(T, onPick, sessionId) {
   const ds = S.drills();
   const el = sheet(`<div class="stack"><div class="h2">Add a practice</div>
-    <input type="search" id="pdq" placeholder="Search drills" autofocus>
+    ${sessionId ? `<a class="btn" href="#/ideas/s/${esc(sessionId)}" id="pdIdeas" style="justify-content:flex-start">${icon('book')}Practice ideas from top coaches<span class="grow"></span><span class="tiny muted">by what they train</span></a>` : ''}
+    <input type="search" id="pdq" placeholder="Search your drills" autofocus>
     <div class="list" id="pdl"></div>
     <div class="row"><button class="btn pri" id="pdNew">${icon('plus')}Design a new drill</button><button class="btn" id="pdX">Cancel</button></div></div>`);
   const draw = q => {
@@ -178,5 +180,6 @@ export function pickDrill(T, onPick) {
   };
   draw(); el.querySelector('#pdq').oninput = e => draw(e.target.value);
   el.querySelector('#pdX').onclick = closeSheet;
+  el.querySelector('#pdIdeas')?.addEventListener('click', () => closeSheet());
   el.querySelector('#pdNew').onclick = () => { closeSheet(); const n = newDrill(); onPick(n, true); };
 }

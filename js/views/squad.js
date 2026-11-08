@@ -15,7 +15,7 @@ export default function squad(el, params, ctx) {
     <div class="row between"><div><div class="h1">Squad</div><div class="small muted" style="margin-top:4px">${ps.length} players · ${esc(t.name)}</div></div>
       <div class="row" style="gap:8px"><button class="btn" data-act="import">Paste a list</button><button class="btn pri" data-act="add">${icon('plus')}Add player</button></div></div>
     ${ps.length ? `<div class="list">${ps.map(p => { const g = (p.goals || []).filter(x => x.status === 'on').length;
-      return `<a class="item" href="#/player/${p.id}">${avatar(S.photoOf(p.id), 40, `<span class="badge-num" style="${p.pos === 'GK' ? 'background:#2FB67A' : ''}">${esc(p.num)}</span>`)}<span class="grow"><span class="t" style="display:block">${S.photoOf(p.id) ? `<span class="muted">${esc(p.num)}</span> ` : ''}${esc(p.name)}</span><span class="s">${esc(p.pos)}${p.pos2 ? ' / ' + esc(p.pos2) : ''}${g ? ` · ${g} goal${g > 1 ? 's' : ''} on the go` : ' · no development goal'}</span></span>${p.share && p.share.token ? `<span class="pill ${p.share.enabled === false ? 'grey' : 'good'}">${icon('link', 'style="width:12px;height:12px"')}Link</span>` : ''}</a>`; }).join('')}</div>` : '<div class="empty">No players yet.</div>'}
+      return `<a class="item" href="#/player/${p.id}">${avatar(S.photoOf(p.id), 40, `<span class="badge-num" style="${p.pos === 'GK' ? 'background:#2FB67A' : ''}">${esc(p.num)}</span>`)}<span class="grow"><span class="t" style="display:block">${S.photoOf(p.id) ? `<span class="muted">${esc(p.num)}</span> ` : ''}${esc(p.name)}</span><span class="s">${p.pos ? esc(p.pos) : 'Position not set'}${p.pos2 ? ' / ' + esc(p.pos2) : ''}${g ? ` · ${g} goal${g > 1 ? 's' : ''} on the go` : ' · no development goal'}</span></span>${p.share && p.share.token ? `<span class="pill ${p.share.enabled === false ? 'grey' : 'good'}">${icon('link', 'style="width:12px;height:12px"')}Link</span>` : ''}</a>`; }).join('')}</div>` : '<div class="empty">No players yet.</div>'}
   </div>
   <div class="stack">
     <div class="card stack tight"><div class="h3">Player pages</div>
@@ -53,23 +53,30 @@ function addSheet(T) {
   };
 }
 
+const isExample = p => /^Player \d+$/.test(p.name || '');
+
 function importSheet(T, ctx) {
+  const examples = S.players(T).filter(isExample).length;
   const el = sheet(`<div class="stack"><div class="h2">Paste a squad list</div>
-    <p class="small muted" style="margin:0">One player per line: number, name, position. For example:<br><code>7 Jane Smith RW</code><br>If a number already exists, that player’s name and position are updated, so you can replace the dummy names in one go.</p>
+    <p class="small muted" style="margin:0">One player per line: number, name, and position if you know it. For example:<br><code>7 Jane Smith RW</code><br>If a number already exists, that player’s name and position are updated, so you can replace the example names in one go. A player with no position shows “Position not set” until you pick one.</p>
     <textarea id="imT" style="min-height:200px" placeholder="1 Name Surname GK"></textarea>
+    ${examples ? `<label class="check"><input type="checkbox" id="imR" checked> Remove example players (“Player 10” and so on) not in this list</label>` : ''}
     <div class="row" style="justify-content:flex-end"><button class="btn" id="imX">Cancel</button><button class="btn pri" id="imS">Import</button></div></div>`);
   el.querySelector('#imX').onclick = closeSheet;
   el.querySelector('#imS').onclick = () => {
-    const existing = S.players(T); let add = 0, upd = 0;
+    const existing = S.players(T); let add = 0, upd = 0, gone = 0; const seen = new Set();
     el.querySelector('#imT').value.split('\n').map(l => l.trim()).filter(Boolean).forEach(l => {
       const m = l.match(/^(\d+)[\s.,:-]+(.+?)(?:[\s,]+(GK|RB|CB|LB|FB|RWB|LWB|DM|CM|AM|6|8|10|RM|LM|RW|LW|W|CF|ST|9))?$/i);
       if (!m) return;
-      const num = +m[1], name = m[2].trim(), pos = (m[3] || '').toUpperCase();
+      const num = +m[1], name = m[2].replace(/\s*\((c|capt?)\)\s*$/i, '').trim(), pos = (m[3] || '').toUpperCase();
+      seen.add(num);
       const cur = existing.find(p => +p.num === num);
-      if (cur) { cur.name = name; if (pos) cur.pos = pos; S.put(cur); upd++; }
-      else { S.create('player', T, { num, name, short: '', pos: pos || 'CM', pos2: '', foot: '', notes: '', goals: [], obs: [] }); add++; }
+      if (cur) { const wasExample = isExample(cur); cur.name = name; if (pos) cur.pos = pos; else if (wasExample) { cur.pos = ''; cur.pos2 = ''; } S.put(cur); upd++; }
+      else { S.create('player', T, { num, name, short: '', pos, pos2: '', foot: '', notes: '', goals: [], obs: [] }); add++; }
     });
-    closeSheet(); toast(`${add} added, ${upd} updated`); ctx.refresh();
+    const rm = el.querySelector('#imR');
+    if (rm && rm.checked && seen.size) existing.filter(p => isExample(p) && !seen.has(+p.num)).forEach(p => { S.del(p.id); gone++; });
+    closeSheet(); toast(`${add} added, ${upd} updated${gone ? `, ${gone} example${gone === 1 ? '' : 's'} removed` : ''}`); ctx.refresh();
   };
 }
 
@@ -77,18 +84,18 @@ export function playerView(el, [id], ctx) {
   const p = S.get(id);
   if (!p) { ctx.setTop({ back: '#/squad', title: 'Player' }); el.innerHTML = '<div class="empty">This player has been removed.</div>'; return; }
   const T = p.team; p.goals ||= [];
-  ctx.setTop({ back: '#/squad', title: p.name, sub: '#' + p.num + ' · ' + p.pos });
+  ctx.setTop({ back: '#/squad', title: p.name, sub: '#' + p.num + ' · ' + (p.pos || 'Position not set') });
   const save = debounce(() => S.put(p), 400);
   const obs = S.reviews(T).filter(r => (r.playerObs || {})[p.id] && r.playerObs[p.id].trim()).map(r => ({ date: r.date, text: r.playerObs[p.id], r }));
   const nm = S.nextMatch(T); const ins = nm ? (nm.instructions || {})[p.id] : '';
 
   el.innerHTML = `<div class="split wide-right"><div class="stack">
-    <div class="card stack tight"><div class="row nowrap" style="gap:16px">${avatar(S.photoOf(p.id), 72)}<span class="display" style="font-size:64px;color:var(--accent);min-width:64px;text-align:center">${esc(p.num)}</span><div class="grow" style="min-width:0"><div class="h1" style="font-size:32px">${esc(p.name)}</div><div class="small muted">${esc(p.pos)}${p.pos2 ? ' / ' + esc(p.pos2) : ''}${p.foot ? ' · ' + esc(p.foot) + ' foot' : ''}</div></div></div>
+    <div class="card stack tight"><div class="row nowrap" style="gap:16px">${avatar(S.photoOf(p.id), 72)}<span class="display" style="font-size:64px;color:var(--accent);min-width:64px;text-align:center">${esc(p.num)}</span><div class="grow" style="min-width:0"><div class="h1" style="font-size:32px">${esc(p.name)}</div><div class="small muted">${p.pos ? esc(p.pos) : 'Position not set'}${p.pos2 ? ' / ' + esc(p.pos2) : ''}${p.foot ? ' · ' + esc(p.foot) + ' foot' : ''}</div></div></div>
       <div class="row nowrap tiny muted" id="photoNote" style="gap:8px">${S.photoOf(p.id) ? `<span class="grow">She added this photo from her player page.</span><button class="btn sm" data-act="unphoto">Remove</button>` : `<span>Photo: players add their own from their player page, if they want to.${p.share && p.share.token ? '' : ' Create her link first.'}</span>`}</div></div>
     <div class="card stack tight">
       <div class="row nowrap"><label class="field" style="width:90px"><span>Number</span><input type="number" inputmode="numeric" data-f="num"></label><label class="field grow"><span>Name</span><input type="text" data-f="name"></label></div>
       <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-        <label class="field"><span>Position</span><select data-f="pos">${POS.concat(POS.includes(p.pos) ? [] : [p.pos]).map(x => `<option ${x === p.pos ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+        <label class="field"><span>Position</span><select data-f="pos">${p.pos ? '' : '<option value="" selected>Not set</option>'}${POS.concat(!p.pos || POS.includes(p.pos) ? [] : [p.pos]).map(x => `<option ${x === p.pos ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
         <label class="field"><span>Also plays</span><select data-f="pos2"><option value="">—</option>${POS.map(x => `<option ${x === p.pos2 ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
         <label class="field"><span>Name on the board</span><input type="text" data-f="short" maxlength="12" placeholder="Short name"></label>
         <label class="field"><span>Foot</span><select data-f="foot"><option value="">—</option>${['Right', 'Left', 'Both'].map(x => `<option ${x === p.foot ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
@@ -116,7 +123,7 @@ export function playerView(el, [id], ctx) {
     ${nm ? `<div class="card stack tight"><div class="eyebrow">Next match: v ${esc(nm.opponent)}</div><div class="small">${ins ? esc(ins) : '<span class="muted">No individual instruction yet.</span>'}</div><a class="small" href="#/match/${nm.id}">Open match plan</a></div>` : ''}
   </div></div>`;
 
-  bindFields(el, p, (path) => { save(); if (path === 'name') ctx.setTop({ back: '#/squad', title: p.name, sub: '#' + p.num + ' · ' + p.pos }); });
+  bindFields(el, p, (path) => { save(); if (path === 'name') ctx.setTop({ back: '#/squad', title: p.name, sub: '#' + p.num + ' · ' + (p.pos || 'Position not set') }); });
   actions(el, {
     unphoto: async () => {
       if (!await confirmSheet('Remove her photo?', 'It comes off the squad list and her page. She can add one again from her page.', 'Remove', false)) return;

@@ -33,3 +33,6 @@ Database rules (needs postgres on a spare port):
     psql -h /tmp -p 5499 -U postgres -f pg_rules.sql                           # RLS, LWW, PIN hashing, lockout
 
 `mocksb.js` and `mockserver.py` stand in for supabase-js and the Supabase API. They mirror the rules in schema.sql but they are not Supabase: a test against a live project is still needed.
+
+- `ideas.py`: practice ideas library. Checks every theme has practices, every diagram sits inside its area, principle theme tags link to ideas, and "Add to my drills" and "Plan a session from this" work.
+- `squad_import.py`: pasting a real squad over the example players (no made-up positions, captain mark stripped, leftover examples removed).

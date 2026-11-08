@@ -463,7 +463,28 @@ const more = () => ({
   ]
 });
 
-const GUIDES = { home, model, principle, boards, board, plans, drills: () => plans(['drills']), block, drill, session, match, review, squad, player, pathway, logbook, teams, team, cloud: cloudGuide, more };
+const ideas = params => ({
+  title: 'Practice ideas',
+  purpose: 'Whole sessions and single practices from top-level coaches, sorted by what they train. Each one is written up in plain words with a diagram, coaching points, questions and progressions, and a link to the coach’s original.',
+  steps: [
+    st('**Train one of your principles**: tap a principle and the list shows ideas that train it. If it says **tag it**, the app asks what the principle is about first: one tap from a short list.', '#ideaFilter'),
+    st('**Or pick what to work on**: the same list of themes under each moment of the game, if you want to browse.'),
+    st('**Whole sessions** are three or four practices in order, from a warm-up through to a game. Open one and **Plan a session from this** creates the session with every practice in it.', params[0] === 's' ? '' : '#ideaSessions'),
+    st('**Practices**: open one to see the full write-up. **Add to my drills** copies it into your library, linked to your principles with the same theme, so you can change anything.', '#ideaDrills'),
+    st(params[0] === 's' ? 'You came here from a session, so anything you pick goes straight into that session.' : 'Coming from a session’s **Add a practice** brings you here with the session’s principles already picked.'),
+    st('Numbers and sizes are the coach’s, or our suggestion where they didn’t give one. Change them to suit your squad.')
+  ]
+});
+const idea = params => ({
+  title: 'A practice idea',
+  purpose: 'The full write-up of one practice or session idea, and where it comes from.',
+  steps: [
+    st('Read the **Set-up**, **How it works** and **Coaching points**. The questions, “I step in when” and “success looks like” are ready for your session plan.'),
+    st('**Add to my drills** puts it in your library with the diagram, linked to your principles that share its theme. If it is already there, the button opens it instead.', '#addD'),
+    st('**Where it comes from** names the coach and links to their original session. The diagram is our layout.', '#ideaSrc')
+  ]
+});
+const GUIDES = { ideas, idea, home, model, principle, boards, board, plans, drills: () => plans(['drills']), block, drill, session, match, review, squad, player, pathway, logbook, teams, team, cloud: cloudGuide, more };
 
 export function helpFor(routeName, params) {
   const g = GUIDES[routeName]; if (!g) return null;

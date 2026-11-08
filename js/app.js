@@ -14,6 +14,7 @@ import review from './views/review.js';
 import squad, { playerView } from './views/squad.js';
 import more, { pathwayView, logbookView, teamsView, teamView, cloudView } from './views/more.js';
 import blockView from './views/block.js';
+import ideasView, { ideaView } from './views/ideas.js';
 import { resetDock, focusField } from './challenges.js';
 import { helpFor, openHelp } from './help.js';
 
@@ -25,6 +26,7 @@ const ROUTES = {
   drill: { v: drill, nav: 'plans', detail: true }, session: { v: session, nav: 'plans', detail: true },
   match: { v: match, nav: 'plans', detail: true }, review: { v: review, nav: 'plans', detail: true },
   block: { v: blockView, nav: 'plans', detail: true },
+  ideas: { v: ideasView, nav: 'plans', detail: true }, idea: { v: ideaView, nav: 'plans', detail: true },
   squad: { v: squad, nav: 'squad' }, player: { v: playerView, nav: 'squad', detail: true },
   more: { v: more, nav: 'more' }, pathway: { v: pathwayView, nav: 'pathway', detail: true },
   logbook: { v: logbookView, nav: 'logbook', detail: true }, teams: { v: teamsView, nav: 'more', detail: true },

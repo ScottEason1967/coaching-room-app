@@ -204,7 +204,7 @@ export default function boardView(el, [id], ctx) {
     } else if (it.kind === 'us') {
       const p = S.get(it.pid);
       box.innerHTML = `<div class="row nowrap"><span class="badge-num">${esc(p ? p.num : '?')}</span><div class="grow"><div class="h3">${esc(p ? p.name : 'Unassigned')}</div><div class="tiny muted">${esc(p ? p.pos : it.role || '')}</div></div></div>
-        <label class="field"><span>Swap for</span><select id="swap"><option value="">Choose a player</option>${S.players(T).filter(x => x.id !== it.pid).map(x => `<option value="${x.id}">${esc(x.num)} · ${esc(x.name)} (${esc(x.pos)})${onPitch.has(x.id) ? ' · on pitch' : ''}</option>`).join('')}</select></label>
+        <label class="field"><span>Swap for</span><select id="swap"><option value="">Choose a player</option>${S.players(T).filter(x => x.id !== it.pid).map(x => `<option value="${x.id}">${esc(x.num)} · ${esc(x.name)}${x.pos ? ` (${esc(x.pos)})` : ''}${onPitch.has(x.id) ? ' · on pitch' : ''}</option>`).join('')}</select></label>
         <p class="tiny muted" style="margin:0">Swapping changes this frame and every later frame. If she’s already on, the two swap places.</p>
         <button class="btn sm" data-act="rm">${icon('x')}Take off the pitch</button>${benchHtml}`;
       box.querySelector('#swap').onchange = e => {
