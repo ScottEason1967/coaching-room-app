@@ -56,6 +56,9 @@ export { themePicker };
 export default function ideasView(el, params, ctx) {
   const T = S.team().id;
   const [kind, cid] = params;
+  // From Training: "Pick a template" shows only whole sessions, "Pick from the library" only practices.
+  const only = kind === 'sessions' || kind === 'drills' ? kind : null;
+  S.setMeta('ideaFrom', only || '');
   const sess = kind === 's' ? S.get(cid) : null;
   const prin = kind === 'p' ? S.get(cid) : null;
   const ps = S.principles(T);
@@ -63,12 +66,12 @@ export default function ideasView(el, params, ctx) {
   // session's, or the last one picked.
   const key = sess ? 's:' + sess.id : prin ? 'p:' + prin.id : '';
   const m = S.meta();
-  let th = kind === 't' ? cid
+  let th = only ? (m.ideaTheme || '') : kind === 't' ? cid
     : key && m.ideaCtx === key ? (m.ideaCtxTheme || '')
     : prin ? themeOf(prin) : sess ? (sess.principleIds || []).map(x => themeOf(S.get(x))).find(Boolean) || '' : (m.ideaTheme || '');
   if (th && !THEMES[th]) th = '';
   const suffix = sess ? `/s/${sess.id}` : prin ? `/p/${prin.id}` : '';
-  ctx.setTop({ back: sess ? '#/session/' + sess.id : prin ? '#/principle/' + prin.id : '#/plans/drills', title: 'Practice ideas', sub: sess ? 'Adding to a session' : prin ? 'For: ' + (prin.title || 'principle') : 'From top-level coaching' });
+  ctx.setTop({ back: sess ? '#/session/' + sess.id : prin ? '#/principle/' + prin.id : '#/training/' + (only || 'drills'), title: only === 'sessions' ? 'Session templates' : only === 'drills' ? 'Drill library' : 'Practice ideas', sub: sess ? 'Adding to a session' : prin ? 'For: ' + (prin.title || 'principle') : 'From top-level coaching' });
 
   const pChip = p => { const pt = themeOf(p); return `<button class="chip ${pt && pt === th ? 'on' : ''}" data-act="pick" data-arg="${p.id}">${esc(p.title || 'Untitled')}${pt ? '' : ' <span class="muted">· tag it</span>'}</button>`; };
   const drills = drillsForTheme(th), sessions = sessionsForTheme(th);
@@ -83,24 +86,26 @@ export default function ideasView(el, params, ctx) {
       ${PHASE_KEYS.map(k => `<div class="tiny muted">${PHASES[k].lab}</div><div class="chips">${themesFor(k).map(t => `<button class="chip ${t === th ? 'on' : ''}" data-act="theme" data-arg="${t}">${esc(THEMES[t].lab)}</button>`).join('')}</div>`).join('')}
     </div>
     <div class="row between"><div class="h2" style="margin:0">${th ? esc(THEMES[th].lab) : 'Everything'}</div>${th ? '<button class="btn sm" data-act="theme" data-arg="">Show everything</button>' : ''}</div>
-    ${sessions.length ? `<div class="eyebrow">Whole sessions</div><div class="grid3" id="ideaSessions">${sessions.map(st => `<a class="card link stack tight" href="#/idea/${st.id}${suffix}" style="text-decoration:none;display:flex">
+    ${sessions.length && only !== 'drills' ? `<div class="eyebrow">Whole sessions</div><div class="grid3" id="ideaSessions">${sessions.map(st => `<a class="card link stack tight" href="#/idea/${st.id}${suffix}" style="text-decoration:none;display:flex">
         <div class="row nowrap" style="gap:6px">${st.parts.slice(0, 4).map(pid => { const t = tplById(pid); return t ? drillSvg(tplDrill(t), { style: 'width:25%;height:54px;border-radius:6px' }) : ''; }).join('')}</div>
         <span class="h3">${esc(st.name)}</span><span class="small muted">${esc(st.why)}</span><span class="tiny muted">${st.parts.length} practices · ${esc(st.src)}</span></a>`).join('')}</div>` : ''}
-    <div class="eyebrow">Practices</div>
+    ${only === 'sessions' ? (sessions.length ? '' : '<div class="empty">No whole sessions for this yet. Show everything to see them all.</div>') : `<div class="eyebrow">Practices</div>
     <div class="grid3" id="ideaDrills">${drills.map(t => `<a class="card link stack tight" href="#/idea/${t.id}${suffix}" style="text-decoration:none;display:flex">${drillSvg(tplDrill(t), { style: 'width:100%;height:150px;border-radius:12px' })}
       <div class="row between nowrap"><span class="h3">${esc(t.name)}</span>${inLib.has(t.id) ? '<span class="pill good">In your drills</span>' : ''}</div>
-      <span class="tiny muted">${esc(t.type)} · ${t.players} players · ${t.minutes} min · ${esc(t.src.who)}</span></a>`).join('')}</div>
+      <span class="tiny muted">${esc(t.type)} · ${t.players} players · ${t.minutes} min · ${esc(t.src.who)}</span></a>`).join('')}</div>`}
     <p class="tiny muted" style="margin:0">Written in our own words from sessions the coaches published, with a link to each original. Adapt the numbers and sizes to your squad.</p>
   </div>`;
 
   actions(el, {
     theme: t => {
+      if (only) { S.setMeta('ideaTheme', t); ctx.refresh(); return; }
       if (key) { S.setMeta('ideaCtx', key); S.setMeta('ideaCtxTheme', t); ctx.refresh(); return; }
       S.setMeta('ideaTheme', t); ctx.go(t ? '#/ideas/t/' + t : '#/ideas');
     },
     pick: pid => {
       const p = S.get(pid); if (!p) return;
       const go = () => {
+        if (only) { S.setMeta('ideaTheme', themeOf(p)); ctx.refresh(); return; }
         if (sess) { S.setMeta('ideaCtx', key); S.setMeta('ideaCtxTheme', themeOf(p)); ctx.refresh(); return; }
         S.setMeta('ideaCtx', ''); ctx.go('#/ideas/p/' + p.id);
       };
@@ -114,7 +119,8 @@ export function ideaView(el, [tid, kind, cid], ctx) {
   const sess = kind === 's' ? S.get(cid) : null;
   const prin = kind === 'p' ? S.get(cid) : null;
   const suffix = sess ? `/s/${sess.id}` : prin ? `/p/${prin.id}` : '';
-  const back = `#/ideas${suffix}`;
+  const from = S.meta().ideaFrom;
+  const back = suffix || !from ? `#/ideas${suffix}` : `#/ideas/${from}`;
   const st = sessionTplById(tid), t = tplById(tid);
   if (!st && !t) { ctx.setTop({ back, title: 'Practice idea' }); el.innerHTML = '<div class="empty">That idea isn’t in the library.</div>'; return; }
 

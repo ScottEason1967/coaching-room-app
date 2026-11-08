@@ -8,7 +8,7 @@ import { matchChallenges, openCount, threatened, chalJump, paintChal, focusField
 import { printMatch, printInstructionCards } from '../print.js';
 import { reviewGate, startReview } from './review.js';
 import { shareSheet, refreshIfShared, refreshPlayers } from './sharing.js';
-import { newBoardSheet, BOARD_TYPES } from './board.js';
+import { newBoardSheet, BOARD_TYPES, BOARD_LABEL } from './board.js';
 import * as cloud from '../cloud.js';
 
 export function newMatch() {
@@ -21,16 +21,18 @@ export function newMatch() {
 }
 
 const TABS = [['them', 'Them'], ['plan', 'Plan'], ['squad', 'Squad'], ['boards', 'Boards'], ['day', 'Day']];
+// Two parts: the opposition analysis, and the match day plan (plan, team selection, boards, the day).
+const PLAN_TABS = [['plan', 'How we play'], ['squad', 'Team selection'], ['boards', 'Boards and set pieces'], ['day', 'On the day']];
 
 export default function matchView(el, [id], ctx) {
   const m = S.get(id);
-  if (!m) { ctx.setTop({ back: '#/plans/matches', title: 'Match' }); el.innerHTML = '<div class="empty">This match plan has been deleted.</div>'; return; }
+  if (!m) { ctx.setTop({ back: '#/matches', title: 'Match' }); el.innerHTML = '<div class="empty">This match plan has been deleted.</div>'; return; }
   const T = m.team; m.tags ||= {}; m.opp ||= {}; m.plan ||= {}; m.plan.principleNotes ||= {}; m.plan.focusIds ||= []; m.instructions ||= {}; m.boardIds ||= []; m.squadIds ||= [];
   const prev = S.previousMeetings(T, m); const trained = S.trainedBefore(T, m);
   const focusSet = new Set(m.plan.focusIds); const suggested = threatened(m, T);
   const prevReview = x => S.reviewOf(x);
   const tab = S.meta().matchTab || 'them';
-  ctx.setTop({ back: '#/plans/matches', title: m.opponent ? 'v ' + m.opponent : 'New match plan', sub: fmtD(m.date) });
+  ctx.setTop({ back: '#/matches', title: m.opponent ? 'v ' + m.opponent : 'New match plan', sub: fmtD(m.date) });
   const save = debounce(() => S.put(m), 400);
   const ps = S.principles(T); const squad = new Set(m.squadIds); const players = S.players(T);
   const boards = m.boardIds.map(S.get).filter(Boolean); const pm = S.playerMap(T);
@@ -60,7 +62,7 @@ export default function matchView(el, [id], ctx) {
         ${ta('plan.selection', 'Selection notes', 'Starting XI, subs plan, who plays where')}</div>
       ${m.squadIds.length ? `<div class="card stack" id="instructions"><div class="h3">Individual instructions</div><p class="tiny muted" style="margin:0">Each player sees only her own on her player page.</p>
         ${m.squadIds.map(S.get).filter(Boolean).map(p => `<label class="field"><span>${esc(p.num)} · ${esc(p.name)}${p.pos ? ` <span class="muted">(${esc(p.pos)})</span>` : ''}</span><textarea data-f="instructions.${p.id}" style="min-height:60px" placeholder="Her job against this opponent"></textarea></label>`).join('')}</div>` : ''}`,
-    boards: () => `<div class="stack" id="boards">${boards.length ? `<div class="grid2">${boards.map(b => `<div class="card stack tight"><a href="#/board/${b.id}">${frameSvg(b.frames[0] || { items: [], arrows: [] }, pm, { orient: 'h', style: 'width:100%;height:auto;border-radius:12px' })}</a><div class="row between nowrap"><span class="h3">${esc(b.name)}</span><span class="pill ${b.type === 'setpiece' ? 'lamp' : 'grey'}">${BOARD_TYPES[b.type] || ''}</span></div><div class="row"><span class="tiny muted grow">${b.sharePlayers ? 'On player pages' : 'Staff only'}</span><button class="btn sm" data-act="detach" data-arg="${b.id}">Remove</button></div></div>`).join('')}</div>` : '<div class="empty">No boards attached. Attach your shapes and set pieces so they print with the plan.</div>'}
+    boards: () => `<div class="stack" id="boards">${boards.length ? `<div class="grid2">${boards.map(b => `<div class="card stack tight"><a href="#/board/${b.id}">${frameSvg(b.frames[0] || { items: [], arrows: [] }, pm, { orient: 'h', style: 'width:100%;height:auto;border-radius:12px' })}</a><div class="row between nowrap"><span class="h3">${esc(b.name)}</span><span class="pill ${b.type === 'setpiece' ? 'lamp' : 'grey'}">${BOARD_LABEL(b.type)}</span></div><div class="row"><span class="tiny muted grow">${b.sharePlayers ? 'On player pages' : 'Staff only'}</span><button class="btn sm" data-act="detach" data-arg="${b.id}">Remove</button></div></div>`).join('')}</div>` : '<div class="empty">No boards attached. Attach your shapes and set pieces so they print with the plan.</div>'}
       <div class="row"><button class="btn pri" data-act="attach">${icon('plus')}Attach a board</button><button class="btn" data-act="newBoard">New board for this match</button></div></div>`,
     day: () => `<div class="card stack">${ta('plan.talk', 'Team talk', 'Three things, in their language', 'style="min-height:110px"')}</div>
       <div class="card stack tight"><div class="h3">Get it out</div>
@@ -80,7 +82,8 @@ export default function matchView(el, [id], ctx) {
       <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))"><label class="field"><span>Date</span><input type="date" data-f="date"></label><label class="field"><span>Kick-off</span><input type="text" data-f="ko" placeholder="14:00"></label>
       <label class="field"><span>Venue</span><input type="text" data-f="venue" placeholder="Home / away ground"></label><label class="field"><span>Competition</span><input type="text" data-f="comp"></label></div>
     </div>
-    <div class="chips scroll" role="tablist">${TABS.map(([k, l]) => `<button class="chip ${k === tab ? 'on' : ''}" role="tab" aria-selected="${k === tab}" data-act="tab" data-arg="${k}">${l}</button>`).join('')}</div>
+    <div class="seg" role="tablist" id="matchPart"><button type="button" role="tab" aria-selected="${tab === 'them'}" class="${tab === 'them' ? 'on' : ''}" data-act="tab" data-arg="them" style="min-height:48px;font-size:14px">Opposition analysis</button><button type="button" role="tab" aria-selected="${tab !== 'them'}" class="${tab !== 'them' ? 'on' : ''}" data-act="tab" data-arg="${S.meta().matchPlanTab || 'plan'}" style="min-height:48px;font-size:14px">Match day plan</button></div>
+    ${tab !== 'them' ? `<div class="chips scroll" role="tablist" id="planTabs">${PLAN_TABS.map(([k, l]) => `<button class="chip ${k === tab ? 'on' : ''}" role="tab" aria-selected="${k === tab}" data-act="tab" data-arg="${k}">${l}</button>`).join('')}</div>` : ''}
     ${body[tab]()}
     <div class="row">${!m.cancelled && m.date ? '<button class="btn" data-act="cancel">Didn’t happen</button>' : ''}<div class="grow"></div><button class="btn danger" data-act="del">${icon('trash')}Delete plan</button></div>
   </div>
@@ -91,13 +94,13 @@ export default function matchView(el, [id], ctx) {
   bindFields(el, m, p => {
     save(); chal();
     if (p === 'opponent' || p === 'date') {
-      ctx.setTop({ back: '#/plans/matches', title: m.opponent ? 'v ' + m.opponent : 'New match plan', sub: fmtD(m.date) });
+      ctx.setTop({ back: '#/matches', title: m.opponent ? 'v ' + m.opponent : 'New match plan', sub: fmtD(m.date) });
       // The opponent file and "trained this week" depend on these two fields; redraw when they change what is shown.
       if (S.previousMeetings(T, m).length !== prev.length || S.trainedBefore(T, m).length !== trained.length) { save.flush(); ctx.refresh(); }
     }
   });
   actions(el, {
-    tab: k => { save.flush(); S.setMeta('matchTab', k); ctx.refresh(); },
+    tab: k => { save.flush(); S.setMeta('matchTab', k); if (k !== 'them') S.setMeta('matchPlanTab', k); ctx.refresh(); },
     unexample: () => { delete m.example; S.put(m); toast('Now set the date'); ctx.refresh(); },
     focus: pid => { m.plan.focusIds = focusSet.has(pid) ? m.plan.focusIds.filter(x => x !== pid) : m.plan.focusIds.concat(pid); S.put(m); ctx.refresh(); },
     copyPrev: () => { const x = prev.find(y => y.opp && (y.opp.ip || y.opp.op)); if (!x) return; m.tags = { ...(x.tags || {}) }; m.opp = { ...(x.opp || {}) }; m.src = 'From the plan of ' + fmtD(x.date) + (x.src ? ' (' + x.src + ')' : '') + '. Update it.'; S.put(m); toast('Copied. Now update it.'); ctx.refresh(); },
@@ -107,7 +110,7 @@ export default function matchView(el, [id], ctx) {
     detach: bid => { m.boardIds = m.boardIds.filter(x => x !== bid); S.put(m); ctx.refresh(); },
     attach: () => {
       const avail = S.boards(T).filter(b => !m.boardIds.includes(b.id));
-      const s = sheet(`<div class="stack"><div class="h2">Attach a board</div>${avail.length ? `<div class="list">${avail.map(b => `<button class="item" data-b="${b.id}"><span class="grow"><span class="t" style="display:block">${esc(b.name)}</span><span class="s">${BOARD_TYPES[b.type] || ''} · ${b.frames.length} frames</span></span></button>`).join('')}</div>` : '<div class="empty">Every board is already attached.</div>'}<button class="btn" id="abX">Close</button></div>`);
+      const s = sheet(`<div class="stack"><div class="h2">Attach a board</div>${avail.length ? `<div class="list">${avail.map(b => `<button class="item" data-b="${b.id}"><span class="grow"><span class="t" style="display:block">${esc(b.name)}</span><span class="s">${BOARD_LABEL(b.type)} · ${b.frames.length} frames</span></span></button>`).join('')}</div>` : '<div class="empty">Every board is already attached.</div>'}<button class="btn" id="abX">Close</button></div>`);
       s.querySelectorAll('[data-b]').forEach(x => x.onclick = () => { m.boardIds.push(x.dataset.b); S.put(m); closeSheet(); ctx.refresh(); });
       s.querySelector('#abX').onclick = closeSheet;
     },
@@ -120,11 +123,11 @@ export default function matchView(el, [id], ctx) {
     share: () => { save.flush(); shareSheet('match', m); },
     players: async () => {
       save.flush();
-      if (!cloud.signedIn()) return toast('Player pages need cloud sync. See More > Cloud sync.');
+      if (!cloud.signedIn()) return toast('Player pages need cloud sync. See your profile picture > Cloud sync.');
       try { const n = await refreshPlayers(T); toast(n ? `Updated ${n} player page${n > 1 ? 's' : ''}` : 'No player links yet. Create them in Squad.'); }
       catch (e) { toast(e.message || 'Could not update'); }
     },
-    del: async () => { if (await confirmSheet('Delete this match plan?', m.reviewId ? 'Its review will be kept.' : '')) { S.del(m.id); location.hash = '#/plans/matches'; } }
+    del: async () => { if (await confirmSheet('Delete this match plan?', m.reviewId ? 'Its review will be kept.' : '')) { S.del(m.id); location.hash = '#/matches'; } }
   });
   return () => { save.flush(); refreshIfShared('match', m); };
 }

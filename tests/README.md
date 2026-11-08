@@ -36,3 +36,4 @@ Database rules (needs postgres on a spare port):
 
 - `ideas.py`: practice ideas library. Checks every theme has practices, every diagram sits inside its area, principle theme tags link to ideas, and "Add to my drills" and "Plan a session from this" work.
 - `squad_import.py`: pasting a real squad over the example players (no made-up positions, captain mark stripped, leftover examples removed).
+- `fixtures.js`: puts back the old example drill (dr-rondo) and match (mt-cls) for tests written against them. The app no longer seeds them.

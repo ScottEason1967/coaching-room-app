@@ -171,8 +171,8 @@ export async function removePlayerPhoto(token) {
 /* ---------- Shared links ---------- */
 export function shareUrl(tok) { return new URL('view.html#' + tok, location.href.split('#')[0]).href; }
 function needCloud() {
-  if (!configured()) throw new Error('Links need cloud sync switched on first (More > Cloud sync).');
-  if (!user) throw new Error('Sign in first (More > Cloud sync) to create links.');
+  if (!configured()) throw new Error('Links need cloud sync switched on first (your profile picture > Cloud sync).');
+  if (!user) throw new Error('Sign in first (your profile picture > Cloud sync) to create links.');
   if (!navigator.onLine) throw new Error('You’re offline. Links update when you’re back online.');
 }
 export async function saveShare({ token, kind, refId, title, data, pin, enabled = true }) {

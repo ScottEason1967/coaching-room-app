@@ -8,7 +8,7 @@ async def main():
         b=await p.chromium.launch(); ctx=await b.new_context(viewport={'width':390,'height':844},has_touch=True,is_mobile=True,service_workers='block')
         pg=await ctx.new_page(); errs=[]; pg.on('pageerror',lambda e: errs.append(str(e))); pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
         # --- drawer on a session plan
-        await pg.goto(U+'#/plans/sessions'); await pg.wait_for_timeout(300); await pg.click('[data-act="newS"]'); await pg.wait_for_timeout(500)
+        await pg.goto(U+'#/plans/sessions'); await pg.wait_for_timeout(700); await pg.evaluate("import('./tests/fixtures.js').then(F => F.examples())"); await pg.wait_for_timeout(300); await pg.click('[data-act="newS"]'); await pg.wait_for_timeout(500)
         dock=pg.locator('#chalDock'); print('dock visible on phone:', await dock.is_visible(), '| side panel hidden:', not await pg.locator('#chal').is_visible())
         bar=await pg.inner_text('#dockBar'); print('dock bar:', bar.replace('\n',' '))
         print('page padded so the drawer does not cover the form:', await pg.evaluate("getComputedStyle(document.querySelector('.content')).paddingBottom"))

@@ -47,7 +47,7 @@ async def main():
         c = await rec(A, 'coach')
         check('profile photo saved, shrunk (under 120 KB of text)', bool(c.get('photo')) and c['photo'].startswith('data:image/jpeg') and len(c['photo']) < 120000)
         print('   profile photo size', len(c.get('photo') or ''))
-        check('top bar shows the photo', await A.query_selector('#topbar a[href="#/more"] img.avatar') is not None)
+        check('top bar shows the photo', await A.query_selector('#meBtn img.avatar') is not None)
         # club badge
         await A.goto(U + 'index.html#/team/t-thornaby'); await A.wait_for_timeout(400)
         await pick(A, '#teamLogo [data-act="logo"]', '/tmp/badge.png')

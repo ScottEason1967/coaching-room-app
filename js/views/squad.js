@@ -40,7 +40,7 @@ export default function squad(el, params, ctx) {
     add: () => addSheet(T),
     import: () => importSheet(T, ctx),
     pushAll: async () => {
-      if (!cloud.signedIn()) return toast('Sign in to cloud sync first (More > Cloud sync)');
+      if (!cloud.signedIn()) return toast('Sign in to cloud sync first (your profile picture > Cloud sync)');
       try { const n = await refreshPlayers(T); toast(`Updated ${n} player page${n === 1 ? '' : 's'}`); } catch (e) { toast(e.message || 'Could not update'); }
     }
   });

@@ -23,7 +23,7 @@ export function newDrill(fields = {}) {
 export default function drillView(el, [id, fromSession], ctx) {
   const d = S.get(id);
   // Opened from a session plan (#/drill/<id>/<sessionId>): Back returns to that session, not the library.
-  const back = fromSession && S.get(fromSession) ? '#/session/' + fromSession : '#/plans/drills';
+  const back = fromSession && S.get(fromSession) ? '#/session/' + fromSession : '#/training/drills';
   if (!d) { ctx.setTop({ back, title: 'Drill' }); el.innerHTML = '<div class="empty">This drill has been deleted.</div>'; return; }
   const t = S.team(); const T = t.id;
   d.links ||= {}; d.corners ||= {}; d.interventions ||= []; d.items ||= []; d.arrows ||= [];

@@ -17,7 +17,7 @@ async def main():
         for f,v in [('worked','a'),('didnt','b'),('change','Fewer stoppages in the rondo'),('self','c')]: await pg.fill(f'[data-f="{f}"]',v)
         await pg.wait_for_timeout(600); await pg.goto(U+'#/home'); await pg.wait_for_timeout(300)
         t=await pg.inner_text('#view'); print('home carried:', [l for l in t.split('\n') if 'Not acted on' in l or 'Acted on' in l])
-        await pg.click('[data-act="newSession"]'); await pg.wait_for_timeout(400)
+        await pg.goto(U+'#/training/sessions'); await pg.wait_for_timeout(300); await pg.click('#newSession'); await pg.wait_for_timeout(400)
         print('new session default date:', await pg.evaluate("document.querySelector('[data-f=date]').value"), '(last session was', yest, '-> same weekday next week expected)')
         await pg.check('[data-f="addresses"]'); await pg.wait_for_timeout(600); await pg.goto(U+'#/home'); await pg.wait_for_timeout(300)
         t=await pg.inner_text('#view'); print('home carried after tick:', [l for l in t.split('\n') if 'Not acted on' in l or 'Acted on' in l])

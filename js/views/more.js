@@ -7,7 +7,7 @@ import { FORMATIONS } from '../pitch.js';
 import { sessionStats } from '../challenges.js';
 
 export default function more(el, params, ctx) {
-  const c = S.coach(); ctx.setTop({});
+  const c = S.coach(); ctx.setTop({ back: '#/home', title: 'Profile and settings' });
   const save = debounce(() => S.put(c), 400);
   const st = cloud.status();
   el.innerHTML = `<div class="stack" style="max-width:720px">
@@ -25,7 +25,7 @@ export default function more(el, params, ctx) {
     <p class="tiny muted">The Coaching Room</p></div>`;
   bindFields(el, c, () => save());
   actions(el, {
-    startHere: () => { S.setMeta('startHereDone', false); location.hash = '#/home'; },
+    startHere: () => { import('./home.js').then(M => M.openStartHere()); },
     photo: async () => { const src = await pickImage({ max: 320, square: true }); if (!src) return; c.photo = src; S.put(c); ctx.refresh(); toast('Photo saved'); },
     unphoto: () => { delete c.photo; S.put(c); ctx.refresh(); }
   });

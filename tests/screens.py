@@ -11,7 +11,7 @@ async def main(dev):
         pg=await ctx.new_page(); errs=[]
         pg.on('console',lambda m: errs.append(('console',m.type,m.text)) if m.type in('error','warning') else None)
         pg.on('pageerror',lambda e: errs.append(('pageerror',str(e))))
-        await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_timeout(800)
+        await pg.goto('http://localhost:8765/index.html'); await pg.wait_for_timeout(700); await pg.evaluate("import('./tests/fixtures.js').then(F => F.examples())"); await pg.wait_for_timeout(800)
         for r in ROUTES:
             await pg.evaluate(f"location.hash='#/{r}'"); await pg.wait_for_timeout(350)
             await pg.screenshot(path=f'shots/{dev}-{r.replace("/","_")}.png',full_page=True)

@@ -43,13 +43,13 @@ async def main():
         sid=(await A.evaluate('location.hash')).split('/')[-1]
         await A.fill('[data-f="theme"]','Session to be reviewed'); await A.fill('[data-f="date"]',yest); await A.wait_for_timeout(700)
         await A.goto(U+'index.html#/home'); await A.wait_for_timeout(400)
-        print('T2 home shows review due:', 'REVIEW DUE' in (await A.inner_text('#view')).upper())
+        print('T2 home shows review due:', 'ANALYSIS DUE' in (await A.inner_text('#view')).upper())
         await A.click('[data-act="rev"]'); await A.wait_for_timeout(400)   # opens the review (empty)
         rid=(await A.evaluate('location.hash')).split('/')[-1]
         await A.goto(U+'index.html#/home'); await A.wait_for_timeout(400)
         t=await A.inner_text('#view')
-        print('T2 after opening an EMPTY review and leaving: home still shows review due?', 'REVIEW DUE' in t.upper())
-        await A.click('[data-act="newSession"]'); await A.wait_for_timeout(400)
+        print('T2 after opening an EMPTY review and leaving: home still shows review due?', 'ANALYSIS DUE' in t.upper())
+        await A.goto(U+'#/training/sessions'); await A.wait_for_timeout(300); await A.click('#newSession'); await A.wait_for_timeout(400)
         print('T2 can plan a new session with the review empty? gate shown =', bool(await A.query_selector('.sheet')), '| hash =', await A.evaluate('location.hash'))
         r=await rec(A,rid); print('T2 review content:', {k:r.get(k) for k in ('worked','didnt','change','self')})
 

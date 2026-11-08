@@ -41,11 +41,11 @@ export function programmeHtml(T) {
 
 export default function blockView(el, [id], ctx) {
   const b = S.get(id);
-  if (!b) { ctx.setTop({ back: '#/plans/programme', title: 'Block' }); el.innerHTML = '<div class="empty">This block has been deleted.</div>'; return; }
+  if (!b) { ctx.setTop({ back: '#/training/programme', title: 'Block' }); el.innerHTML = '<div class="empty">This block has been deleted.</div>'; return; }
   const T = b.team; b.principleIds ||= []; b.weeksPlan ||= [];
   const weeks = Math.max(1, Math.min(12, +b.weeks || 1));
   while (b.weeksPlan.length < weeks) b.weeksPlan.push('');
-  ctx.setTop({ back: '#/plans/programme', title: b.title || 'Training block', sub: `${fmtD(b.start)} · ${weeks} weeks` });
+  ctx.setTop({ back: '#/training/programme', title: b.title || 'Training block', sub: `${fmtD(b.start)} · ${weeks} weeks` });
   const save = debounce(() => S.put(b), 400);
   const ps = S.principles(T); const sel = new Set(b.principleIds);
   const st = blockStatus(b); const td = today(); const wk = st === 'now' ? S.weekOf(b, td) : null;
@@ -81,10 +81,10 @@ export default function blockView(el, [id], ctx) {
     </div>
   </div></div>`;
 
-  bindFields(el, b, (p) => { save(); if (p === 'weeks' || p === 'start') { save.flush(); ctx.refresh(); } if (p === 'title') ctx.setTop({ back: '#/plans/programme', title: b.title || 'Training block', sub: `${fmtD(b.start)} · ${weeks} weeks` }); });
+  bindFields(el, b, (p) => { save(); if (p === 'weeks' || p === 'start') { save.flush(); ctx.refresh(); } if (p === 'title') ctx.setTop({ back: '#/training/programme', title: b.title || 'Training block', sub: `${fmtD(b.start)} · ${weeks} weeks` }); });
   actions(el, {
     pr: pid => { b.principleIds = sel.has(pid) ? b.principleIds.filter(x => x !== pid) : b.principleIds.concat(pid); S.put(b); ctx.refresh(); },
-    del: async () => { if (await confirmSheet('Delete this block?', 'Sessions in it are kept; they just stop belonging to a block.')) { S.del(b.id); location.hash = '#/plans/programme'; } }
+    del: async () => { if (await confirmSheet('Delete this block?', 'Sessions in it are kept; they just stop belonging to a block.')) { S.del(b.id); location.hash = '#/training/programme'; } }
   });
   return () => save.flush();
 }

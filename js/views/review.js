@@ -43,10 +43,10 @@ export function reviewGate(t, onClear, what = 'plan the next one') {
 
 export default function reviewView(el, [id], ctx) {
   const r = S.get(id);
-  if (!r) { el.innerHTML = `<div class="empty">This review has been deleted.</div>`; ctx.setTop({ back: '#/plans/reviews', title: 'Review' }); return; }
+  if (!r) { el.innerHTML = `<div class="empty">This analysis has been deleted.</div>`; ctx.setTop({ back: '#/analysis', title: 'Analysis' }); return; }
   const ref = S.get(r.refId); const t = r.team;
   const title = r.type === 'match' ? 'v ' + (ref ? ref.opponent : 'match') : (ref ? ref.theme || 'Session' : 'Session');
-  ctx.setTop({ back: '#/plans/reviews', title: 'Review', sub: title + ' · ' + fmtD(r.date) });
+  ctx.setTop({ back: '#/analysis', title: (r.type === 'match' ? 'Match analysis' : 'Session analysis'), sub: title + ' · ' + fmtD(r.date) });
   const save = debounce(() => S.put(r), 400);
   const ps = (r.principleIds || []).map(S.get).filter(Boolean); const others = (r.otherIds || []).map(S.get).filter(Boolean);
   const focusIds = new Set((r.focus || []).map(f => f.id));
@@ -111,7 +111,7 @@ export default function reviewView(el, [id], ctx) {
     <details class="card" id="playerObs" ${focusIds.size ? 'open' : ''}><summary class="h3" style="cursor:pointer">Player observations <span class="muted small">(${focusIds.size ? 'focus players first; ' : ''}shows on each player’s profile)</span></summary>
       <div class="stack tight" style="margin-top:10px">${squad.length ? squad.map(p => `<label class="field"><span>${esc(p.num)} · ${esc(p.name)}${focusIds.has(p.id) ? ` <span class="pill lamp">focus</span> <span class="muted">${esc(((r.focus || []).find(f => f.id === p.id) || {}).goal || '')}</span>` : ''}</span><input type="text" data-f="playerObs.${p.id}" placeholder="${focusIds.has(p.id) ? 'What you saw, what you said, what next' : 'One line'}"></label>`).join('') : '<div class="small muted">Pick a match squad to see players here.</div>'}</div>
     </details>
-    <div class="row"><button class="btn danger" data-act="del">${icon('trash')}Delete review</button></div>
+    <div class="row"><button class="btn danger" data-act="del">${icon('trash')}Delete analysis</button></div>
   </div>
   <div><div id="chal" style="position:sticky;top:80px"></div></div></div>`;
 
@@ -130,7 +130,7 @@ export default function reviewView(el, [id], ctx) {
     del: async () => {
       if (!await confirmSheet('Delete this review?', 'The session or match will show as needing a review again.')) return;
       if (ref) { ref.reviewId = null; S.put(ref); }
-      S.del(r.id); toast('Review deleted'); location.hash = '#/plans/reviews';
+      S.del(r.id); toast('Analysis deleted'); location.hash = '#/analysis';
     }
   });
   return () => save.flush();

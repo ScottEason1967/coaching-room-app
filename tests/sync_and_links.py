@@ -22,7 +22,7 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch()
         A=await device(b,'phone',390,844); B=await device(b,'ipad',1194,834)
-        await A.goto(U+'index.html#/cloud'); await A.wait_for_timeout(500)
+        await A.goto(U+'index.html#/cloud'); await A.wait_for_timeout(700); await A.evaluate("import('./tests/fixtures.js').then(F => F.examples())"); await A.wait_for_timeout(500)
         print('A cloud screen:', (await A.inner_text('#view'))[:60].replace('\n',' | '))
         await A.fill('#cE','joe@example.com'); await A.fill('#cP','correct-horse-1'); srv.op_signup({'email':'joe@example.com','password':'correct-horse-1'}); await A.click('#cIn'); await A.wait_for_timeout(1200)
         print('A after sign-up:', (await A.inner_text('#view'))[:90].replace('\n',' | '))
@@ -55,7 +55,7 @@ async def main():
         await A.click('[data-act="unexample"]'); await A.wait_for_timeout(200)
         import datetime; d=(datetime.date.today()+datetime.timedelta(days=2)).isoformat()
         await A.fill('[data-f="date"]',d); await A.wait_for_timeout(300)
-        await A.click('[data-act="tab"][data-arg="squad"]'); await A.wait_for_timeout(300)
+        await A.click('#matchPart button:nth-child(2)'); await A.wait_for_timeout(300); await A.click('#planTabs [data-arg="squad"]'); await A.wait_for_timeout(300)
         await A.click('[data-act="sq"][data-arg="pl-9"]'); await A.wait_for_timeout(300)
         await A.fill('[data-f="instructions.pl-9"]','Pin their centre-backs and attack the back post'); await A.wait_for_timeout(700)
         await A.goto(U+'index.html#/player/pl-9'); await A.wait_for_timeout(300)

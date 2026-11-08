@@ -10,7 +10,7 @@ async def main():
         pg=await ctx.new_page(); errs=[]
         pg.on('pageerror',lambda e: errs.append(str(e)))
         await pg.add_init_script("window.print=()=>{window.__printed=(window.__printed||0)+1}")
-        await pg.goto(U+'#/plans/sessions'); await pg.wait_for_timeout(500)
+        await pg.goto(U+'#/plans/sessions'); await pg.wait_for_timeout(700); await pg.evaluate("import('./tests/fixtures.js').then(F => F.examples())"); await pg.wait_for_timeout(500)
         await pg.click('[data-act="newS"]'); await pg.wait_for_timeout(400)
         sid=(await pg.evaluate('location.hash')).split('/')[-1]; print('session',sid)
         await pg.fill('[data-f="theme"]','Playing out through the 6 under pressure')
@@ -23,9 +23,9 @@ async def main():
         await pg.click('[data-act="print"]'); await pg.wait_for_timeout(300)
         print('session print svgs', await pg.evaluate("document.querySelectorAll('#print svg').length"), 'printed', await pg.evaluate('window.__printed'))
         await pg.goto(U+'#/home'); await pg.wait_for_timeout(400)
-        print('home due banner:', 'REVIEW DUE' in (await pg.inner_text('#view')).upper())
+        print('home due banner:', 'ANALYSIS DUE' in (await pg.inner_text('#view')).upper())
         await pg.screenshot(path='shots/t6-home-due.png', full_page=True)
-        await pg.click('[data-act="newSession"]'); await pg.wait_for_timeout(300)
+        await pg.goto(U+'#/training/sessions'); await pg.wait_for_timeout(300); await pg.click('#newSession'); await pg.wait_for_timeout(300)
         gate=await pg.inner_text('.sheet'); print('gate:', gate[:120].replace('\n',' | '))
         await pg.click('.sheet [data-r]'); await pg.wait_for_timeout(400)
         rid=(await pg.evaluate('location.hash')).split('/')[-1]; print('review', rid)
@@ -40,7 +40,7 @@ async def main():
         await pg.screenshot(path='shots/t6-review.png', full_page=True)
         await pg.goto(U+'#/home'); await pg.wait_for_timeout(400)
         t=await pg.inner_text('#view'); print('home: due gone', 'REVIEW DUE' not in t.upper(), '| carried:', 'clear trigger' in t)
-        await pg.click('[data-act="newSession"]'); await pg.wait_for_timeout(400)
+        await pg.goto(U+'#/training/sessions'); await pg.wait_for_timeout(300); await pg.click('#newSession'); await pg.wait_for_timeout(400)
         t=await pg.inner_text('#view'); print('new session shows carried forward:', 'Carried forward' in t and 'clear trigger' in t)
         # model: agree principle
         await pg.goto(U+'#/principle/pr-1'); await pg.wait_for_timeout(400)
@@ -54,7 +54,7 @@ async def main():
         r=await rec(pg,'pl-9'); print('pl-9 now', r['name'], r['pos'], '| count', await pg.evaluate("document.querySelectorAll('#view .item').length"))
         # match: squad + instructions + cards print
         await pg.goto(U+'#/match/mt-cls'); await pg.wait_for_timeout(300)
-        await pg.click('[data-act="tab"][data-arg="squad"]'); await pg.wait_for_timeout(300)
+        await pg.click('#matchPart button:nth-child(2)'); await pg.wait_for_timeout(300); await pg.click('#planTabs [data-arg="squad"]'); await pg.wait_for_timeout(300)
         await pg.click('[data-act="squadAll"]'); await pg.wait_for_timeout(300)
         await pg.fill('[data-f="instructions.pl-9"]','Pin their centre-backs; attack the back post on every cross'); await pg.wait_for_timeout(700)
         await pg.click('[data-act="tab"][data-arg="day"]'); await pg.wait_for_timeout(300)

@@ -23,7 +23,7 @@ async def main():
         pg.on('console',lambda m: errs.append(m.text) if m.type=='error' else None)
         await pg.add_init_script("window.print=()=>{window.__printed=(window.__printed||0)+1}")
         cdp=await ctx.new_cdp_session(pg)
-        await pg.goto(U+'#/board/bd-shape'); await pg.wait_for_timeout(700)
+        await pg.goto(U+'#/board/bd-shape'); await pg.wait_for_timeout(700); await pg.evaluate("import('./tests/fixtures.js').then(F => F.examples())"); await pg.wait_for_timeout(700)
         # 1 drag CF (u10) on vertical board
         a=await center(pg,'[data-id="u10"] circle:nth-child(2)'); target=[a[0]+60,a[1]+90]
         await drag(cdp,a,target); await pg.wait_for_timeout(500)

@@ -95,41 +95,44 @@ async def main():
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
 
-        # ---------- Start here (first run)
-        await pg.goto(U); await pg.wait_for_timeout(700)
+        # ---------- Start here (first run): a slim card on Home, the guide opens in a sheet
+        await pg.goto(U); await pg.wait_for_timeout(700); await pg.evaluate("import('./tests/fixtures.js').then(F => F.examples())"); await pg.wait_for_timeout(300)
+        check('Start here card shows on first run', await pg.locator('#startHereCard').count() == 1)
+        r = await check_screen(pg, 'home (card open)', 'home')
+        await pg.click('#startHereCard [data-act="guide"]'); await pg.wait_for_timeout(400)
         sh = pg.locator('#startHere')
-        check('Start here shows on first run', await sh.count() == 1 and await sh.is_visible())
+        check('Start here guide opens', await sh.count() == 1 and await sh.is_visible())
         await pg.screenshot(path='shots/help-starthere.png')
         txt = await sh.inner_text()
-        check('Start here: has the set-up links, the loop, the ? hint', all(x in txt for x in ['Rewrite the three principles', 'Paste your squad', 'Plan your first block', 'Sign in for sync', 'Add to Home Screen', 'Plan the session from the block', 'Review the match on Monday', 'Every screen has a ?']))
+        check('Start here: has the set-up links, the loop, the ? hint', all(x in txt for x in ['Rewrite the three principles', 'Paste your squad', 'Plan your first block', 'Sign in for sync', 'Add to Home Screen', 'plan the session from the block', 'the match, on Monday', 'Every screen has a ?']), txt[:300])
         links = await sh.evaluate("e => [...e.querySelectorAll('a')].map(a => a.getAttribute('href'))")
-        check('Start here: links go to model, squad, programme, cloud', links == ['#/model', '#/squad', '#/plans/programme', '#/cloud'], links)
-        first = await pg.evaluate("document.querySelector('#view').firstElementChild.id")
-        check('Start here is the first thing on Home', first == 'startHere', first)
-        # Home guide while the card is open: its Start here step must work
-        r = await check_screen(pg, 'home (card open)', 'home')
-        await pg.click('#startHere [data-act="startDone"]'); await pg.wait_for_timeout(300)
-        check('Got it hides the card', await pg.locator('#startHere').count() == 0)
+        check('Start here: links go to model, squad, programme, cloud', links == ['#/model', '#/squad', '#/training/programme', '#/cloud'], links)
+        await pg.click('#startDone'); await pg.wait_for_timeout(300)
+        check('Got it hides the card', await pg.locator('#startHereCard').count() == 0)
         await pg.reload(); await pg.wait_for_timeout(600)
-        check('card stays hidden after reload', await pg.locator('#startHere').count() == 0)
+        check('card stays hidden after reload', await pg.locator('#startHereCard').count() == 0)
         check('flag is saved', await pg.evaluate("(async () => (await import('./js/store.js')).meta().startHereDone === true)()"))
+        if await pg.locator('#guideBtn').is_visible():
+            await pg.click('#guideBtn'); await pg.wait_for_timeout(400)
+            check('Start here guide button in the top bar opens it', await pg.locator('#startHere').count() == 1)
+            await pg.click('#startDone'); await pg.wait_for_timeout(300)
         await go(pg, 'more')
         sh_btn = pg.locator('[data-act="startHere"]')
-        check('More has a Start here item', await sh_btn.count() == 1 and 'Start here' in await sh_btn.inner_text())
+        check('Profile and settings has a Start here item', await sh_btn.count() == 1 and 'Start here' in await sh_btn.inner_text())
         await sh_btn.click(); await pg.wait_for_timeout(500)
-        check('More > Start here goes Home and brings the card back', await pg.evaluate("location.hash") == '#/home' and await pg.locator('#startHere').count() == 1)
-        await pg.click('#startHere [data-act="startDone"]'); await pg.wait_for_timeout(300)
+        check('it opens the guide', await pg.locator('#startHere').count() == 1)
+        await pg.click('#startDone'); await pg.wait_for_timeout(300)
 
         # ---------- data for the rest
         ids = await pg.evaluate(SEED); await pg.wait_for_timeout(400)
         T = ids['team']
-        none = await pg.evaluate("(async () => { const H = await import('./js/help.js'); return [H.helpFor('nonsense', []), H.helpFor('drills', []) && H.helpFor('drills', []).title]; })()")
-        check('no guide for an unknown route; "drills" alias gives the drills guide', none[0] is None and none[1] == 'Plans: Drills', none)
+        none = await pg.evaluate("(async () => { const H = await import('./js/help.js'); return [H.helpFor('nonsense', []), H.helpFor('training', ['drills']) && H.helpFor('training', ['drills']).title]; })()")
+        check('no guide for an unknown route; training/drills gives the drills guide', none[0] is None and none[1] == 'Training: Drills', none)
 
         # ---------- every screen
         SCREENS = [
-            ('home', 'home'), ('model', 'model'), ('principle', 'principle/pr-1'), ('boards', 'boards'), ('board', 'board/bd-shape'),
-            ('plans: sessions', 'plans/sessions'), ('plans: matches', 'plans/matches'), ('plans: reviews', 'plans/reviews'), ('plans: programme', 'plans/programme'), ('plans: drills', 'plans/drills'),
+            ('home', 'home'), ('team', 'teamhome'), ('sketch', 'sketch'), ('model', 'model'), ('principle', 'principle/pr-1'), ('board', 'board/bd-shape'),
+            ('training: sessions', 'training/sessions'), ('matches', 'matches'), ('analysis', 'analysis'), ('training: programme', 'training/programme'), ('training: drills', 'training/drills'),
             ('block', 'block/' + ids['block']), ('drill', 'drill/dr-rondo'), ('session (today)', 'session/' + ids['todaySession']), ('session (past, reviewed)', 'session/' + ids['pastSession']), ('session (empty)', 'session/' + ids['bareSession']),
             ('match (example)', 'match/mt-cls'), ('match (upcoming)', 'match/' + ids['upMatch']), ('match (played)', 'match/' + ids['playedMatch']),
             ('review (session)', 'review/' + ids['sessionReview']), ('review (match)', 'review/' + ids['matchReview']),
@@ -162,7 +165,7 @@ async def main():
         g = await guide(pg, 'match', [ids['upMatch']]); target = next(s for s in g['steps'] if s.get('tab') == 'day' and s.get('show') == '[data-act="players"]')
         k = [s for s in g['steps'] if s.get('show')].index(target)
         await pg.locator('#helpSheet [data-show]').nth(k).click(); await pg.wait_for_timeout(500)
-        check('match: Show me on a Day step from the Them tab switches to Day and flashes it', await pg.evaluate("document.querySelector('[role=tab][aria-selected=true]').textContent.trim() === 'Day' && document.querySelector('[data-act=players]').classList.contains('flash')"))
+        check('match: Show me on a Day step from the Them tab switches to Day and flashes it', await pg.evaluate("document.querySelector('#planTabs [role=tab][aria-selected=true]').textContent.trim() === 'On the day' && document.querySelector('[data-act=players]').classList.contains('flash')"))
 
         # board guide walks frame by frame with the real controls
         g = await guide(pg, 'board', [])
@@ -176,6 +179,7 @@ async def main():
         await go(pg, 'home')
         box = await pg.evaluate("(() => { const k = [...document.querySelectorAll('#topbar .row.nowrap > *')].map(e => { const r = e.getBoundingClientRect(); return [e.getAttribute('aria-label') || e.tagName, Math.round(r.left), Math.round(r.right), Math.round(r.width), Math.round(r.height)]; }); return k; })()")
         print('top bar right group [label, left, right, w, h]:', box)
+        box = [x for x in box if x[3] > 0]
         check('top bar: ?, dot and avatar all inside 390 px', all(x[2] <= 390 for x in box) and len(box) == 3)
         await pg.screenshot(path='shots/help-home.png')
         await pg.click(HELPBTN); await pg.wait_for_timeout(250); await pg.screenshot(path='shots/help-sheet-home.png')

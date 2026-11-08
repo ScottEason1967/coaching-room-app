@@ -115,7 +115,7 @@ export function modelChallenges(t) {
   });
   if (team && !(team.roles && Object.values(team.roles).some(v => v && v.trim()))) out.push(Q('ask', 'Positional roles are blank. What do you expect of each position in your shape?', 'Game model'));
   const cb = S.currentBlock(t);
-  if (ps.length && !cb) out.push(Q('ask', 'No training block is running. Which principle gets the next four to six weeks, and what does each week add?', 'Programme', '#/plans/programme'));
+  if (ps.length && !cb) out.push(Q('ask', 'No training block is running. Which principle gets the next four to six weeks, and what does each week add?', 'Programme', '#/training/programme'));
   if (!out.length) out.push(Q('ok', 'Every phase has principles; each has a trigger, a picture, tags and a drill; a block is running; nothing is flagged by recent reviews.'));
   return out;
 }
@@ -177,11 +177,11 @@ export function sessionKit(s) {
 export function sessionChallenges(s, t) {
   const out = []; const st = sessionStats(s); const ps = (s.principleIds || []).map(S.get).filter(Boolean);
   const due = S.reviewsDue(t).filter(x => x.rec.id !== s.id && (!s.date || x.rec.date < s.date));
-  if (due.length) out.push(Q('req', `${due.length} review${due.length > 1 ? 's' : ''} outstanding from before this session. Write ${due.length > 1 ? 'them' : 'it'} first: that’s where this session should come from.`, 'Plan-Do-Review', '#/plans/reviews'));
+  if (due.length) out.push(Q('req', `${due.length} review${due.length > 1 ? 's' : ''} outstanding from before this session. Write ${due.length > 1 ? 'them' : 'it'} first: that’s where this session should come from.`, 'Plan-Do-Review', '#/analysis'));
   if (!s.theme || s.theme.trim().length < 5) out.push(Q('req', 'Session theme: one sentence on what the team will be better at by the end.', null, 'theme'));
   if (!ps.length) out.push(Q('req', 'Which principle(s) is this session about?', 'Game model', '#sessionPrinciples'));
   const blk = S.blockFor(t, s.date);
-  if (ps.length && !blk) out.push(Q('ask', 'This session isn’t in a training block. One-off sessions don’t add up; put four to six weeks behind a principle in Plans > Programme.', 'Programme', '#/plans/programme'));
+  if (ps.length && !blk) out.push(Q('ask', 'This session isn’t in a training block. One-off sessions don’t add up; put four to six weeks behind a principle in Plans > Programme.', 'Programme', '#/training/programme'));
   else if (blk && ps.length && !ps.some(p => (blk.principleIds || []).includes(p.id))) out.push(Q('ask', `The block “${blk.title}” is about ${(blk.principleIds || []).map(S.get).filter(Boolean).map(p => p.title).join(', ') || 'other principles'}; this session isn’t. Deliberate (match prep, a problem from the review), or drift?`, 'Programme', '#sessionPrinciples'));
   const lc = S.lastChange(t);
   if (lc) {
@@ -273,7 +273,7 @@ export function matchChallenges(m, t) {
     const tp = new Set(trained.flatMap(s => s.principleIds || []));
     const inPlan = focus.some(f => tp.has(f.id)) || trained.some(s => s.matchPrep);
     if (!inPlan) out.push(Q('ask', `This week you trained ${trained.map(s => '“' + (s.theme || 'session') + '”').join(', ')}. None of it is in this plan. Either put it in (keys, focus principles) or ask why you trained it.`, 'Training to match', '#trained', 'plan'));
-  } else if (m.date && m.date >= today()) out.push(Q('ask', 'No session in the seven days before this match. What are the players going into it on?', 'Training to match', '#/plans/sessions'));
+  } else if (m.date && m.date >= today()) out.push(Q('ask', 'No session in the seven days before this match. What are the players going into it on?', 'Training to match', '#/training/sessions'));
   if (m.date && m.date < today() && !m.cancelled) {
     const rv = S.reviewOf(m);
     if (!rv) out.push(Q('req', 'This match has been played. Write the review: it’s what makes the game model learn.', 'Plan-Do-Review', '#reviewBar'));

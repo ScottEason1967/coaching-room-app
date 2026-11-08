@@ -12,7 +12,7 @@ async def main():
         txt=lambda sel='#view': pg.inner_text(sel)
         async def chal(): return (await pg.inner_text('#chal')).replace('\n',' | ')
         # --- model: identity, trigger, tags, picture
-        await pg.goto(U+'#/model'); await pg.wait_for_timeout(400)
+        await pg.goto(U+'#/model'); await pg.wait_for_timeout(700); await pg.evaluate("import('./tests/fixtures.js').then(F => F.examples())"); await pg.wait_for_timeout(400)
         print('model check before:', (await chal())[:140])
         await pg.fill('[data-f="identity"]','We keep the ball and play through the thirds; we never kick it long by default.'); await pg.wait_for_timeout(600)
         await pg.goto(U+'#/principle/pr-1'); await pg.wait_for_timeout(300)

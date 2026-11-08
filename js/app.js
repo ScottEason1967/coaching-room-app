@@ -3,10 +3,10 @@ import * as S from './store.js';
 import * as cloud from './cloud.js';
 import { $, esc, icon, sheet, closeSheet, toast, autosize, avatar, teamBadge } from './util.js';
 
-import home from './views/home.js';
+import home, { openStartHere } from './views/home.js';
+import { teamHome, training, matches, analysis, sketch } from './views/hubs.js';
 import model, { principleView } from './views/model.js';
 import board, { boardList } from './views/board.js';
-import plans from './views/plans.js';
 import drill from './views/drill.js';
 import session from './views/session.js';
 import match from './views/match.js';
@@ -18,28 +18,36 @@ import ideasView, { ideaView } from './views/ideas.js';
 import { resetDock, focusField } from './challenges.js';
 import { helpFor, openHelp } from './help.js';
 
+// sec: which area a screen belongs to. It sets the colour (Training blue, Match green, Analysis orange)
+// and which item in the main bar is lit.
 const ROUTES = {
   home: { v: home, nav: 'home' },
-  model: { v: model, nav: 'model' }, principle: { v: principleView, nav: 'model', detail: true },
-  boards: { v: boardList, nav: 'board' }, board: { v: board, nav: 'board', detail: true },
-  plans: { v: plans, nav: 'plans' },
-  drill: { v: drill, nav: 'plans', detail: true }, session: { v: session, nav: 'plans', detail: true },
-  match: { v: match, nav: 'plans', detail: true }, review: { v: review, nav: 'plans', detail: true },
-  block: { v: blockView, nav: 'plans', detail: true },
-  ideas: { v: ideasView, nav: 'plans', detail: true }, idea: { v: ideaView, nav: 'plans', detail: true },
-  squad: { v: squad, nav: 'squad' }, player: { v: playerView, nav: 'squad', detail: true },
-  more: { v: more, nav: 'more' }, pathway: { v: pathwayView, nav: 'pathway', detail: true },
-  logbook: { v: logbookView, nav: 'logbook', detail: true }, teams: { v: teamsView, nav: 'more', detail: true },
-  team: { v: teamView, nav: 'more', detail: true }, cloud: { v: cloudView, nav: 'more', detail: true }
+  teamhome: { v: teamHome, nav: 'team' },
+  model: { v: model, nav: 'team', detail: true }, principle: { v: principleView, nav: 'team', detail: true },
+  squad: { v: squad, nav: 'team', detail: true }, player: { v: playerView, nav: 'team', detail: true },
+  sketch: { v: sketch, nav: 'team', detail: true }, board: { v: board, nav: 'team', detail: true },
+  training: { v: training, nav: 'training', sec: 'training' },
+  drill: { v: drill, nav: 'training', sec: 'training', detail: true }, session: { v: session, nav: 'training', sec: 'training', detail: true },
+  block: { v: blockView, nav: 'training', sec: 'training', detail: true },
+  ideas: { v: ideasView, nav: 'training', sec: 'training', detail: true }, idea: { v: ideaView, nav: 'training', sec: 'training', detail: true },
+  matches: { v: matches, nav: 'match', sec: 'match' },
+  match: { v: match, nav: 'match', sec: 'match', detail: true },
+  analysis: { v: analysis, nav: 'analysis', sec: 'analysis' },
+  review: { v: review, nav: 'analysis', sec: 'analysis', detail: true },
+  more: { v: more, nav: '', detail: true }, pathway: { v: pathwayView, nav: '', detail: true },
+  logbook: { v: logbookView, nav: '', detail: true }, teams: { v: teamsView, nav: '', detail: true },
+  team: { v: teamView, nav: '', detail: true }, cloud: { v: cloudView, nav: '', detail: true }
 };
-const NAV = [['home', 'Home', 'home', '#/home'], ['model', 'Model', 'model', '#/model'], ['board', 'Board', 'board', '#/boards'], ['plans', 'Plans', 'plans', '#/plans'], ['squad', 'Squad', 'squad', '#/squad']];
-const SIDE_EXTRA = [['pathway', 'Pathway', 'ladder', '#/pathway'], ['logbook', 'Logbook', 'book', '#/logbook'], ['more', 'More', 'cog', '#/more']];
+// Old addresses (bookmarks, links in printouts) still land in the right place.
+const OLD = { plans: p => ({ sessions: '#/training/sessions', programme: '#/training/programme', drills: '#/training/drills', matches: '#/matches', reviews: '#/analysis' })[p[0]] || '#/training', boards: () => '#/sketch' };
+const NAV = [['home', 'Home', 'home', '#/home'], ['team', 'Team', 'model', '#/teamhome'], ['training', 'Training', 'training', '#/training'], ['match', 'Match', 'match', '#/matches'], ['analysis', 'Analysis', 'analysis', '#/analysis']];
 
 let current = { name: '', params: [] }, top = {}, pendingRefresh = false, pointerDown = false, cleanup = null;
 
 function parse() {
   const h = location.hash.replace(/^#\/?/, '');
   const [name, ...params] = h.split('/').map(decodeURIComponent);
+  if (OLD[name]) { const to = OLD[name](params); history.replaceState(null, '', to); return parse(); }
   return { name: ROUTES[name] ? name : 'home', params };
 }
 
@@ -71,27 +79,25 @@ function route(keepScroll) {
 }
 
 function renderNav(on) {
-  $('#bottomnav').innerHTML = NAV.map(([k, lab, ic, href]) => `<a href="${href}" class="${on === k ? 'on' : ''}" ${on === k ? 'aria-current="page"' : ''}>${icon(ic)}<span>${lab}</span></a>`).join('');
-  const t = S.team(); const c = S.coach();
-  $('#sidebar').innerHTML = `<div class="brand">${ringMini()}<span>Coaching Room</span></div>
-    <button class="item" data-act="team" style="margin:0 0 10px;min-height:52px">${teamBadge(t, 32, 15)}<span class="grow"><span class="t" style="display:block;font-size:13.5px">${esc(t?.name || 'No team')}</span><span class="s">${esc(t?.season || '')} · switch</span></span>${icon('down', 'style="width:16px;height:16px;color:var(--muted)"')}</button>
-    ${NAV.concat(SIDE_EXTRA).map(([k, lab, ic, href]) => `<a class="nav ${on === k ? 'on' : ''}" href="${href}">${icon(ic)}<span>${lab}</span></a>`).join('')}
-    <div style="flex:1"></div>
-    <a class="nav" href="#/cloud" id="sideSync">${syncDot()}<span>${syncLabel()}</span></a>
-    <div class="tiny muted" style="padding:6px 12px">${esc(c.name || '')}</div>`;
-  $('#sidebar').querySelector('[data-act="team"]').onclick = teamSwitcher;
+  const nav = $('#bottomnav');
+  nav.innerHTML = NAV.map(([k, lab, ic, href]) => `<a href="${href}" class="${k} ${on === k ? 'on' : ''}" ${on === k ? 'aria-current="page"' : ''}>${icon(ic)}<span>${lab}</span></a>`).join('');
+  nav.classList.toggle('athome', on === 'home');
+  document.body.dataset.sec = ROUTES[current.name].sec || '';
 }
 
 function renderTop() {
   const t = S.team(); const c = S.coach(); const tb = $('#topbar');
   const left = top.back
     ? `<a class="btn icon" href="${top.back}" aria-label="Back" style="border:0;background:rgba(255,255,255,.05)">${icon('back')}</a><div class="grow" style="min-width:0"><div class="h2" style="font-size:21px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(top.title || '')}</div>${top.sub ? `<div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(top.sub)}</div>` : ''}</div>`
-    : `<button class="team-switch" data-act="team">
+    : `<span class="brand">${ringMini()}<span>Coaching Room</span></span><button class="team-switch" data-act="team">
         ${teamBadge(t, 34, 17)}
         <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;min-width:0"><span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${esc(t?.name || 'Add a team')}</span><span class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${esc(t?.season || '')}${t?.season ? ' · ' : ''}switch team</span></span>${icon('down', 'style="width:16px;height:16px;color:var(--muted);flex:none"')}</button><div class="grow"></div>`;
+  const guide = top.home ? `<button type="button" class="btn guide-btn" data-act="guide" id="guideBtn">Start here guide</button>` : '';
   const help = helpFor(current.name, current.params) ? `<button type="button" class="btn icon" data-act="help" aria-label="How to use this screen" title="How to use this screen" style="background:var(--surface2);font-family:var(--display);font-weight:700;font-size:20px">?</button>` : '';
-  tb.innerHTML = `${left}<div class="row nowrap" style="gap:8px">${top.actions || ''}${help}<a href="#/cloud" class="btn icon" aria-label="Sync: ${esc(syncLabel())}" title="${esc(syncLabel())}" style="border:0;width:36px">${syncDot()}</a><a href="#/more" class="btn icon" aria-label="Your profile, pathway and settings" style="background:var(--surface2);font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.04em;${c.photo ? 'padding:0;overflow:hidden' : ''}">${avatar(c.photo, 40, esc(c.initials || 'JE'))}</a></div>`;
+  tb.innerHTML = `${left}<div class="row nowrap" style="gap:8px">${top.actions || ''}${guide}${help}<a href="#/cloud" class="btn icon" aria-label="Sync: ${esc(syncLabel())}" title="${esc(syncLabel())}" style="border:0;width:36px">${syncDot()}</a><button type="button" class="btn icon" id="meBtn" data-act="me" aria-label="Your profile, pathway and settings" style="background:var(--surface2);font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.04em;${c.photo ? 'padding:0;overflow:hidden' : ''}">${avatar(c.photo, 40, esc(c.initials || 'JE'))}</button></div>`;
   const b = tb.querySelector('[data-act="team"]'); if (b) b.onclick = teamSwitcher;
+  const gb = tb.querySelector('[data-act="guide"]'); if (gb) gb.onclick = openStartHere;
+  tb.querySelector('[data-act="me"]').onclick = profileMenu;
   const hb = tb.querySelector('[data-act="help"]');
   if (hb) hb.onclick = () => openHelp(current.name, current.params, { goTab: (tab, show) => { S.setMeta('matchTab', tab); ctx.refresh(); setTimeout(() => focusField(show, document), 60); } });
   if (top.onActions) top.onActions(tb);
@@ -108,6 +114,19 @@ function syncDot() {
 }
 function ringMini() {
   return `<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><g fill="none" stroke-width="3.2" stroke-linecap="round">${[0, 1, 2, 3].map(i => `<circle cx="13" cy="13" r="9.5" stroke="${i === 1 ? 'var(--accent)' : i === 0 ? 'color-mix(in srgb,var(--accent) 50%,transparent)' : 'rgba(255,255,255,.18)'}" stroke-dasharray="12.5 47.2" transform="rotate(${-86 + i * 90} 13 13)"/>`).join('')}</g></svg>`;
+}
+
+// Everything about you rather than the team: pathway, logbook, settings, sync.
+function profileMenu() {
+  const c = S.coach();
+  const el = sheet(`<div class="stack" id="meMenu"><div class="row nowrap" style="gap:12px">${avatar(c.photo, 52, `<span class="badge-num" style="width:52px;height:52px;background:var(--surface2);color:var(--text)">${esc(c.initials || 'JE')}</span>`)}<div><div class="h2" style="margin:0">${esc(c.name || 'You')}</div><div class="tiny muted">Your own development, separate from the team</div></div></div>
+    <div class="list">
+      <a class="item" href="#/pathway"><span class="badge-num" style="background:var(--surface2);color:var(--text2)">${icon('ladder', 'style="width:20px;height:20px"')}</span><span class="grow"><span class="t" style="display:block">Pathway</span><span class="s">UEFA C to Pro: strengths, development, evidence</span></span></a>
+      <a class="item" href="#/logbook"><span class="badge-num" style="background:var(--surface2);color:var(--text2)">${icon('book', 'style="width:20px;height:20px"')}</span><span class="grow"><span class="t" style="display:block">Logbook</span><span class="s">Hours, CPD and reflections</span></span></a>
+      <a class="item" href="#/more"><span class="badge-num" style="background:var(--surface2);color:var(--text2)">${icon('cog', 'style="width:20px;height:20px"')}</span><span class="grow"><span class="t" style="display:block">Profile and settings</span><span class="s">Your photo, name, teams, backups</span></span></a>
+      <a class="item" href="#/cloud"><span class="badge-num" style="background:var(--surface2);color:var(--text2)">${icon('cloud', 'style="width:20px;height:20px"')}</span><span class="grow"><span class="t" style="display:block">Cloud sync</span><span class="s">${esc(syncLabel())}</span></span></a>
+    </div></div>`);
+  el.querySelectorAll('a').forEach(a => a.addEventListener('click', () => closeSheet()));
 }
 
 export function teamSwitcher() {
@@ -198,7 +217,7 @@ async function boot() {
   S.onChange(src => {
     if (src === 'remote') safeRefresh();
     if (src === 'savefail') toast('This device is out of storage space. Export a backup from More.', 5000);
-    if (src === 'conflict') toast('A newer edit from another device replaced an unsent edit made here. What you wrote is kept under More > Cloud sync.', 7000);
+    if (src === 'conflict') toast('A newer edit from another device replaced an unsent edit made here. What you wrote is kept under your profile picture > Cloud sync.', 7000);
   });
   cloud.onStatus(() => { const s = $('#topbar'); if (s) renderTop(); const sd = $('#sideSync'); if (sd) sd.innerHTML = `${syncDot()}<span>${syncLabel()}</span>`; });
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {

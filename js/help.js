@@ -2,7 +2,7 @@
 // A step with `show` gets a "Show me" button: it closes the sheet, scrolls to the control, opens any
 // fold-out it is inside, flashes it and (for inputs) focuses it.
 //   show: a data-f path ('theme'), '#id', a selector in square brackets or starting with a dot
-//         ('[data-act="addFrame"]'), or a hash route ('#/plans/programme').
+//         ('[data-act="addFrame"]'), or a hash route ('#/training/programme').
 //   tab:  match screen only. The tab the control lives on; Show me switches to it first.
 // Guides are text written here. Nothing from Joe's own data is put into them unescaped.
 import * as S from './store.js';
@@ -10,7 +10,7 @@ import * as cloud from './cloud.js';
 import { esc, sheet, closeSheet, toast, today } from './util.js';
 import { focusField } from './challenges.js';
 
-const LOOP = 'Model → Programme → Session → Match → Review → Model';
+const LOOP = 'Model → Programme → Session → Match → Analysis → Model';
 const st = (text, show, tab) => { const o = { text }; if (show) o.show = show; if (tab) o.tab = tab; return o; };
 const when = (cond, sel) => cond ? sel : undefined;
 const T = () => (S.team() || {}).id;
@@ -26,25 +26,43 @@ const fmtGuide = g => ({ loop: LOOP + '.', ...g });
 
 /* ------------------------------------------------------------------ Home */
 const home = () => {
-  const open = !S.meta().startHereDone;
   const due = T() ? S.reviewsDue(T()).length : 0;
   return {
     title: 'Home',
-    purpose: 'Home shows where you are in the loop and what needs doing next. Start at the top and work down.',
-    loop: `Home is not a step in the loop. It shows which step you are on: ${LOOP}.`,
+    purpose: 'Home shows what is next and gets you into each part of the app with one tap.',
+    loop: `Home is not a step in the loop. The three big tiles are the week: ${LOOP}.`,
     steps: [
-      st('The **ring** is the loop: Model, Plan, Coach, Review. The bright part is where you are now. Tap a word on it to go there.', '.cycle'),
-      st('If a **Review due** panel is at the top, a session or match has been played and its review is not finished. Tap **Review** (or **Finish**) first. ' + GATE, when(due, '[aria-label="Reviews due"]')),
-      st('**Start here** is the set-up list for your first week. Tap **Got it** when you have finished with it. You can bring it back from More > Start here.', when(open, '#startHere')),
-      st('**Carried forward** is the one thing you decided to change in your last review. It stays here until a session acts on it. When one does, you get a link to that session.', '[aria-label="Carried forward"]'),
-      st('**Training block** shows the block that is running, which week you are in and what that week adds. Tap the block’s name to open it. With none running, tap **Plan four to six weeks**.', '[aria-label="Training block"]'),
-      st('**Next match** shows who you play next and whether the opposition report and the plan are ready. Tap **Open match plan**. With nothing in the diary it says **New match plan**.', '[aria-label="Next match"]'),
-      st('**New session**, **Board** and **Game model** are shortcuts to the three things you open most.', '[data-act="newSession"]'),
-      st('**Coming up** lists the next sessions and matches by date. Tap one to open it.', '[aria-label="Coming up"]'),
-      st('Every screen has a **?** at the top right. Tap it for the guide to that screen.', '[aria-label="How to use this screen"]')
+      st('If an **Analysis due** panel is at the top, a session or match has been played and its analysis is not finished. Tap **Start** (or **Finish**) first. ' + GATE, when(due, '[aria-label="Analysis due"]')),
+      st('**Next match** and **Next session** take you straight to the next thing in the diary. With nothing planned, they say so and take you to where you add one.', '#nextMatch'),
+      st('**Your week** is three tiles in the order the week runs: **Training** (blue), **Match** (green) and **Analysis** (orange). Each shows where you are, for example the block and week, or how many analyses are waiting. Every screen in each area keeps its colour.', '#wTraining'),
+      st('**Your team**: **Game model** (how you play), **Squad** (your players) and **Sketch** (a blank board for ideas and team talks).', '#hModel'),
+      st('**Start here guide** (top right) is the set-up list for your first week. Your profile picture opens your **Pathway**, **Logbook**, settings and cloud sync.', phone() ? '#meBtn' : '#guideBtn'),
+      st('The bar ' + (phone() ? 'along the bottom' : 'under the top bar on other screens') + ' takes you between **Home**, **Team**, **Training**, **Match** and **Analysis** from anywhere.', phone() ? '#bottomnav' : undefined)
     ]
   };
 };
+
+const teamhome = () => ({
+  title: 'Team',
+  purpose: 'Everything about this team rather than one week: how you play, who you have, and a board to think on.',
+  loop: `The game model is where the loop starts: ${LOOP}.`,
+  steps: [
+    st('**Game model**: your identity and principles for each phase. Sessions, match plans and analysis are all tested against it.', '#tModel'),
+    st('**Squad**: your players, their positions, development goals and private player pages.', '#tSquad'),
+    st('**Sketch**: a blank board with your team on it, for ideas and team talks. Your saved shapes, phases and set pieces are listed there too.', '#tSketch')
+  ]
+});
+
+const sketch = () => ({
+  title: 'Sketch',
+  purpose: 'A blank board to think on. Move players, draw runs and passes, add frames to play a move through.',
+  loop: `Sketching sits outside the loop. Anything worth keeping can be attached to a match plan or a principle: ${LOOP}.`,
+  steps: [
+    st('Tap **New sketch**. It opens a full pitch with your team in its usual shape.', '#newSketch'),
+    st('**Recent sketches** are the ones you have made. Tap one to carry on.', when(T() && S.boards(T()).some(b => b.type === 'sketch'), '#sketches')),
+    st('**Saved boards** are the shapes, phases of play and set pieces your game model and match plans use. Tap one to open it.', when(T() && S.boards(T()).some(b => b.type !== 'sketch'), '#savedBoards'))
+  ]
+});
 
 /* ----------------------------------------------------------------- Model */
 const model = () => ({
@@ -84,18 +102,6 @@ const principle = () => ({
 });
 
 /* ------------------------------------------------------------ Board list */
-const boards = () => ({
-  title: 'Tactics board',
-  purpose: 'All the boards for this team: shapes, phases of play and set pieces. A board can have many frames, so it can show a move from start to finish.',
-  loop: `Boards support every step: they are the picture on a principle, the plan in a match, and the thing players see on their pages. ${LOOP}.`,
-  steps: [
-    st('Tap **New board**. Give it a name and choose **Shape**, **Phase of play** or **Set piece**. Pick your shape, and add an opposition shape if you want one. Set pieces start with “Show on player pages” ticked.', '[data-act="new"]'),
-    st('Tap a board to open it. Each card shows the first frame, its type, how many frames it has and when you last edited it. “On player pages” means players can see it.', '[href^="#/board/"]'),
-    st('Boards are used in three places. A **principle** can point at one as its picture. A **match plan** can attach shapes and set pieces so they print with the plan. And boards marked for players show on their player pages.')
-  ]
-});
-
-/* ----------------------------------------------------------------- Board */
 const board = () => ({
   title: 'A board',
   purpose: 'Draw a shape or a move and play it through frame by frame. Each frame is one moment; the next frame is what happens next.',
@@ -119,66 +125,68 @@ const board = () => ({
   ]
 });
 
-/* ----------------------------------------------------------------- Plans */
-const PLANS_TABS = ['sessions', 'matches', 'reviews', 'programme', 'drills'];
-const plansTab = params => PLANS_TABS.includes((params || [])[0]) ? params[0] : (S.meta().plansTab || 'sessions');
+/* ----------------------------------------------------------------- Training, Match, Analysis */
+const TRAIN_TABS = ['programme', 'sessions', 'drills'];
+const trainTab = params => TRAIN_TABS.includes((params || [])[0]) ? params[0] : (S.meta().trainTab || 'sessions');
 
-const plans = params => {
-  const tab = plansTab(params);
-  const strip = st('The tabs along the top are **Sessions**, **Matches**, **Reviews**, **Programme** and **Drills**.', '[role="tablist"]');
+const training = params => {
+  const tab = trainTab(params);
+  const strip = st('Training has three levels, one inside the other: the **Programme** holds blocks of sessions, and each **Session** is made of **Drills**. The tabs switch between them.', '#trainTabs');
   if (tab === 'sessions') return {
-    title: 'Plans: Sessions',
-    purpose: 'Every training session you have planned or done. Sessions coming up are first; sessions already done are under Done.',
-    loop: `Sessions are the middle of the loop: ${LOOP}. Each is built from the block and from your last review.`,
+    title: 'Training: Sessions',
+    purpose: 'Every training session you have planned or done, grouped by the block it falls in.',
+    loop: `Sessions are the middle of the loop: ${LOOP}. Each is built from the block and from your last analysis.`,
     steps: [
       strip,
-      st('Tap **New session**. The app picks your usual training night as the date and fills in the block’s principles. If a review is outstanding it stops you first. ' + GATE, '[data-act="newS"]'),
-      st('Tap a session to open it. The row shows the date, minutes, number of practices and the block and week it falls in. The pill on the right tells you its review state: **Today**, **Needs review**, **Review unfinished**, **Reviewed** or **Didn’t happen**.', '[href^="#/session/"]')
+      st('**Create your own** starts a blank session. The app picks your usual training night and fills in the block’s principles. ' + GATE, '#newSession'),
+      st('**Pick a template** shows whole sessions from top coaches. Choose one and **Plan a session from this**: its drills go into your drills and into the new session, ready to edit.', '#pickSession'),
+      st('**My sessions** are grouped under the block each falls in by its date. Sessions dated outside every block are under **No block**. The pill on the right shows its analysis: **Needs analysis**, **Analysis unfinished**, **Analysis done** or **Didn’t happen**.', when(T() && S.sessions(T()).length, '[href^="#/session/"]'))
     ]
   };
-  if (tab === 'matches') return {
-    title: 'Plans: Matches',
-    purpose: 'Every match plan, coming up and played. A match plan tests your game model against one opponent.',
-    loop: `Matches come after sessions: ${LOOP}. The review you write afterwards feeds the opponent file.`,
-    steps: [
-      strip,
-      st('Tap **New match plan**. If a review is outstanding the app asks for it first. ' + GATE, '[data-act="newM"]'),
-      st('Tap a match to open it. The row shows the opponent, the date and, once played, the score. The pill says whether it is waiting for a review. “Example” marks the starter plan.', '[href^="#/match/"]')
-    ]
-  };
-  if (tab === 'reviews') return {
-    title: 'Plans: Reviews',
-    purpose: 'Every review you have written. There is one for each session and match that has been played.',
-    loop: `Reviews close the loop: ${LOOP}. The “one thing to change” from the latest review is what your next session is built from.`,
-    steps: [
-      strip,
-      st('Each row is a review: the session theme or the opponent, the date, and the one thing you decided to change. **Done** means every part that feeds the next session is written. **Unfinished** means it is not, and it still counts as outstanding. Tap one to open it.', '[href^="#/review/"]'),
-      st('You start a review from the session or match itself (**Review now** on a session, **Review** on a match) or from the **Review due** panel on Home. There is no New button here on purpose. ' + GATE)
-    ]
-  };
-  if (tab === 'programme') return {
-    title: 'Plans: Programme',
-    purpose: 'Your training blocks. A block is four to six weeks on one or two principles, with something new each week. Sessions in a block’s dates belong to it automatically.',
-    loop: `Programme sits between the model and the session: ${LOOP}.`,
-    steps: [
-      strip,
-      st('Tap **New block**. It starts when your last block ends, or today. You then give it a title, choose the principles and write what each week adds.', '[data-act="newB"]'),
-      st('Blocks are listed as **Running now**, **Coming up** and **Finished**. Tap one to open it. The pill shows the week you are in.', '[href^="#/block/"]')
-    ]
-  };
-  return {
-    title: 'Plans: Drills',
-    purpose: 'Your drill library. It comes with you to every team; each drill links to principles separately for each team.',
+  if (tab === 'drills') return {
+    title: 'Training: Drills',
+    purpose: 'Your drills. They come with you to every team; each links to principles separately for each team.',
     loop: `Drills are what you build a session from: ${LOOP}.`,
     steps: [
       strip,
-      st('Type in **Search drills** to find one by name, type or objective.', '#dq'),
-      st('**Linked to this team** shows only drills that serve at least one of this team’s principles.', '[data-act="mine"]'),
-      st('Tap **New drill** to design one.', '[data-act="newD"]'),
-      st('Each card shows the diagram, the type, minutes and linked principles. The pill says **Ready** or how many must-dos are left (**to do**). Tap one to open it.', '[href^="#/drill/"]')
+      st('**Create your own**: draw the area, cones and players, write how it works and how you will coach it. It is saved as yours.', '#newDrill'),
+      st('**Pick from the library**: 36 practices from top coaches, sorted by what they train. **Add to my drills** copies one in for you to change.', '#pickDrill'),
+      st('**My drills** shows the diagram, type, minutes and linked principles. The pill says **Ready** or how many must-dos are left. Tap one to open it.', when(T() && S.drills().length, '[href^="#/drill/"]'))
+    ]
+  };
+  return {
+    title: 'Training: Programme',
+    purpose: 'Your training blocks. A block is four to six weeks on one or two principles, with something new each week. Sessions dated inside a block belong to it.',
+    loop: `Programme sits between the model and the session: ${LOOP}.`,
+    steps: [
+      strip,
+      st('Tap **New block**. It starts when your last block ends, or today. You then give it a title, choose the principles and write what each week adds.', '#newBlock'),
+      st('Blocks are listed as **Running now**, **Coming up** and **Finished**. Tap one to open it.', when(T() && S.blocks(T()).length, '[href^="#/block/"]'))
     ]
   };
 };
+
+const matches = () => ({
+  title: 'Match',
+  purpose: 'Every match, coming up and played. Each has two parts: the opposition analysis and your match day plan.',
+  loop: `Matches come after training: ${LOOP}. The analysis you write afterwards feeds the opponent file.`,
+  steps: [
+    st('Tap **New match** to add the fixture. If an analysis is outstanding the app asks for it first. ' + GATE, '#newMatch'),
+    st('Tap a match to open it. The row shows the opponent, the date and, once played, the score. The pill says whether it is waiting for its analysis.', when(T() && S.matches(T()).length, '[href^="#/match/"]')),
+    st('Inside a match there are two parts. **Opposition analysis** is what you know about them. **Match day plan** is yours: how you will play, team selection, boards and set pieces, and the day itself. Share it with staff from the plan.')
+  ]
+});
+
+const analysis = () => ({
+  title: 'Analysis',
+  purpose: 'Your analysis of every session and match: what worked, what didn’t, and the one thing to change.',
+  loop: `Analysis closes the loop: ${LOOP}. The one thing to change is what your next session is built from.`,
+  steps: [
+    st('**To write up** lists sessions and matches that have been played without an analysis. Tap **Start**. ' + GATE, when(T() && S.reviewsDue(T()).length, '#anDue')),
+    st('**Done** lists every analysis: the session or opponent, the date and the one thing you decided to change. **Unfinished** ones still count as outstanding. Tap one to open it.', when(T() && S.reviews(T()).length, '#anList')),
+    st('You can also start an analysis from the session or match itself, or from the **Analysis due** panel on Home. There is no New button here on purpose: every analysis belongs to something you did.')
+  ]
+});
 
 /* ----------------------------------------------------------------- Block */
 const block = params => {
@@ -232,7 +240,7 @@ const session = params => {
   };
 };
 // A block link when the date is in a block; otherwise the link to plan one.
-const blockSel = (t, s) => t && S.blockFor(t, s.date) ? '[href^="#/block/"]' : '[href="#/plans/programme"]';
+const blockSel = (t, s) => t && S.blockFor(t, s.date) ? '[href^="#/block/"]' : '[href="#/training/programme"]';
 
 /* ----------------------------------------------------------------- Drill */
 const drill = () => ({
@@ -275,9 +283,9 @@ const match = params => {
     purpose: 'Test your game model against one opponent: how they play, what wins you the game, your plan B, who is in the squad and what each player has to do.',
     loop: `Match comes after the sessions: ${LOOP}. The review you write afterwards feeds the opponent file and the model.`,
     steps: [
-      st('**Opponent**, **Date**, **Kick-off**, **Venue** and **Competition** are at the top. Type the opponent’s name and the app offers names you have played before. Playing the same team again shows their opponent file on the Them tab.', 'opponent'),
-      st('The tabs are **Them**, **Plan**, **Squad**, **Boards** and **Day**. Tap one to switch. Your changes are saved as you type.', '[role="tablist"]'),
-      st('**Opponent file** (Them tab) appears when you have played this team before. It shows last time’s keys, what they did that you did not expect, and what did not work. If this plan is empty, **Start from last time’s analysis** copies it for you to update.', when(prev, '#oppFile'), 'them'),
+      st('**Opponent**, **Date**, **Kick-off**, **Venue** and **Competition** are at the top. Type the opponent’s name and the app offers names you have played before. Playing the same team again shows their opponent file on the Opposition analysis.', 'opponent'),
+      st('A match has two parts: **Opposition analysis** (them) and **Match day plan**. The match day plan has four tabs: **How we play**, **Team selection**, **Boards and set pieces** and **On the day**. Your changes are saved as you type.', '#matchPart'),
+      st('**Opponent file** (Opposition analysis) appears when you have played this team before. It shows last time’s keys, what they did that you did not expect, and what did not work. If this plan is empty, **Start from last time’s analysis** copies it for you to update.', when(prev, '#oppFile'), 'them'),
       st('**How they play**: the tags (shape, how they build, how they press, their transitions, in the air, set-piece threat). They drive the questions in the challenge and the suggested principles under test. Pick **Not known** if you do not know.', 'tags.press', 'them'),
       st('**Where this comes from**: Hudl, watched live, league table. It tells you how far to trust the report.', 'src', 'them'),
       st('**In possession**, **Out of possession**, **When they win it**, **When they lose it**, **Set pieces** and **Key individuals**: write what you saw.', 'opp.ip', 'them'),
@@ -292,10 +300,10 @@ const match = params => {
       st('**Squad**: tap the players in the squad (**All** and **None** help). Add selection notes, such as the starting XI.', '#squadChips', 'squad'),
       st('**Individual instructions**: one box per squad player. Each player sees only her own, on her player page. Write her job against this opponent.', when(hasSquad, '#instructions'), 'squad'),
       st('**Boards**: **Attach a board** adds a shape or set piece you have drawn, or **New board for this match** makes one. Attached boards print with the plan and, if marked for players, appear on their pages.', '#boards', 'boards'),
-      st('**Team talk** (Day tab): three things, in their language.', 'plan.talk', 'day'),
+      st('**Team talk** (On the day): three things, in their language.', 'plan.talk', 'day'),
       st('**Print match plan** and **Print player cards** (one instruction card per player) give you paper for the day. **Share with staff** makes a private link and PIN.', '[data-act="print"]', 'day'),
       st('**Update player pages** sends the latest to every player who has a link: her own instruction, the keys, and boards marked for players. It needs cloud sync, and links are made in Squad.', '[data-act="players"]', 'day'),
-      st('**Result** (Day tab) appears once the match date has come. Put the score in so the opponent file keeps it.', when(played, 'result.us'), 'day'),
+      st('**Result** (On the day) appears once the match date has come. Put the score in so the opponent file keeps it.', when(played, 'result.us'), 'day'),
       chalStep('What wins this game?'),
       st('Once the date arrives a bar at the top offers **Review**. Do it on Monday at the latest. ' + GATE, when(played && !m.cancelled, '#reviewBar')),
       st('**Didn’t happen** is for a postponed or cancelled match. It clears the review you would otherwise owe.', when(!m.cancelled && m.date, '[data-act="cancel"]'))
@@ -353,7 +361,7 @@ const squad = () => ({
     st('**Add player** adds one: number, name and position.', '[data-act="add"]'),
     st('Tap a player to open her page: goals, notes and her link. The green **Link** tag means she has a player page.', '[href^="#/player/"]'),
     st('**Player pages** (the box on the right, below the list on a phone): tick what goes on every page: agreed principles, the keys to winning for the next match, and boards marked “show on player pages”. Her number, goals and her own match instruction are always on. Your private notes never are.', '[data-o="principles"]'),
-    st('**Update all … player pages** sends the latest to every player who has a link. You need to be signed in (More > Cloud sync).', '[data-act="pushAll"]'),
+    st('**Update all … player pages** sends the latest to every player who has a link. You need to be signed in (your profile picture > Cloud sync).', '[data-act="pushAll"]'),
     st('If any players are under 18, check your club’s safeguarding policy before sending links. For example, send them through a parent.')
   ]
 });
@@ -460,7 +468,7 @@ const more = () => ({
     st('**Coaching logbook** records CPD and coaching hours.', '.list [href="#/logbook"]'),
     st('**Teams** lists every team you coach.', '.list [href="#/teams"]'),
     st('**Cloud sync and backup** shows whether you are synced and is where you download a backup.', '.list [href="#/cloud"]'),
-    st('**Start here** brings back the first-run card on Home, in case you want the set-up list again.', '[data-act="startHere"]')
+    st('**Start here** opens the set-up list again. It is also the **Start here guide** button on Home.', '[data-act="startHere"]')
   ]
 });
 
@@ -485,7 +493,7 @@ const idea = params => ({
     st('**Where it comes from** names the coach and links to their original session. The diagram is our layout.', '#ideaSrc')
   ]
 });
-const GUIDES = { ideas, idea, home, model, principle, boards, board, plans, drills: () => plans(['drills']), block, drill, session, match, review, squad, player, pathway, logbook, teams, team, cloud: cloudGuide, more };
+const GUIDES = { ideas, idea, home, teamhome, sketch, training, matches, analysis, model, principle, board, block, drill, session, match, review, squad, player, pathway, logbook, teams, team, cloud: cloudGuide, more };
 
 export function helpFor(routeName, params) {
   const g = GUIDES[routeName]; if (!g) return null;

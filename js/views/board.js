@@ -7,6 +7,7 @@ import { printBoard } from '../print.js';
 import { shareSheet } from './sharing.js';
 
 export const BOARD_TYPES = { shape: 'Shape', phase: 'Phase of play', setpiece: 'Set piece' };
+export const BOARD_LABEL = t => ({ ...BOARD_TYPES, sketch: 'Sketch' })[t] || 'Board';
 const SIMILAR = { GK: ['GK'], RB: ['RB', 'FB', 'RWB'], LB: ['LB', 'FB', 'LWB'], CB: ['CB'], '6': ['6', 'DM', 'CM'], '8': ['8', 'CM', '10'], RW: ['RW', 'W', 'RM'], LW: ['LW', 'W', 'LM'], CF: ['CF', 'ST', '9'], ST: ['ST', 'CF'], CM: ['CM', '8', '6'], DM: ['DM', '6', 'CM'], RM: ['RM', 'RW', 'W'], LM: ['LM', 'LW', 'W'], '10': ['10', '8', 'CM'], RAM: ['RW', '10', 'W'], LAM: ['LW', '10', 'W'], RWB: ['RB', 'RWB', 'FB'], LWB: ['LB', 'LWB', 'FB'] };
 
 // Best guess at an XI for a formation from player positions. Joe can swap anyone.
@@ -57,7 +58,7 @@ export function boardList(el, params, ctx) {
   const bs = S.boards(T); const pm = S.playerMap(T);
   el.innerHTML = `<div class="stack"><div class="row between"><div><div class="h1">Tactics board</div><div class="small muted" style="margin-top:4px">Shapes, phases and set pieces for ${esc(S.team().name)}</div></div><button class="btn pri" data-act="new">${icon('plus')}New board</button></div>
     ${bs.length ? `<div class="grid3">${bs.map(b => `<a class="card link stack tight" href="#/board/${b.id}" style="text-decoration:none;display:flex">${frameSvg(b.frames[0] || { items: [], arrows: [] }, pm, { orient: 'h', style: 'width:100%;height:auto;border-radius:12px' })}
-      <div class="row between nowrap"><span class="h3">${esc(b.name)}</span><span class="pill ${b.type === 'setpiece' ? 'lamp' : 'grey'}">${BOARD_TYPES[b.type] || 'Board'}</span></div><span class="tiny muted">${b.frames.length} frame${b.frames.length === 1 ? '' : 's'} · edited ${fmtAgo(b.upd)}${b.sharePlayers ? ' · on player pages' : ''}</span></a>`).join('')}</div>`
+      <div class="row between nowrap"><span class="h3">${esc(b.name)}</span><span class="pill ${b.type === 'setpiece' ? 'lamp' : 'grey'}">${BOARD_LABEL(b.type)}</span></div><span class="tiny muted">${b.frames.length} frame${b.frames.length === 1 ? '' : 's'} · edited ${fmtAgo(b.upd)}${b.sharePlayers ? ' · on player pages' : ''}</span></a>`).join('')}</div>`
     : `<div class="empty">No boards yet. Start with your base shape, then add frames for build-up, pressing and set pieces.</div>`}</div>`;
   actions(el, { new: () => newBoardSheet(T) });
 }
@@ -75,7 +76,7 @@ const toolIcon = (k) => {
 
 export default function boardView(el, [id], ctx) {
   const b = S.get(id);
-  if (!b) { ctx.setTop({ back: '#/boards', title: 'Board' }); el.innerHTML = '<div class="empty">This board has been deleted.</div>'; return; }
+  if (!b) { ctx.setTop({ back: '#/sketch', title: 'Board' }); el.innerHTML = '<div class="empty">This board has been deleted.</div>'; return; }
   const T = b.team;
   let fi = Math.min(+(S.meta()['frame:' + id] || 0), b.frames.length - 1); if (fi < 0) fi = 0;
   if (!b.frames.length) b.frames.push(newBoardFrame(T, S.get(T).formation));
@@ -85,7 +86,7 @@ export default function boardView(el, [id], ctx) {
   const O = () => orient === 'auto' ? autoOrient() : orient;
   let playing = false; const undo = []; let snap = JSON.stringify(fr());
   const save = debounce(() => S.put(b), 300);
-  ctx.setTop({ back: '#/boards', title: b.name, sub: (BOARD_TYPES[b.type] || '') + ' · ' + b.frames.length + ' frame' + (b.frames.length === 1 ? '' : 's') });
+  ctx.setTop({ back: '#/sketch', title: b.name, sub: BOARD_LABEL(b.type) + ' · ' + b.frames.length + ' frame' + (b.frames.length === 1 ? '' : 's') });
 
   el.innerHTML = `<div class="stack">
     <div class="toolrail" role="toolbar" aria-label="Board tools">${TOOLS.map(([k, l]) => `<button class="tool" data-tool="${k}">${toolIcon(k)}<span>${l}</span></button>`).join('')}</div>
@@ -261,7 +262,7 @@ export default function boardView(el, [id], ctx) {
     print: () => printBoard(b),
     share: () => shareSheet('board', b),
     dupBoard: () => { const c = clone(b); c.id = uid(); c.name = b.name + ' (copy)'; delete c.share; S.put(c); location.hash = '#/board/' + c.id; },
-    delBoard: async () => { if (await confirmSheet('Delete this board?', 'Match plans that use it will lose it.')) { S.del(b.id); location.hash = '#/boards'; } }
+    delBoard: async () => { if (await confirmSheet('Delete this board?', 'Match plans that use it will lose it.')) { S.del(b.id); location.hash = '#/sketch'; } }
   });
 
   function frameMenu() {

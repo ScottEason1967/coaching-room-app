@@ -29,9 +29,9 @@ export function newSession() {
 
 export default function sessionView(el, [id], ctx) {
   const s = S.get(id);
-  if (!s) { ctx.setTop({ back: '#/plans', title: 'Session' }); el.innerHTML = '<div class="empty">This session has been deleted.</div>'; return; }
+  if (!s) { ctx.setTop({ back: '#/training/sessions', title: 'Session' }); el.innerHTML = '<div class="empty">This session has been deleted.</div>'; return; }
   const T = s.team; s.blocks ||= []; s.principleIds ||= []; s.focusIds ||= [];
-  ctx.setTop({ back: '#/plans', title: s.theme || 'Session plan', sub: fmtD(s.date) });
+  ctx.setTop({ back: '#/training/sessions', title: s.theme || 'Session plan', sub: fmtD(s.date) });
   const save = debounce(() => S.put(s), 400);
   const ps = S.principles(T); const sel = new Set(s.principleIds);
   const lc = S.lastChange(T); const nm = S.nextMatch(T);
@@ -55,7 +55,7 @@ export default function sessionView(el, [id], ctx) {
         <label class="field"><span>Venue</span><input type="text" data-f="venue"></label>
         <label class="field"><span>Length (min)</span><input type="number" inputmode="numeric" data-f="length"></label>
       </div>
-      ${blk ? `<div class="small" style="color:var(--text2)"><a href="#/block/${blk.id}">Block: ${esc(blk.title || 'untitled')}</a> · week ${wk} of ${blk.weeks}${(blk.weeksPlan || [])[wk - 1] ? ` · <b>this week:</b> ${esc(blk.weeksPlan[wk - 1])}` : ''}</div>` : `<div class="tiny muted">Not in a training block. <a href="#/plans/programme">Plan one</a> so sessions add up.</div>`}
+      ${blk ? `<div class="small" style="color:var(--text2)"><a href="#/block/${blk.id}">Block: ${esc(blk.title || 'untitled')}</a> · week ${wk} of ${blk.weeks}${(blk.weeksPlan || [])[wk - 1] ? ` · <b>this week:</b> ${esc(blk.weeksPlan[wk - 1])}` : ''}</div>` : `<div class="tiny muted">Not in a training block. <a href="#/training/programme">Plan one</a> so sessions add up.</div>`}
       <div class="field" id="sessionPrinciples"><span>Principles this session is about</span>
         ${ps.length ? PHASE_KEYS.filter(k => ps.some(p => p.phase === k)).map(k => `<div class="tiny muted" style="margin-top:4px">${PHASES[k].lab}</div><div class="chips">${ps.filter(p => p.phase === k).map(p => `<button class="chip ${sel.has(p.id) ? 'on' : ''}" data-act="pr" data-arg="${p.id}">${esc(p.title || 'Untitled')}</button>`).join('')}</div>`).join('') : '<div class="small" style="color:var(--lamp)">No principles yet. <a href="#/model">Write your game model</a> first: sessions are built from it.</div>'}
       </div>
@@ -106,7 +106,7 @@ export default function sessionView(el, [id], ctx) {
   chal();
   bindFields(el, s, (p) => {
     save(); chal();
-    if (p === 'theme') ctx.setTop({ back: '#/plans', title: s.theme || 'Session plan', sub: fmtD(s.date) });
+    if (p === 'theme') ctx.setTop({ back: '#/training/sessions', title: s.theme || 'Session plan', sub: fmtD(s.date) });
     if (p === 'addresses') { s.addressesReview = s.addresses && lc ? lc.id : null; save.flush(); ctx.refresh(); }
     if (p === 'date') { save.flush(); ctx.refresh(); }
     if (/^blocks\.\d+\.(minutes|talk)$/.test(p)) { const n = sessionStats(s); const pill = el.querySelector("#rollPill"); if (pill) pill.textContent = `${n.total} min · ${n.rolling}% ball rolling`; }
@@ -125,7 +125,7 @@ export default function sessionView(el, [id], ctx) {
     uncancel: () => { s.cancelled = false; S.put(s); ctx.refresh(); },
     print: () => { save.flush(); printSession(s); },
     share: () => { save.flush(); shareSheet('session', s); },
-    del: async () => { if (await confirmSheet('Delete this session plan?', s.reviewId ? 'Its review will be kept.' : '')) { S.del(s.id); location.hash = '#/plans'; } }
+    del: async () => { if (await confirmSheet('Delete this session plan?', s.reviewId ? 'Its review will be kept.' : '')) { S.del(s.id); location.hash = '#/training/sessions'; } }
   });
   return () => { save.flush(); refreshIfShared('session', s); };
 }

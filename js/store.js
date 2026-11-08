@@ -125,6 +125,13 @@ export function tidySeed() {
   }
   const m = db.recs['mt-cls']; if (m && m.src === OLD_SRC) { m.src = ''; fix.push(m); }
   fix.forEach(r => put(r, { quiet: true }));
+  // The example rondo and example match were planted in Joe's own lists at set-up. The practice library
+  // replaces them, so they go, unless he has turned them into something of his own.
+  if (!db.meta.examplesGone) {
+  db.meta.examplesGone = true;
+  const rd = db.recs['dr-rondo']; if (rd && !rd.del && rd.name === 'Example: 5v2 rondo') { del('dr-rondo'); fix.push(rd); }
+  const ex = db.recs['mt-cls']; if (ex && !ex.del && ex.example && !ex.date && !ex.reviewId) { del('mt-cls'); fix.push(ex); }
+  }
   return fix.length;
 }
 
@@ -259,30 +266,5 @@ function seed() {
     { id: 'f3', name: 'Mid block (starter)', phase: 'op', notes: 'STARTER FRAME. A 4-5-1 style block to show the idea. Set the real shape and pressing triggers.', items: mk(block).concat([{ id: 'b', kind: 'ball', x: 34, y: 30 }]), arrows: [] }
   ] });
 
-  const disc = (x, y) => ({ id: uid(), kind: 'disc', color: '#F2B705', x, y });
-  seedPut({ id: 'dr-rondo', kind: 'drill', name: 'Example: 5v2 rondo', type: 'Warm-up', area: 'custom', preset: 'custom', w: 14, h: 14,
-    items: [disc(1, 1), disc(13, 1), disc(1, 13), disc(13, 13),
-      { id: uid(), kind: 'att', x: 7, y: 1.6 }, { id: uid(), kind: 'att', x: 12.4, y: 7 }, { id: uid(), kind: 'att', x: 7, y: 12.4 }, { id: uid(), kind: 'att', x: 1.6, y: 7 }, { id: uid(), kind: 'att', x: 9.5, y: 9.5 },
-      { id: uid(), kind: 'def', x: 6, y: 6 }, { id: uid(), kind: 'def', x: 8, y: 7.6 }, { id: uid(), kind: 'ball', x: 7.8, y: 2.6 }],
-    arrows: [], objective: 'EXAMPLE (edit or delete). Players keep the ball under pressure by giving angles of support.',
-    links: { [T]: ['pr-2'] }, corners: { tech: 'Receiving on the half-turn; weight of pass', psych: 'Composure under pressure', phys: '', soc: '' },
-    org: '14 x 14 m box. 5 attackers (blue) v 2 defenders (red). Spare balls at each corner.',
-    how: 'Blues keep the ball. A defender who wins it swaps with the player who lost it.',
-    points: 'Open body before receiving. Second and third player give angles. Play away from pressure.',
-    prog: 'One touch. Smaller box. Add a third defender.', reg: 'Bigger box. Unlimited touches.',
-    interventions: ['qa', 'obs'], players: 7, minutes: 12 });
-
-  seedPut({ id: 'mt-cls', kind: 'match', team: T, opponent: 'Chester-le-Street', example: true, date: '', ko: '', venue: '', comp: '',
-    src: '',
-    tags: { formation: '4-3-3', build: 'long/direct', press: 'individual/unorganised', aerial: 'weak', transition: 'slow/blunt', setpiece: 'average' },
-    opp: { ip: 'Little interest in playing out. GK has a big kick. Throw-ins mostly long and down the line. Want fast breaks but nobody high enough and not enough quality. Midfield barely touch it: go long or lose it.',
-      op: 'Two modes: sit in a 4-5-1 with one screening, or press as individuals with no organisation. Don’t engage once the ball is in their defensive third. CBs slow and dive in; poor in 1v1s. Full-backs weak.',
-      ta: 'Midfield slow, second to everything.', td: 'Want fast breaks but lack numbers and quality.',
-      sp: 'Corners: defenders on both posts, hybrid marking (3 zonal, rest man). Wide free kicks barely organised. GK poor with anything above head height. Struggle to defend crosses: short clearances or chances.',
-      people: 'LW quick but just runs at the ball. RW works hard and tracks back. ST can be smart.' },
-    plan: { keys: 'Attack their weak full-back with our strongest winger at every chance.\nBack-post runs on every cross: they defend crosses badly.\nInswinging set pieces on top of their keeper.',
-      threat: 'Physical, reckless early fouls; long throws. Answer: keep calm, move the ball quickly, high rest defence.',
-      ip: 'Full-back could roll inside in build-up; more bodies centrally for second balls; CBs wide or into the 6 to bypass the press; fast switches of play.',
-      op: '', sp: 'Captain delivers inswingers onto the keeper.', selection: '', talk: '', principleNotes: {} },
-    instructions: {}, boardIds: ['bd-shape'], squadIds: [], result: { us: '', them: '' } });
+  // No pretend drills or matches: the practice library and the starter principles are the examples.
 }
