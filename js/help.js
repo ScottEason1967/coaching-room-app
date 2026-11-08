@@ -110,6 +110,7 @@ const board = () => ({
     st('**Play** runs the frames through one after another so you can see the move. You need at least two frames.', '[data-act="play"]'),
     st('**Frame** opens a menu: duplicate this frame, move it earlier or later, clear its arrows, or delete it.', '[data-act="frameMenu"]'),
     st('**Zoom** magnifies the pitch (arrow buttons appear so you can move around it). The button that says **Upright** or **Sideways** turns the pitch the other way. **Undo** takes back your last change.', '[data-act="zoom"]'),
+    st('**Opposition** (the dropdown under the buttons): pick a shape and all eleven opponents go on this frame, with their positions on them. Pick **None** to take them off. It works on any board, new or old.', '#oppSel'),
     st('**Shapes**: one tap puts all eleven opponents on in a shape (4-4-2, 4-3-3, 5-3-2 and others), with their positions shown on them if you want. **Take the opponents off** clears them. Underneath, one tap puts our team into a formation, keeping the same players on where it can. Arrows and the ball stay where they are.', '[data-act="shape"]'),
     st('**Tap a player** to open the inspector. You can **Swap for** another player from the squad (it changes this frame and every later one), or **Take off the pitch**. Opponents and labels have a text box for their number or words.', '#insp'),
     st('The **bench chips** under the inspector (“Not on the pitch · tap to bring on”) are squad players who are not in this frame. Tap one to put her on.', '#insp'),

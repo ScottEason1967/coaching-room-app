@@ -21,10 +21,18 @@ export function autoXI(T, formation, prefer) {
   return f.map(([role, x, y], i) => { const p = pick(role); if (p) used.add(p.id); return { id: 'u' + i, kind: 'us', pid: p ? p.id : null, role, x, y }; });
 }
 
+// Eleven opponents in a shape, attacking down the screen. Positions (CB, ST…) on them unless asked for numbers.
+const OPP_NAME = f => f.replace(' (6 + two 8s)', '').replace(' (block)', ' low block');
+export function oppItems(shape, positions = true) {
+  const c = OPP_SHAPES[shape] || FORMATIONS[shape] || OPP_SHAPES[OPP_NAME(shape)] || [];
+  return c.map((p, i) => ({ id: 'o' + i, kind: 'opp', label: positions ? p[0] : String(i + 1), x: 68 - p[1], y: 105 - p[2] }));
+}
+const oppOptions = sel => Object.keys(OPP_SHAPES).map(f => `<option value="${esc(f)}" ${f === sel ? 'selected' : ''}>${esc(f)}</option>`).join('');
+
 export function newBoardFrame(T, formation, withOpp) {
   const items = autoXI(T, formation).concat([{ id: 'b', kind: 'ball', x: 34, y: 96 }]);
-  if (withOpp) (FORMATIONS[withOpp] || []).forEach((c, i) => items.push({ id: 'o' + i, kind: 'opp', label: String(i + 1), x: 68 - c[1], y: 105 - c[2] }));
-  return { id: uid(), name: 'Frame 1', phase: '', notes: '', items, arrows: [] };
+  if (withOpp) items.push(...oppItems(withOpp));
+  return { id: uid(), name: 'Frame 1', phase: '', notes: '', items, arrows: [], oppShape: withOpp || '' };
 }
 
 export function newBoardSheet(T, onMade) {
@@ -33,7 +41,7 @@ export function newBoardSheet(T, onMade) {
     <label class="field"><span>Name</span><input type="text" id="nbN" placeholder="e.g. Corner for: inswinger" autofocus></label>
     <div class="field"><span>Type</span><div class="seg" id="nbT">${Object.entries(BOARD_TYPES).map(([k, l], i) => `<button data-v="${k}" class="${i ? '' : 'on'}">${l}</button>`).join('')}</div></div>
     <label class="field"><span>Our shape</span><select id="nbF">${Object.keys(FORMATIONS).map(f => `<option ${f === t.formation ? 'selected' : ''}>${esc(f)}</option>`).join('')}</select></label>
-    <label class="field"><span>Opposition</span><select id="nbO"><option value="">None for now</option>${Object.keys(FORMATIONS).map(f => `<option>${esc(f)}</option>`).join('')}</select></label>
+    <label class="field"><span>Opposition</span><select id="nbO"><option value="">None for now</option>${oppOptions('')}</select></label>
     <div class="row" style="justify-content:flex-end"><button class="btn" id="nbC">Cancel</button><button class="btn pri" id="nbM">Create</button></div></div>`);
   let type = 'shape';
   el.querySelectorAll('#nbT button').forEach(b => b.onclick = () => { type = b.dataset.v; el.querySelectorAll('#nbT button').forEach(x => x.classList.toggle('on', x === b)); });
@@ -83,6 +91,8 @@ export default function boardView(el, [id], ctx) {
     <div class="toolrail" role="toolbar" aria-label="Board tools">${TOOLS.map(([k, l]) => `<button class="tool" data-tool="${k}">${toolIcon(k)}<span>${l}</span></button>`).join('')}</div>
     <div class="split wide-right" style="align-items:start">
       <div class="stack tight">
+        <label class="row nowrap" style="gap:10px;align-items:center" id="oppRow"><span class="small" style="white-space:nowrap;font-weight:600">Opposition</span>
+          <select id="oppSel" style="flex:1;min-width:0"></select></label>
         <div class="pitchwrap" style="display:flex;justify-content:center;background:transparent"><svg class="pitch" id="pitch" role="img" aria-label="Tactics board"></svg></div>
         <div class="row" style="gap:8px">
           <button class="btn sm" data-act="undo" id="undoB" disabled>${icon('rotate', 'style="transform:scaleX(-1)"')}Undo</button>
@@ -148,7 +158,23 @@ export default function boardView(el, [id], ctx) {
     el.querySelector('#frames').innerHTML = b.frames.map((f, i) => `<button class="frame ${i === fi ? 'on' : ''}" data-f="${i}">${frameSvg(f, pm, { orient: 'h' })}<span>${i + 1}. ${esc(f.name || 'Frame')}</span></button>`).join('')
       + `<button class="frame" data-act="addFrame" style="align-items:center;justify-content:center;min-height:120px">${icon('plus', 'style="width:22px;height:22px"')}<span>Next frame</span></button>`;
     el.querySelectorAll('[data-f]').forEach(x => x.onclick = () => selectFrame(+x.dataset.f));
+    oppDropdown();
   }
+  // Opposition dropdown on the board: pick a shape and all eleven go on this frame; pick None to take them off.
+  function oppDropdown() {
+    const sel = el.querySelector('#oppSel'); if (!sel) return;
+    const f = fr(), on = f.items.some(i => i.kind === 'opp');
+    const cur = on ? (f.oppShape && OPP_SHAPES[f.oppShape] ? f.oppShape : '_custom') : '';
+    sel.innerHTML = `<option value="">None</option>${cur === '_custom' ? '<option value="_custom" selected>On the board (placed by hand)</option>' : ''}${oppOptions(cur)}`;
+    sel.value = cur;
+    sel.onchange = () => {
+      const v = sel.value, f = fr(); if (v === '_custom') return;
+      f.items = f.items.filter(i => i.kind !== 'opp').concat(v ? oppItems(v) : []);
+      f.oppShape = v; cv.o.changed(); cv.render(); oppDropdown();
+      toast(v ? 'Opponents in a ' + v : 'Opponents taken off');
+    };
+  }
+
   function frameFields() {
     const f = fr(); const n = el.querySelector('#fN'), p = el.querySelector('#fP'), t = el.querySelector('#fT');
     n.value = f.name || ''; p.value = f.phase || ''; t.value = f.notes || '';
@@ -275,12 +301,11 @@ export default function boardView(el, [id], ctx) {
       f.items = f.items.filter(i => i.kind !== 'us').concat(xi); cv.o.changed(); cv.render(); closeSheet(); renderInsp();
     });
     s.querySelectorAll('[data-opp]').forEach(btn => btn.onclick = () => {
-      const pos = s.querySelector('#sOpos').checked;
       const f = fr();
-      f.items = f.items.filter(i => i.kind !== 'opp').concat((OPP_SHAPES[btn.dataset.opp] || []).map((c, i) => ({ id: 'o' + i, kind: 'opp', label: pos ? c[0] : String(i + 1), x: 68 - c[1], y: 105 - c[2] })));
-      cv.o.changed(); cv.render(); closeSheet(); toast('Opponents in a ' + btn.dataset.opp);
+      f.items = f.items.filter(i => i.kind !== 'opp').concat(oppItems(btn.dataset.opp, s.querySelector('#sOpos').checked));
+      f.oppShape = btn.dataset.opp; cv.o.changed(); cv.render(); closeSheet(); oppDropdown(); toast('Opponents in a ' + btn.dataset.opp);
     });
-    s.querySelector('#sOclr')?.addEventListener('click', () => { const f = fr(); f.items = f.items.filter(i => i.kind !== 'opp'); cv.o.changed(); cv.render(); closeSheet(); });
+    s.querySelector('#sOclr')?.addEventListener('click', () => { const f = fr(); f.items = f.items.filter(i => i.kind !== 'opp'); f.oppShape = ''; cv.o.changed(); cv.render(); closeSheet(); oppDropdown(); });
     s.querySelector('#sX').onclick = closeSheet;
   }
 
