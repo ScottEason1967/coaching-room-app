@@ -5,7 +5,10 @@ import { esc, icon, uid, clone, actions, sheet, closeSheet, confirmSheet, toast,
 import { Canvas, FORMATIONS, OPP_SHAPES, BOARD_SC, boardItem, pitchFull, frameSvg, boardViewBox, ARROWS, svgToPng } from '../pitch.js';
 import { printBoard } from '../print.js';
 import { shareSheet } from './sharing.js';
+import { saveBoardSketch } from './sketch.js';
 
+// On a phone the pitch takes every touch, so it is kept short enough to leave room to scroll.
+const PHONE = () => matchMedia('(max-width:899px)').matches;
 export const BOARD_TYPES = { shape: 'Shape', phase: 'Phase of play', setpiece: 'Set piece' };
 export const BOARD_LABEL = t => ({ ...BOARD_TYPES, sketch: 'Sketch' })[t] || 'Board';
 const SIMILAR = { GK: ['GK'], RB: ['RB', 'FB', 'RWB'], LB: ['LB', 'FB', 'LWB'], CB: ['CB'], '6': ['6', 'DM', 'CM'], '8': ['8', 'CM', '10'], RW: ['RW', 'W', 'RM'], LW: ['LW', 'W', 'LM'], CF: ['CF', 'ST', '9'], ST: ['ST', 'CF'], CM: ['CM', '8', '6'], DM: ['DM', '6', 'CM'], RM: ['RM', 'RW', 'W'], LM: ['LM', 'LW', 'W'], '10': ['10', '8', 'CM'], RAM: ['RW', '10', 'W'], LAM: ['LW', '10', 'W'], RWB: ['RB', 'RWB', 'FB'], LWB: ['LB', 'LWB', 'FB'] };
@@ -88,7 +91,8 @@ export default function boardView(el, [id], ctx) {
   const save = debounce(() => S.put(b), 300);
   ctx.setTop({ back: '#/sketch', title: b.name, sub: BOARD_LABEL(b.type) + ' · ' + b.frames.length + ' frame' + (b.frames.length === 1 ? '' : 's') });
 
-  el.innerHTML = `<div class="stack">
+  const sketchBar = b.type === 'sketch' ? `<div class="card row nowrap" id="sketchBar" style="gap:10px;flex-wrap:wrap;border-color:var(--accent-line)"><span class="grow small" style="min-width:200px">A sketch: play about freely. When it’s worth keeping, <b>Save to</b> a set piece, a principle, a match plan or a drill.</span><button class="btn sm" data-act="delSketch">Delete</button><button class="btn sm pri" data-act="saveTo" id="saveToBtn">Save to…</button></div>` : '';
+  el.innerHTML = `<div class="stack">${sketchBar}
     <div class="toolrail" role="toolbar" aria-label="Board tools">${TOOLS.map(([k, l]) => `<button class="tool" data-tool="${k}">${toolIcon(k)}<span>${l}</span></button>`).join('')}</div>
     <div class="split wide-right" style="align-items:start">
       <div class="stack tight">
@@ -131,7 +135,7 @@ export default function boardView(el, [id], ctx) {
   const sizePitch = () => {
     const h = O() === 'h';
     svg.style.aspectRatio = h ? '113/74' : '74/113';
-    svg.style.width = `min(100%, calc((100dvh - 200px) * ${h ? '113/74' : '74/113'}))`;
+    svg.style.width = `min(100%, calc((100dvh - ${PHONE() ? 430 : 200}px) * ${h ? '113/74' : '74/113'}))`;
     el.querySelector('#oLab').textContent = h ? 'Upright' : 'Sideways';
   };
   let pm = S.playerMap(T);
@@ -247,6 +251,8 @@ export default function boardView(el, [id], ctx) {
   }
 
   actions(el, {
+    saveTo: () => { save.flush(); saveBoardSketch(b, fi); },
+    delSketch: async () => { if (await confirmSheet('Delete this sketch?', '')) { S.del(b.id); location.hash = '#/sketch'; } },
     undo: () => { if (!undo.length) return; const prev = JSON.parse(undo.pop()); const f = fr(); f.items = prev.items; f.arrows = prev.arrows; snap = JSON.stringify(f); cv.sel = null; save(); cv.render(); renderFrames(); renderInsp(); el.querySelector('#undoB').disabled = !undo.length; },
     play,
     orient: () => { orient = O() === 'h' ? 'v' : 'h'; S.setMeta('boardOrient', orient); sizePitch(); cv.render(); },

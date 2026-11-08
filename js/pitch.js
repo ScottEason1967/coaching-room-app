@@ -191,7 +191,7 @@ export class Canvas {
     const m = over || this.m; const sc = this.o.scale();
     const vb = this.viewBoxNow(); this.svg.setAttribute('viewBox', vb);
     // A finger needs about 44 px. Hit circles are at least 22 px in radius on screen whatever the drawing scale.
-    const pxPer = (this.svg.getBoundingClientRect().width || 0) / (+vb.split(' ')[2] || 1); const minR = pxPer ? 22 / pxPer : 0; this.minR = minR;
+    const rc = this.svg.getBoundingClientRect(); const vv = vb.split(' '); const pxPer = Math.min((rc.width || 0) / (+vv[2] || 1), (rc.height || 1e9) / (+vv[3] || 1)); const minR = pxPer ? 22 / pxPer : 0; this.minR = minR;
     const rot = this.o.orient && this.o.orient() === 'h' ? ROT_H : '';
     let h = arrowDefs(this.pf) + `<g id="cg" transform="${rot}"><g>${this.o.bg()}</g><g>`;
     (m.arrows || []).forEach(a => h += arrowSvg(a, sc, this.sel === a.id, this.pf));

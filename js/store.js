@@ -186,7 +186,8 @@ export const playerMap = t => Object.fromEntries(players(t).map(p => [p.id, { nu
 export const principles = t => all('principle', t).sort((a, b) => PHASE_KEYS.indexOf(a.phase) - PHASE_KEYS.indexOf(b.phase) || (a.order || 0) - (b.order || 0));
 export const boards = t => all('board', t).sort((a, b) => (b.upd || '').localeCompare(a.upd || ''));
 // Drafts are library copies being edited that have not been saved as Joe's own yet: kept out of every list.
-export const drills = () => all('drill').filter(d => !d.draft).sort((a, b) => (b.upd || '').localeCompare(a.upd || ''));
+export const drillSketches = () => all('drill').filter(d => d.sketch && !d.draft).sort((a, b) => (b.upd || '').localeCompare(a.upd || ''));
+export const drills = () => all('drill').filter(d => !d.draft && !d.sketch).sort((a, b) => (b.upd || '').localeCompare(a.upd || ''));
 export const sessions = t => all('session', t).sort((a, b) => (b.date || '9').localeCompare(a.date || '9'));
 export const matches = t => all('match', t).sort((a, b) => (b.date || '9').localeCompare(a.date || '9'));
 export const reviews = t => all('review', t).sort((a, b) => (b.date || '').localeCompare(a.date || ''));

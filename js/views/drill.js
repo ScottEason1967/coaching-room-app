@@ -5,6 +5,7 @@ import { esc, icon, uid, clone, bindFields, actions, debounce, confirmSheet, toa
 import { Canvas, EQUIP, ARROWS, AREAS, CONE_COLOURS, areaBg, drillScale, svgToPng } from '../pitch.js';
 import { drillChallenges, box, chalJump, paintChal } from '../challenges.js';
 import { printDrill } from '../print.js';
+import { saveDrillSketch } from './sketch.js';
 
 const KIT = ['disc', 'cone', 'mannequin', 'pole', 'hurdle', 'ladder', 'minigoal', 'goal', 'ball', 'att', 'def', 'neu', 'gk', 'coach', 'zone', 'text'];
 const ROTATABLE = ['mannequin', 'hurdle', 'ladder', 'minigoal', 'goal', 'zone'];
@@ -23,7 +24,7 @@ export function newDrill(fields = {}) {
 export default function drillView(el, [id, fromSession], ctx) {
   const d = S.get(id);
   // Opened from a session plan (#/drill/<id>/<sessionId>): Back returns to that session, not the library.
-  const back = fromSession && S.get(fromSession) ? '#/session/' + fromSession : '#/training/drills';
+  const back = fromSession && S.get(fromSession) ? '#/session/' + fromSession : (S.get(id) || {}).sketch ? '#/sketch' : '#/training/drills';
   if (!d) { ctx.setTop({ back, title: 'Drill' }); el.innerHTML = '<div class="empty">This drill has been deleted.</div>'; return; }
   const t = S.team(); const T = t.id;
   d.links ||= {}; d.corners ||= {}; d.interventions ||= []; d.items ||= []; d.arrows ||= [];
@@ -34,8 +35,9 @@ export default function drillView(el, [id, fromSession], ctx) {
   const usedIn = S.sessions(T).filter(s => (s.blocks || []).some(b => b.drillId === d.id));
 
   const cr = d.src && d.src.who ? `<div class="tiny muted" id="drillSrc">Based on a session by <b>${esc(d.src.who)}</b>${d.src.role ? ' (' + esc(d.src.role) + ')' : ''}${d.src.url ? ` · <a href="${esc(d.src.url)}" target="_blank" rel="noopener">see the original</a>` : ''}${d.src.note ? '. ' + esc(d.src.note) : ''}</div>` : '';
+  const sketchBar = d.sketch ? `<div class="card row nowrap" id="sketchBar" style="gap:10px;flex-wrap:wrap;border-color:var(--accent-line)"><span class="grow small" style="min-width:200px">A drill sketch: pick an area, put the kit and players out, draw it. When it’s worth keeping, <b>Save to</b> your drills or a session.</span><button class="btn sm" data-act="delSketch">Delete</button><button class="btn sm pri" data-act="saveTo" id="saveToBtn">Save to…</button></div>` : '';
   const draftBar = d.draft ? `<div class="card row nowrap" id="draftBar" style="gap:10px;border-color:var(--accent);flex-wrap:wrap"><span class="grow small" style="min-width:200px">Your copy of a library practice. Change anything you like, then <b>Save as my drill</b>. The library version never changes.</span><button class="btn sm" data-act="discard">Discard</button><button class="btn sm pri" data-act="keep" id="saveDraft">Save as my drill</button></div>` : '';
-  el.innerHTML = `<div class="split wide-right"><div class="stack">${draftBar}${chalJump()}
+  el.innerHTML = `<div class="split wide-right"><div class="stack">${draftBar}${sketchBar}${d.sketch ? '' : chalJump()}
     <div class="card stack tight">
       <label class="field"><span>Name</span><input type="text" data-f="name"></label>${cr}
       <div class="grid2">
@@ -77,15 +79,16 @@ export default function drillView(el, [id, fromSession], ctx) {
       ${Object.entries(CORNERS).map(([k, l]) => `<label class="field"><span>${l}</span><input type="text" data-f="corners.${k}"></label>`).join('')}</div>
     <div class="card stack tight" id="interventions"><div class="h3">How you plan to intervene</div><div class="chips">${Object.entries(INTERVENTIONS).map(([k, l]) => `<button class="chip ${d.interventions.includes(k) ? 'on' : ''}" data-act="iv" data-arg="${k}">${l}</button>`).join('')}</div></div>
     <div class="card small muted">${usedIn.length ? `Used in ${usedIn.length} session${usedIn.length > 1 ? 's' : ''}: ${usedIn.slice(0, 4).map(s => `<a href="#/session/${s.id}">${fmtD(s.date)}</a>`).join(', ')}` : 'Not used in a session yet.'}</div>
-    <div class="row">${d.draft ? '' : `<button class="btn" data-act="dup">${icon('dup')}Save as a new drill</button>`}<div class="grow"></div><button class="btn danger" data-act="del">${icon('trash')}Delete drill</button></div>
+    <div class="row">${d.draft || d.sketch ? '' : `<button class="btn" data-act="dup">${icon('dup')}Save as a new drill</button>`}<div class="grow"></div><button class="btn danger" data-act="del">${icon('trash')}Delete drill</button></div>
   </div>
   <div><div id="chal" style="position:sticky;top:80px"></div></div></div>`;
 
-  const chal = () => paintChal(el, drillChallenges(d, T), 'Drill check', '', { rec: d, save: () => S.put(d), repaint: () => chal() });
+  // A sketch is for thinking: no drill check until it is saved as a drill.
+  const chal = () => d.sketch ? null : paintChal(el, drillChallenges(d, T), 'Drill check', '', { rec: d, save: () => S.put(d), repaint: () => chal() });
   bindFields(el, d, (p) => { save(); chal(); if (p === 'name') ctx.setTop({ back, title: d.name || 'Drill', sub: d.type }); });
 
   const svg = el.querySelector('#dc'); const undo = []; let snap = JSON.stringify({ items: d.items, arrows: d.arrows });
-  const size = () => { svg.style.aspectRatio = `${d.w + 4}/${d.h + 4}`; svg.style.width = `min(100%, calc((100dvh - 220px) * ${(d.w + 4) / (d.h + 4)}))`; };
+  const size = () => { svg.style.aspectRatio = `${d.w + 4}/${d.h + 4}`; svg.style.width = `min(100%, calc((100dvh - ${matchMedia('(max-width:899px)').matches ? 430 : 220}px) * ${(d.w + 4) / (d.h + 4)}))`; };
   const cv = new Canvas(svg, {
     model: () => d, size: () => [d.w, d.h], bg: () => areaBg(d.w, d.h, d.preset), scale: () => drillScale(d.w, d.h),
     viewBox: () => `-2 -2 ${d.w + 4} ${d.h + 4}`,
@@ -153,6 +156,8 @@ export default function drillView(el, [id, fromSession], ctx) {
     clearArrows: () => { if (!d.arrows.length) return; d.arrows = []; cv.o.changed(); cv.render(); },
     png: async () => { if (cv.zoom) { cv.setZoom(false); el.querySelector('#zoomB').classList.remove('on'); el.querySelector('#panB').style.display = 'none'; } try { await shareFile(await svgToPng(svg), (d.name || 'drill').replace(/[^\w\- ]+/g, '') + '.png', d.name); } catch (e) { toast('Could not make the image on this device'); } },
     print: () => { save.flush(); printDrill(d, T); },
+    saveTo: () => { save.flush(); saveDrillSketch(d); },
+    delSketch: async () => { if (await confirmSheet('Delete this sketch?', '')) { S.del(d.id); location.hash = '#/sketch'; } },
     keep: () => { save.flush(); delete d.draft; d.tplPristine = false; S.put(d); toast('Saved in your drills'); ctx.refresh(); },
     discard: () => { S.del(d.id); history.length > 1 ? history.back() : (location.hash = '#/training/drills'); },
     dup: () => { const c = clone(d); c.id = undefined; c.name = d.name + ' (copy)'; delete c.tplPristine; const n = S.create('drill', null, c); location.hash = '#/drill/' + n.id + (fromSession ? '/' + fromSession : ''); },

@@ -109,7 +109,7 @@ export default function matchView(el, [id], ctx) {
     squadNone: () => { m.squadIds = []; S.put(m); ctx.refresh(); },
     detach: bid => { m.boardIds = m.boardIds.filter(x => x !== bid); S.put(m); ctx.refresh(); },
     attach: () => {
-      const avail = S.boards(T).filter(b => !m.boardIds.includes(b.id));
+      const avail = S.boards(T).filter(b => !m.boardIds.includes(b.id) && b.type !== 'sketch');
       const s = sheet(`<div class="stack"><div class="h2">Attach a board</div>${avail.length ? `<div class="list">${avail.map(b => `<button class="item" data-b="${b.id}"><span class="grow"><span class="t" style="display:block">${esc(b.name)}</span><span class="s">${BOARD_LABEL(b.type)} · ${b.frames.length} frames</span></span></button>`).join('')}</div>` : '<div class="empty">Every board is already attached.</div>'}<button class="btn" id="abX">Close</button></div>`);
       s.querySelectorAll('[data-b]').forEach(x => x.onclick = () => { m.boardIds.push(x.dataset.b); S.put(m); closeSheet(); ctx.refresh(); });
       s.querySelector('#abX').onclick = closeSheet;

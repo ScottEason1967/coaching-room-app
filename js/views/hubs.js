@@ -1,7 +1,7 @@
 // The four areas behind the home tiles: Team, Training, Match and Analysis, plus Sketch.
 // Training holds the hierarchy Programme > Sessions > Drills. Each area has its own colour.
 import * as S from '../store.js';
-import { esc, icon, today, fmtD, fmtAgo, addDays, actions } from '../util.js';
+import { esc, icon, today, fmtD, fmtAgo, addDays, actions, confirmSheet } from '../util.js';
 import { sessionStats, drillChallenges, openCount, reviewComplete } from '../challenges.js';
 import { newSession } from './session.js';
 import { newMatch } from './match.js';
@@ -118,20 +118,27 @@ export function analysis(el, params, ctx) {
 export function sketch(el, params, ctx) {
   const T = S.team().id; ctx.setTop({ back: '#/home', title: 'Sketch', sub: 'Think on a blank board' });
   const pm = S.playerMap(T);
-  const bs = S.boards(T); const sk = bs.filter(b => b.type === 'sketch'); const saved = bs.filter(b => b.type !== 'sketch');
-  const card = b => `<a class="card link stack tight" href="#/board/${b.id}" style="text-decoration:none;display:flex">${frameSvg(b.frames[0] || { items: [], arrows: [] }, pm, { orient: 'h', style: 'width:100%;height:auto;border-radius:12px' })}
-    <div class="row between nowrap"><span class="h3">${esc(b.name)}</span><span class="pill grey">${BOARD_LABEL(b.type)}</span></div><span class="tiny muted">${b.frames.length} frame${b.frames.length === 1 ? '' : 's'} · edited ${fmtAgo(b.upd)}</span></a>`;
+  const bs = S.boards(T); const bsk = bs.filter(b => b.type === 'sketch'); const saved = bs.filter(b => b.type !== 'sketch');
+  const dsk = S.drillSketches();
+  const recent = [...bsk.map(b => ({ k: 'b', r: b })), ...dsk.map(d => ({ k: 'd', r: d }))].sort((a, b) => (b.r.upd || '').localeCompare(a.r.upd || ''));
+  const card = (x, id) => x.k === 'b'
+    ? `<a class="card link stack tight" href="#/board/${x.r.id}" style="text-decoration:none;display:flex">${frameSvg(x.r.frames[0] || { items: [], arrows: [] }, pm, { orient: 'h', style: 'width:100%;height:auto;border-radius:12px' })}
+      <div class="row between nowrap"><span class="h3">${esc(x.r.name)}</span><span class="pill grey">${BOARD_LABEL(x.r.type === 'sketch' ? 'phase' : x.r.type)}</span></div><span class="tiny muted">${x.r.frames.length} frame${x.r.frames.length === 1 ? '' : 's'} · edited ${fmtAgo(x.r.upd)}</span></a>`
+    : `<a class="card link stack tight" href="#/drill/${x.r.id}" style="text-decoration:none;display:flex">${drillSvg(x.r, { style: 'width:100%;height:150px;border-radius:12px' })}
+      <div class="row between nowrap"><span class="h3">${esc(x.r.name)}</span><span class="pill grey">Drill</span></div><span class="tiny muted">edited ${fmtAgo(x.r.upd)}</span></a>`;
   el.innerHTML = `<div class="stack">
-    <div class="bigpicks one">${bigBtn('new', 'sketch', 'New sketch', 'A full pitch with your team on it. Move, draw, add frames.', true, 'newSketch')}</div>
-    <div class="eyebrow">Recent sketches</div>
-    ${sk.length ? `<div class="grid3" id="sketches">${sk.map(card).join('')}</div>` : '<div class="empty">Nothing sketched yet.</div>'}
-    ${saved.length ? `<div class="eyebrow">Saved boards</div><p class="tiny muted" style="margin:0">Shapes, phases and set pieces used by your game model and match plans.</p><div class="grid3" id="savedBoards">${saved.map(card).join('')}</div>` : ''}
+    <div class="bigpicks">${bigBtn('newT', 'board', 'Tactics', 'A full pitch with your team on it. Move, draw, add frames.', true, 'newSketch')}${bigBtn('newD', 'training', 'Drill', 'An area with cones and players, like a practice.', true, 'newDrillSketch')}</div>
+    <div class="row between"><div class="eyebrow" style="margin:0">Recent sketches</div>${recent.length ? '<button class="btn sm" data-act="clear" id="clearSketches">Clear all</button>' : ''}</div>
+    ${recent.length ? `<div class="grid3" id="sketches">${recent.map(card).join('')}</div><p class="tiny muted" style="margin:0">Sketches stay here until you save them somewhere with <b>Save to</b>, or delete them.</p>` : '<div class="empty">Nothing sketched yet.</div>'}
+    ${saved.length ? `<div class="eyebrow">Saved boards</div><p class="tiny muted" style="margin:0">Shapes, phases and set pieces used by your game model and match plans.</p><div class="grid3" id="savedBoards">${saved.map(b => card({ k: 'b', r: b })).join('')}</div>` : ''}
   </div>`;
+  const n = recent.length + 1;
   actions(el, {
-    new: () => {
-      const n = sk.length + 1;
-      const b = S.create('board', T, { name: 'Sketch ' + n, type: 'sketch', sharePlayers: false, frames: [newBoardFrame(T, S.team().formation, '')] });
-      location.hash = '#/board/' + b.id;
+    newT: () => { const b = S.create('board', T, { name: 'Sketch ' + n, type: 'sketch', sharePlayers: false, frames: [newBoardFrame(T, S.team().formation, '')] }); location.hash = '#/board/' + b.id; },
+    newD: () => { const d = newDrill({ name: 'Sketch ' + n, sketch: true }); location.hash = '#/drill/' + d.id; },
+    clear: async () => {
+      if (!await confirmSheet('Clear all sketches?', `${recent.length} sketch${recent.length === 1 ? '' : 'es'} will be deleted. Anything you saved somewhere stays.`)) return;
+      recent.forEach(x => S.del(x.r.id)); ctx.refresh();
     }
   });
 }

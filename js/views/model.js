@@ -87,7 +87,7 @@ export function principleView(el, [id], ctx) {
   const p = S.get(id);
   if (!p) { ctx.setTop({ back: '#/model', title: 'Principle' }); el.innerHTML = '<div class="empty">This principle has been deleted.</div>'; return; }
   const T = p.team; p.subs ||= []; p.history ||= []; p.pops ||= [];
-  const bds = S.boards(T); const pops = popsFor(p.phase);
+  const bds = S.boards(T).filter(b => b.type !== 'sketch' || b.id === p.boardId); const pops = popsFor(p.phase);
   ctx.setTop({ back: '#/model', title: p.title || 'New principle', sub: PHASES[p.phase].lab });
   const save = debounce(() => S.put(p), 400);
   const ev = principleEvidence(p, T);

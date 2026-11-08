@@ -55,11 +55,13 @@ const teamhome = () => ({
 
 const sketch = () => ({
   title: 'Sketch',
-  purpose: 'A blank board to think on. Move players, draw runs and passes, add frames to play a move through.',
-  loop: `Sketching sits outside the loop. Anything worth keeping can be attached to a match plan or a principle: ${LOOP}.`,
+  purpose: 'A blank board to think on, kept apart from your saved work until it is worth keeping.',
+  loop: `Sketching sits outside the loop. **Save to** puts a sketch where it belongs: a set piece, a principle, a match plan, a drill or a session: ${LOOP}.`,
   steps: [
-    st('Tap **New sketch**. It opens a full pitch with your team in its usual shape.', '#newSketch'),
-    st('**Recent sketches** are the ones you have made. Tap one to carry on.', when(T() && S.boards(T()).some(b => b.type === 'sketch'), '#sketches')),
+    st('**Tactics** opens a full pitch with your team in its usual shape. Move players, draw runs and passes, add frames to play a move through.', '#newSketch'),
+    st('**Drill** opens an area with the kit: cones, poles, mini goals, players. Change the area size from the drill’s Area box, up to a full pitch.', '#newDrillSketch'),
+    st('Inside a sketch, **Save to…** files it: a tactics sketch as a set piece, a shape or phase, a principle’s picture, a board on a match day plan, or a new drill; a drill sketch into your drills or straight into a session.'),
+    st('**Recent sketches** stay until you save or delete them. **Clear all** deletes the lot; anything you saved somewhere stays.', when(T() && (S.boards(T()).some(b => b.type === 'sketch') || S.drillSketches().length), '#sketches')),
     st('**Saved boards** are the shapes, phases of play and set pieces your game model and match plans use. Tap one to open it.', when(T() && S.boards(T()).some(b => b.type !== 'sketch'), '#savedBoards'))
   ]
 });

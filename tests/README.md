@@ -38,3 +38,5 @@ Database rules (needs postgres on a spare port):
 - `squad_import.py`: pasting a real squad over the example players (no made-up positions, captain mark stripped, leftover examples removed).
 - `fixtures.js`: puts back the old example drill (dr-rondo) and match (mt-cls) for tests written against them. The app no longer seeds them.
 - `block_build.py`: building a block from the top: sessions per week (new, template, moved in) and drills per session from the block page.
+- `sketch.py`: tactics and drill sketches, Save to (set piece, principle, match plan, drill, my drills, a session), Clear all.
+- `board_phone.py`: on a phone the frames sit above the pitch and the page scrolls from beside it.
