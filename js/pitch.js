@@ -68,7 +68,7 @@ export const EQUIP = {
   ladder: { lab: 'Ladder', draw: (it, s) => { let r = `<rect x="${-.5 * s}" y="${-2 * s}" width="${1 * s}" height="${4 * s}" fill="none" stroke="#FFD23F" stroke-width="${.12 * s}"/>`; for (let i = 1; i < 8; i++) r += `<line x1="${-.5 * s}" x2="${.5 * s}" y1="${(-2 + i * .5) * s}" y2="${(-2 + i * .5) * s}" stroke="#FFD23F" stroke-width="${.1 * s}"/>`; return r; } },
   minigoal: { lab: 'Mini goal', draw: () => `<rect x="-0.9" y="-0.4" width="1.8" height="0.8" fill="rgba(255,255,255,.25)" stroke="#fff" stroke-width=".18"/>` },
   goal: { lab: 'Goal', draw: () => `<rect x="-3.66" y="-1" width="7.32" height="2" fill="rgba(255,255,255,.3)" stroke="#fff" stroke-width=".25"/>` },
-  ball: { lab: 'Ball', draw: (it, s) => `<circle r="${.42 * s}" fill="#fff" stroke="#111" stroke-width="${.1 * s}"/><circle r="${.14 * s}" fill="#111"/>` },
+  ball: { lab: 'Ball', draw: (it, s) => ballSvg(s) },
   att: { lab: 'Attacker', text: true, draw: (it, s) => tokenSvg(s, TEAM_COL, it.label || '') },
   def: { lab: 'Defender', text: true, draw: (it, s) => tokenSvg(s, OPP_COL, it.label || '') },
   neu: { lab: 'Neutral', text: true, draw: (it, s) => tokenSvg(s, '#F2B705', it.label || '', '#1b1400') },
@@ -80,12 +80,41 @@ export const EQUIP = {
 export const CONE_COLOURS = ['#F2B705', '#FF7A00', '#3D7BFF', '#D63B3B', '#FFFFFF', '#2FB67A'];
 
 // Formations in board coordinates: [role, x, y]. Order: GK, back line, midfield, front.
+// A football that reads as a football at a glance: white ball, black centre panel, panels at the rim,
+// seams between them, a dark outline and a soft shadow so it stands out on the grass.
+function ballSvg(s) {
+  const R = .6 * s, pt = (r, deg) => { const a = deg * Math.PI / 180; return [r * Math.cos(a), r * Math.sin(a)]; };
+  const P = (r, deg) => pt(r, deg).map(v => v.toFixed(3)).join(',');
+  const ring = [0, 1, 2, 3, 4].map(k => -90 + k * 72);
+  const inner = .34 * R;
+  const centre = `<polygon points="${ring.map(a => P(inner, a)).join(' ')}" fill="#151515"/>`;
+  // Seams: from each corner of the centre panel out to a junction, then branching to the two rim
+  // panels either side, which outlines the white hexagons the way a real ball looks.
+  const ln = (a, b) => `<line x1="${a[0].toFixed(3)}" y1="${a[1].toFixed(3)}" x2="${b[0].toFixed(3)}" y2="${b[1].toFixed(3)}" stroke="#151515" stroke-width="${.04 * s}" stroke-linecap="round"/>`;
+  const seams = ring.map(a => { const j = pt(.6 * R, a); return ln(pt(inner, a), j) + ln(j, pt(.78 * R, a + 21)) + ln(j, pt(.78 * R, a - 21)); }).join('');
+  // Rim panels: the half-hidden pentagons round the edge, opposite each side of the centre panel.
+  const rim = ring.map(a => a + 36).map(c => `<polygon points="${[P(R, c - 24), P(.78 * R, c - 15), P(.68 * R, c), P(.78 * R, c + 15), P(R, c + 24)].join(' ')}" fill="#151515"/>`).join('');
+  return `<ellipse cx="${.1 * s}" cy="${.16 * s}" rx="${R}" ry="${R * .88}" fill="rgba(0,0,0,.35)"/>`
+    + `<circle r="${R}" fill="#fff"/>${rim}${seams}${centre}<circle r="${R}" fill="none" stroke="#151515" stroke-width="${.07 * s}"/>`;
+}
+
 export const FORMATIONS = {
   '4-3-3 (6 + two 8s)': [['GK', 34, 100], ['RB', 58, 82], ['CB', 42, 88], ['CB', 26, 88], ['LB', 10, 82], ['6', 34, 72], ['8', 46, 58], ['8', 22, 58], ['RW', 58, 38], ['LW', 10, 38], ['CF', 34, 30]],
   '4-4-2': [['GK', 34, 100], ['RB', 58, 82], ['CB', 42, 88], ['CB', 26, 88], ['LB', 10, 82], ['RM', 58, 58], ['CM', 40, 62], ['CM', 28, 62], ['LM', 10, 58], ['ST', 40, 36], ['ST', 28, 36]],
   '4-2-3-1': [['GK', 34, 100], ['RB', 58, 82], ['CB', 42, 88], ['CB', 26, 88], ['LB', 10, 82], ['DM', 41, 70], ['DM', 27, 70], ['RAM', 56, 50], ['10', 34, 50], ['LAM', 12, 50], ['ST', 34, 32]],
   '4-5-1 (block)': [['GK', 34, 100], ['RB', 56, 84], ['CB', 41, 86], ['CB', 27, 86], ['LB', 12, 84], ['RM', 58, 66], ['CM', 44, 68], ['DM', 34, 72], ['CM', 24, 68], ['LM', 10, 66], ['ST', 34, 52]],
   '3-5-2': [['GK', 34, 100], ['CB', 48, 86], ['CB', 34, 88], ['CB', 20, 86], ['RWB', 62, 62], ['CM', 46, 62], ['DM', 34, 70], ['CM', 22, 62], ['LWB', 6, 62], ['ST', 40, 36], ['ST', 28, 36]]
+};
+// Extra shapes for the opposition's quick buttons (y: 100 is their own goal line end, as above).
+export const OPP_SHAPES = {
+  '4-4-2': FORMATIONS['4-4-2'],
+  '4-3-3': [['GK', 34, 100], ['RB', 58, 82], ['CB', 42, 88], ['CB', 26, 88], ['LB', 10, 82], ['CM', 46, 62], ['DM', 34, 70], ['CM', 22, 62], ['RW', 58, 38], ['LW', 10, 38], ['ST', 34, 32]],
+  '4-2-3-1': FORMATIONS['4-2-3-1'],
+  '4-1-4-1': [['GK', 34, 100], ['RB', 58, 82], ['CB', 42, 88], ['CB', 26, 88], ['LB', 10, 82], ['DM', 34, 72], ['RM', 58, 54], ['CM', 42, 58], ['CM', 26, 58], ['LM', 10, 54], ['ST', 34, 34]],
+  '4-5-1 low block': FORMATIONS['4-5-1 (block)'],
+  '3-5-2': FORMATIONS['3-5-2'],
+  '3-4-3': [['GK', 34, 100], ['CB', 48, 86], ['CB', 34, 88], ['CB', 20, 86], ['RM', 60, 62], ['CM', 42, 66], ['CM', 26, 66], ['LM', 8, 62], ['RW', 54, 38], ['LW', 14, 38], ['ST', 34, 32]],
+  '5-3-2': [['GK', 34, 100], ['RWB', 60, 78], ['CB', 46, 86], ['CB', 34, 88], ['CB', 22, 86], ['LWB', 8, 78], ['CM', 48, 62], ['CM', 34, 66], ['CM', 20, 62], ['ST', 40, 38], ['ST', 28, 38]]
 };
 
 export const AREAS = {

@@ -138,6 +138,7 @@ function hideApp(on) {
   if (on) { closeSheet(); const v = $('#view'); if (v) v.innerHTML = ''; }
 }
 function gate(mode = 'signin', note = '') {
+  window.__crStarted = true;
   started = false; hideApp(true);
   let g = document.getElementById('gate');
   if (!g) { g = document.createElement('div'); g.id = 'gate'; document.body.appendChild(g); }
@@ -179,6 +180,7 @@ function gate(mode = 'signin', note = '') {
   setTimeout(() => g.querySelector('input')?.focus(), 50);
 }
 function start() {
+  window.__crStarted = true;
   document.getElementById('gate')?.remove();
   hideApp(false);
   if (started) return; started = true;
