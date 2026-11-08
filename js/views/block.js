@@ -3,7 +3,20 @@
 // assesses and the start of the weekly/monthly/seasonal planning the Pro syllabus expects.
 import * as S from '../store.js';
 import { PHASES, PHASE_KEYS } from '../store.js';
-import { esc, icon, today, addDays, fmtD, bindFields, actions, debounce, confirmSheet, toast } from '../util.js';
+import { esc, icon, today, addDays, fmtD, bindFields, actions, debounce, confirmSheet, toast, sheet, closeSheet, uid } from '../util.js';
+import { createSession } from './session.js';
+import { pickDrill } from './drill.js';
+import { reviewGate } from './review.js';
+
+// The date a new session in week i of a block gets: the team's usual training night that week,
+// avoiding days that already have a session; with no history, the first day of the week.
+export function weekDate(T, b, i) {
+  const ws = addDays(b.start, 7 * i); const taken = new Set(S.sessions(T).map(s => s.date));
+  const days = [...new Set(S.sessions(T).filter(s => s.date && !s.cancelled).slice(0, 6).map(s => new Date(s.date + 'T12:00').getDay()))];
+  for (let k = 0; k < 7; k++) { const d = addDays(ws, k); if (!taken.has(d) && (!days.length || days.includes(new Date(d + 'T12:00').getDay()))) return d; }
+  for (let k = 0; k < 7; k++) { const d = addDays(ws, k); if (!taken.has(d)) return d; }
+  return ws;
+}
 
 export function newBlock() {
   const T = S.team().id;
@@ -63,12 +76,15 @@ export default function blockView(el, [id], ctx) {
         ${ps.length ? PHASE_KEYS.filter(k => ps.some(p => p.phase === k)).map(k => `<div class="tiny muted" style="margin-top:4px">${PHASES[k].lab}</div><div class="chips">${ps.filter(p => p.phase === k).map(p => `<button class="chip ${sel.has(p.id) ? 'on' : ''}" data-act="pr" data-arg="${p.id}">${esc(p.title || 'Untitled')}</button>`).join('')}</div>`).join('') : '<div class="small" style="color:var(--lamp)">No principles yet. <a href="#/model">Write your game model</a> first.</div>'}</div>
       <label class="field"><span>Why now: what the reviews or the fixtures say</span><textarea data-f="aim" style="min-height:64px" placeholder="e.g. Not seen in the last three reviews; next four opponents all press high"></textarea></label>
     </div>
-    <div class="card stack tight"><div class="h3">Week by week: what each week adds</div>
-      <p class="tiny muted" style="margin:0">Simple to complex, or part to whole. If every week says the same thing, it isn’t a programme.</p>
+    <div class="card stack tight" id="weeks"><div class="h3">Week by week: what each week adds, and its sessions</div>
+      <p class="tiny muted" style="margin:0">Simple to complex, or part to whole. If every week says the same thing, it isn’t a programme. Add sessions to each week here, and drills to each session.</p>
       ${b.weeksPlan.slice(0, weeks).map((w, i) => `<div class="stack tight" style="padding:8px 0;border-top:1px solid var(--line)"><div class="row between nowrap"><span class="small" style="font-weight:600">Week ${i + 1} <span class="muted" style="font-weight:400">· from ${weekDates(i)}</span></span>${wk === i + 1 ? '<span class="pill">Now</span>' : ''}</div>
         <input type="text" data-f="weeksPlan.${i}" placeholder="${['Unopposed shape and the picture', 'Opposed, numbers up', 'Equal numbers, directional', 'Phase of play v the next opponent’s press', 'Game with the trigger live', 'Consolidate and test'][i] || ''}">
-        ${ss.filter(s => inWeek(s, i)).map(s => `<a class="tiny" href="#/session/${s.id}">${fmtD(s.date)}: ${esc(s.theme || 'session')}${(s.principleIds || []).some(x => sel.has(x)) ? '' : ' <span style="color:var(--lamp)">(not on the block’s principles)</span>'}</a>`).join('')}
-        ${ms.filter(m => inWeek(m, i)).map(m => `<a class="tiny" href="#/match/${m.id}">${fmtD(m.date)}: match v ${esc(m.opponent)}</a>`).join('')}</div>`).join('')}
+        ${ss.filter(s => inWeek(s, i)).map(s => { const dn = (s.blocks || []).map(x => S.get(x.drillId)).filter(Boolean); return `<div class="card inset stack tight" style="padding:10px 12px"><div class="row between nowrap" style="gap:8px"><a class="small grow" style="font-weight:600" href="#/session/${s.id}">${fmtD(s.date)}: ${esc(s.theme || 'Session, no theme yet')}</a><button class="btn sm" data-act="addDrill" data-arg="${s.id}">${icon('plus')}Drill</button></div>
+          ${dn.length ? `<div class="tiny muted">${dn.map(d => esc(d.name)).join(' · ')}</div>` : '<div class="tiny muted">No drills yet.</div>'}
+          ${(s.principleIds || []).some(x => sel.has(x)) || !sel.size ? '' : '<div class="tiny" style="color:var(--lamp)">Not on the block’s principles.</div>'}</div>`; }).join('')}
+        ${ms.filter(m => inWeek(m, i)).map(m => `<a class="tiny" href="#/match/${m.id}">${fmtD(m.date)}: match v ${esc(m.opponent)}</a>`).join('')}
+        <div class="row" style="gap:6px"><button class="btn sm pri" data-act="newS" data-arg="${i}">${icon('plus')}New session</button><button class="btn sm" data-act="tplS" data-arg="${i}">From a template</button><button class="btn sm" data-act="moveS" data-arg="${i}">Move one here</button></div></div>`).join('')}
     </div>
     ${st === 'done' || st === 'now' ? `<div class="card stack" style="border-color:var(--lamp-line)"><label class="field"><span style="color:var(--lamp)">End of block: did the team get there? What’s the evidence, and what’s next?</span><textarea data-f="outcome" placeholder="Reviews, what you saw in games, what the players say. Then: next block, or go again?"></textarea></label></div>` : ''}
     <div class="row"><div class="grow"></div><button class="btn danger" data-act="del">${icon('trash')}Delete block</button></div>
@@ -83,6 +99,17 @@ export default function blockView(el, [id], ctx) {
 
   bindFields(el, b, (p) => { save(); if (p === 'weeks' || p === 'start') { save.flush(); ctx.refresh(); } if (p === 'title') ctx.setTop({ back: '#/training/programme', title: b.title || 'Training block', sub: `${fmtD(b.start)} · ${weeks} weeks` }); });
   actions(el, {
+    newS: i => reviewGate(T, () => { const n = createSession(T, { date: weekDate(T, b, +i), principleIds: b.principleIds.slice() }); toast('Session added to week ' + (+i + 1)); location.hash = '#/session/' + n.id; }, 'plan a new session'),
+    tplS: i => { S.setMeta('ideaWeek', { block: b.id, week: +i, at: Date.now() }); location.hash = '#/ideas/sessions'; },
+    moveS: i => {
+      const cand = S.sessions(T).filter(s => !inWeek(s, +i) && !S.reviewOf(s) && !s.cancelled);
+      const sh = sheet(`<div class="stack"><div class="h2">Move a session into week ${+i + 1}</div><p class="small muted" style="margin:0">Its date changes to ${fmtD(weekDate(T, b, +i))}. Sessions already analysed stay where they are.</p>
+        ${cand.length ? `<div class="list">${cand.map(s => `<button class="item" data-s="${s.id}"><span class="grow"><span class="t" style="display:block">${esc(s.theme || 'Session, no theme yet')}</span><span class="s">${fmtD(s.date)}${S.blockFor(T, s.date) ? ' · in ' + esc(S.blockFor(T, s.date).title || 'a block') : ' · no block'}</span></span></button>`).join('')}</div>` : '<div class="empty">No other sessions to move.</div>'}
+        <button class="btn" id="mvX">Cancel</button></div>`);
+      sh.querySelector('#mvX').onclick = closeSheet;
+      sh.querySelectorAll('[data-s]').forEach(x => x.onclick = () => { const se = S.get(x.dataset.s); se.date = weekDate(T, b, +i); b.principleIds.forEach(p => { if (!(se.principleIds || []).includes(p)) (se.principleIds ||= []).push(p); }); S.put(se); closeSheet(); toast('Moved to week ' + (+i + 1)); ctx.refresh(); });
+    },
+    addDrill: sid => { const se = S.get(sid); pickDrill(T, (d, isNew) => { (se.blocks ||= []).push({ id: uid(), drillId: d.id, minutes: +d.minutes || 15, talk: 3, note: '' }); S.put(se); if (isNew) location.hash = '#/drill/' + d.id + '/' + se.id; else { toast('Added to the session'); ctx.refresh(); } }, se.id); },
     pr: pid => { b.principleIds = sel.has(pid) ? b.principleIds.filter(x => x !== pid) : b.principleIds.concat(pid); S.put(b); ctx.refresh(); },
     del: async () => { if (await confirmSheet('Delete this block?', 'Sessions in it are kept; they just stop belonging to a block.')) { S.del(b.id); location.hash = '#/training/programme'; } }
   });

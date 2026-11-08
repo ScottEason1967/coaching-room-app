@@ -201,7 +201,9 @@ const block = params => {
       st('**Starts** and **Weeks**. Sessions dated inside these weeks belong to the block. Changing either redraws the week-by-week list.', 'start'),
       st('Choose the **Principles this block is about**. One or two. Tap a chip to add or remove it. New sessions in the block start with these ticked.', '[data-act="pr"]'),
       st('**Why now**: what the reviews or the fixtures say. This is your evidence for choosing it.', 'aim'),
-      st('**Week by week**: write what each week adds, simple to complex or part to whole. Sessions and matches in each week are listed under it. A session on other principles is marked.', 'weeksPlan.0'),
+      st('**Week by week**: write what each week adds, simple to complex or part to whole. Sessions and matches in each week are listed under it, each session with its drills. A session on other principles is marked.', 'weeksPlan.0'),
+      st('Fill each week from here: **New session** adds one on your usual training night that week, on the block’s principles. **From a template** picks a whole session from top coaches and drops it into that week, drills included. **Move one here** brings in a session planned elsewhere.', '[data-act="newS"]'),
+      st('**Drill** on a session adds a practice to it: one of yours, one from the library, or a new one.', when(S.sessions(b.team || '').some(x => x.date >= (b.start || '') && b.start && x.date < S.blockEnd(b)), '[data-act="addDrill"]')),
       st('**End of block** appears once the block is running or finished. Did the team get there? What is the evidence, and what is next? Write it before you plan the next block.', when(live, 'outcome')),
       st('**Evidence in this block** (right on a laptop, bottom on a phone) counts sessions, matches and reviews, and how each principle scored.'),
       st('**Delete block** keeps the sessions; they just stop belonging to a block.', '[data-act="del"]')

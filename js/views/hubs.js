@@ -83,7 +83,7 @@ export function training(el, [tab], ctx) {
   const dq = el.querySelector('#dq');
   if (dq) dq.oninput = () => { S.setMeta('drillQ', dq.value); clearTimeout(dq._t); dq._t = setTimeout(() => { ctx.refresh(); const n = el.querySelector('#dq'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 350); };
   actions(el, {
-    newS: () => newSession(), tplS: () => ctx.go('#/ideas/sessions'),
+    newS: () => newSession(), tplS: () => { S.setMeta('ideaWeek', null); ctx.go('#/ideas/sessions'); },
     newD: () => { const d = newDrill(); location.hash = '#/drill/' + d.id; }, libD: () => ctx.go('#/ideas/drills'),
     newB: () => newBlock()
   });

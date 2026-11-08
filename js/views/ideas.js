@@ -7,6 +7,7 @@ import { esc, icon, uid, actions, sheet, closeSheet, toast } from '../util.js';
 import { drillSvg } from '../pitch.js';
 import { THEMES, themesFor, themeOf, DRILL_TEMPLATES, SESSION_TEMPLATES, drillsForTheme, sessionsForTheme, tplById, sessionTplById } from '../templates.js';
 import { createSession } from './session.js';
+import { weekDate } from './block.js';
 import { reviewGate } from './review.js';
 
 const tplDrill = t => ({ w: t.w, h: t.h, preset: 'custom', items: t.items(), arrows: [] });
@@ -61,6 +62,8 @@ export default function ideasView(el, params, ctx) {
   // From Training: "Pick a template" shows only whole sessions, "Pick from the library" only practices.
   const only = kind === 'sessions' || kind === 'drills' ? kind : null;
   S.setMeta('ideaFrom', only || '');
+  const wkc = only === 'sessions' && S.meta().ideaWeek && Date.now() - S.meta().ideaWeek.at < 36e5 ? S.meta().ideaWeek : null;
+  if (!only && S.meta().ideaWeek) S.setMeta('ideaWeek', null);
   const sess = kind === 's' ? S.get(cid) : null;
   const prin = kind === 'p' ? S.get(cid) : null;
   const ps = S.principles(T);
@@ -73,13 +76,14 @@ export default function ideasView(el, params, ctx) {
     : prin ? themeOf(prin) : sess ? (sess.principleIds || []).map(x => themeOf(S.get(x))).find(Boolean) || '' : (m.ideaTheme || '');
   if (th && !THEMES[th]) th = '';
   const suffix = sess ? `/s/${sess.id}` : prin ? `/p/${prin.id}` : '';
-  ctx.setTop({ back: sess ? '#/session/' + sess.id : prin ? '#/principle/' + prin.id : '#/training/' + (only || 'drills'), title: only === 'sessions' ? 'Session templates' : only === 'drills' ? 'Drill library' : 'Practice ideas', sub: sess ? 'Adding to a session' : prin ? 'For: ' + (prin.title || 'principle') : 'From top-level coaching' });
+  ctx.setTop({ back: sess ? '#/session/' + sess.id : prin ? '#/principle/' + prin.id : wkc ? '#/block/' + wkc.block : '#/training/' + (only || 'drills'), title: only === 'sessions' ? 'Session templates' : only === 'drills' ? 'Drill library' : 'Practice ideas', sub: sess ? 'Adding to a session' : prin ? 'For: ' + (prin.title || 'principle') : 'From top-level coaching' });
 
   const pChip = p => { const pt = themeOf(p); return `<button class="chip ${pt && pt === th ? 'on' : ''}" data-act="pick" data-arg="${p.id}">${esc(p.title || 'Untitled')}</button>`; };
   const drills = drillsForTheme(th), sessions = sessionsForTheme(th);
   const inLib = new Set(S.drills().map(d => d.tplId).filter(Boolean));
 
   el.innerHTML = `<div class="stack">
+    ${wkc && S.get(wkc.block) ? `<div class="banner small">Pick a session and it goes into week ${wkc.week + 1} of “${esc(S.get(wkc.block).title || 'your block')}”.</div>` : ''}
     ${sess ? `<div class="banner small">Pick a practice or a whole session and it goes into the session for ${esc(S.get(sess.id) ? new Date(sess.date + 'T12:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '')}.</div>` : ''}
     <div class="card stack tight" id="ideaFilter">
       <div class="label">Train one of your principles</div>
@@ -141,7 +145,10 @@ export function ideaView(el, [tid, kind, cid], ctx) {
         if (sess) { addBlocks(sess, made); toast(`${made.length} practices added`); location.hash = '#/session/' + sess.id; return; }
         reviewGate(T, () => {
           const pids = [...new Set(S.principles(T).filter(p => st.themes.includes(themeOf(p))).map(p => p.id))];
-          const s = createSession(T, { theme: st.name, principleIds: pids, fromTemplate: st.id });
+          // Picked from a week of a training block: the session goes into that week, on the block's principles.
+          const wkc = S.meta().ideaWeek; const blk = wkc && Date.now() - wkc.at < 36e5 ? S.get(wkc.block) : null;
+          const s = createSession(T, { theme: st.name, principleIds: blk ? [...new Set([...(blk.principleIds || []), ...pids])] : pids, fromTemplate: st.id, ...(blk ? { date: weekDate(T, blk, wkc.week) } : {}) });
+          if (blk) S.setMeta('ideaWeek', null);
           addBlocks(s, made); toast('Session planned from the idea: check the date and the challenge'); location.hash = '#/session/' + s.id;
         }, 'plan a new session');
       }
