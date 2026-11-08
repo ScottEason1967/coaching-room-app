@@ -54,29 +54,57 @@ function addSheet(T) {
 }
 
 const isExample = p => /^Player \d+$/.test(p.name || '');
+const POS_RE = 'GK|RB|CB|LB|FB|RWB|LWB|DM|CM|AM|6|8|10|RM|LM|RW|LW|W|CF|ST|9';
+
+// Reads a pasted squad. Copes with one player per line, and with a list whose line
+// breaks were lost on the way in ("1 Jane Smith 2 Amy Jones ..."): a number followed by
+// a name always starts a new player, so squad numbers are never folded into a name.
+export function parseSquad(text) {
+  const out = [];
+  String(text || '').replace(/\r/g, '').split('\n').forEach(line => {
+    line.trim().split(/\s+(?=\d{1,3}[\s.,:-]+[A-Za-z\u00C0-\u024F])/).forEach(chunk => {
+      const m = chunk.trim().match(new RegExp('^(\\d{1,3})[\\s.,:-]+(.+?)(?:[\\s,]+(' + POS_RE + '))?$', 'i'));
+      if (!m) return;
+      const name = m[2].replace(/\s*\((c|capt?)\)\s*$/i, '').trim();
+      if (!name || /\d/.test(name)) return;
+      out.push({ num: +m[1], name, pos: (m[3] || '').toUpperCase() });
+    });
+  });
+  return out;
+}
 
 function importSheet(T, ctx) {
-  const examples = S.players(T).filter(isExample).length;
   const el = sheet(`<div class="stack"><div class="h2">Paste a squad list</div>
-    <p class="small muted" style="margin:0">One player per line: number, name, and position if you know it. For example:<br><code>7 Jane Smith RW</code><br>If a number already exists, that player’s name and position are updated, so you can replace the example names in one go. A player with no position shows “Position not set” until you pick one.</p>
+    <p class="small muted" style="margin:0">Number, name, and position if you know it. One player per line is best, for example:<br><code>7 Jane Smith RW</code><br>Each player keeps her squad number. A player with no position shows “Position not set” until you pick one.</p>
     <textarea id="imT" style="min-height:200px" placeholder="1 Name Surname GK"></textarea>
-    ${examples ? `<label class="check"><input type="checkbox" id="imR" checked> Remove example players (“Player 10” and so on) not in this list</label>` : ''}
+    <div class="tiny muted" id="imP">Nothing pasted yet.</div>
+    <label class="check"><input type="checkbox" id="imR" checked> Replace the whole squad with this list (anyone not on it is removed)</label>
     <div class="row" style="justify-content:flex-end"><button class="btn" id="imX">Cancel</button><button class="btn pri" id="imS">Import</button></div></div>`);
+  const ta = el.querySelector('#imT'), prev = el.querySelector('#imP');
+  ta.oninput = () => { const r = parseSquad(ta.value); prev.textContent = r.length ? `${r.length} player${r.length === 1 ? '' : 's'} found: ` + r.map(x => x.num + ' ' + x.name).join(', ') : 'No players found yet.'; };
   el.querySelector('#imX').onclick = closeSheet;
-  el.querySelector('#imS').onclick = () => {
-    const existing = S.players(T); let add = 0, upd = 0, gone = 0; const seen = new Set();
-    el.querySelector('#imT').value.split('\n').map(l => l.trim()).filter(Boolean).forEach(l => {
-      const m = l.match(/^(\d+)[\s.,:-]+(.+?)(?:[\s,]+(GK|RB|CB|LB|FB|RWB|LWB|DM|CM|AM|6|8|10|RM|LM|RW|LW|W|CF|ST|9))?$/i);
-      if (!m) return;
-      const num = +m[1], name = m[2].replace(/\s*\((c|capt?)\)\s*$/i, '').trim(), pos = (m[3] || '').toUpperCase();
-      seen.add(num);
-      const cur = existing.find(p => +p.num === num);
-      if (cur) { const wasExample = isExample(cur); cur.name = name; if (pos) cur.pos = pos; else if (wasExample) { cur.pos = ''; cur.pos2 = ''; } S.put(cur); upd++; }
-      else { S.create('player', T, { num, name, short: '', pos, pos2: '', foot: '', notes: '', goals: [], obs: [] }); add++; }
+  el.querySelector('#imS').onclick = async () => {
+    const rows = parseSquad(ta.value);
+    if (!rows.length) return toast('No players found. Put a number then a name, for example 7 Jane Smith');
+    const nums = new Set(rows.map(r => r.num));
+    if (nums.size < rows.length) return toast('The same squad number appears twice. Check the list.');
+    const replace = el.querySelector('#imR').checked;
+    const existing = S.players(T);
+    const going = replace ? existing.filter(p => !nums.has(+p.num)) : [];
+    closeSheet();
+    if (going.some(p => !isExample(p)) && !await confirmSheet(`Remove ${going.length} player${going.length === 1 ? '' : 's'}?`,
+      'Not on your list: ' + going.map(p => (p.num || '?') + ' ' + p.name).join(', ') + '. They come off boards and match squads, and their player links are deleted.', 'Import and remove')) return;
+    let add = 0, upd = 0;
+    rows.forEach(r => {
+      const cur = existing.find(p => +p.num === r.num);
+      if (cur) { const wasExample = isExample(cur); cur.name = r.name; if (r.pos) cur.pos = r.pos; else if (wasExample) { cur.pos = ''; cur.pos2 = ''; } S.put(cur); upd++; }
+      else { S.create('player', T, { num: r.num, name: r.name, short: '', pos: r.pos, pos2: '', foot: '', notes: '', goals: [], obs: [] }); add++; }
     });
-    const rm = el.querySelector('#imR');
-    if (rm && rm.checked && seen.size) existing.filter(p => isExample(p) && !seen.has(+p.num)).forEach(p => { S.del(p.id); gone++; });
-    closeSheet(); toast(`${add} added, ${upd} updated${gone ? `, ${gone} example${gone === 1 ? '' : 's'} removed` : ''}`); ctx.refresh();
+    for (const p of going) {
+      if (p.share && p.share.token) { try { await cloud.deleteShare(p.share.token); } catch (e) { /* link stays off-line; removed with the player */ } }
+      S.del(p.id);
+    }
+    toast(`${add} added, ${upd} updated${going.length ? `, ${going.length} removed` : ''}`); ctx.refresh();
   };
 }
 
