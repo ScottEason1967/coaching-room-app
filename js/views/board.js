@@ -165,19 +165,33 @@ export default function boardView(el, [id], ctx) {
     el.querySelectorAll('[data-f]').forEach(x => x.onclick = () => selectFrame(+x.dataset.f));
     oppDropdown();
   }
-  // Opposition dropdown on the board: pick a shape and all eleven go on this frame; pick None to take them off.
+  // Opponents belong to the whole board: putting a shape on, changing it or taking them off applies to every
+  // frame. If they have been moved by hand on any frame, that work would be lost, so ask first.
+  function oppMoved() {
+    return b.frames.some(f => {
+      const o = f.items.filter(i => i.kind === 'opp'); if (!o.length) return false;
+      if (!OPP_SHAPES[f.oppShape]) return true;
+      const ref = oppItems(f.oppShape);
+      return o.length !== ref.length || o.some(i => { const r = ref.find(x => x.id === i.id); return !r || Math.abs(r.x - i.x) > .5 || Math.abs(r.y - i.y) > .5; });
+    });
+  }
+  async function setOppAll(v, positions = true) {
+    const had = b.frames.some(f => f.items.some(i => i.kind === 'opp'));
+    if (had && oppMoved() && !await confirmSheet(v ? 'Reset the opponents on every frame?' : 'Take the opponents off every frame?',
+      `You have moved opponents on ${b.frames.length > 1 ? 'some frames' : 'this board'}. ${v ? 'They will all go back into a ' + v + ' on every frame.' : 'Those moves will be lost.'}`, v ? 'Reset them' : 'Take them off')) { oppDropdown(); return false; }
+    b.frames.forEach(f => { f.items = f.items.filter(i => i.kind !== 'opp').concat(v ? oppItems(v, positions) : []); f.oppShape = v; });
+    cv.o.changed(); cv.render(); oppDropdown(); renderFrames();
+    toast(v ? `Opponents in a ${v} on every frame` : 'Opponents taken off every frame');
+    return true;
+  }
+  // Opposition dropdown on the board: pick a shape and all eleven go on every frame; pick None to take them off.
   function oppDropdown() {
     const sel = el.querySelector('#oppSel'); if (!sel) return;
     const f = fr(), on = f.items.some(i => i.kind === 'opp');
     const cur = on ? (f.oppShape && OPP_SHAPES[f.oppShape] ? f.oppShape : '_custom') : '';
     sel.innerHTML = `<option value="">None</option>${cur === '_custom' ? '<option value="_custom" selected>On the board (placed by hand)</option>' : ''}${oppOptions(cur)}`;
     sel.value = cur;
-    sel.onchange = () => {
-      const v = sel.value, f = fr(); if (v === '_custom') return;
-      f.items = f.items.filter(i => i.kind !== 'opp').concat(v ? oppItems(v) : []);
-      f.oppShape = v; cv.o.changed(); cv.render(); oppDropdown();
-      toast(v ? 'Opponents in a ' + v : 'Opponents taken off');
-    };
+    sel.onchange = () => { const v = sel.value; if (v === '_custom') return; setOppAll(v); };
   }
 
   function frameFields() {
@@ -236,6 +250,8 @@ export default function boardView(el, [id], ctx) {
   function play() {
     if (playing || b.frames.length < 2) { if (b.frames.length < 2) toast('Add a second frame to play it through'); return; }
     playing = true; let i = 0; const dur = 1100;
+    // On a phone, bring the whole pitch into the middle of the screen before it plays.
+    if (PHONE()) svg.scrollIntoView({ block: 'center', behavior: 'smooth' });
     const step = () => {
       if (i >= b.frames.length - 1) { playing = false; selectFrame(b.frames.length - 1); return; }
       const A = b.frames[i], B = b.frames[i + 1]; const t0 = performance.now();
@@ -294,26 +310,22 @@ export default function boardView(el, [id], ctx) {
     const chip = (attr, f, on) => `<button class="btn sm ${on ? 'on' : ''}" ${attr}="${esc(f)}" style="min-width:76px">${esc(f.replace(' (6 + two 8s)', '').replace(' (block)', ' block'))}</button>`;
     const hasOpp = fr().items.some(i => i.kind === 'opp');
     const s = sheet(`<div class="stack"><div class="h2">Shapes</div>
-      <div class="stack tight"><div class="label">Opponents: one tap puts all eleven on</div>
+      <div class="stack tight"><div class="label">Opponents: one tap puts all eleven on every frame</div>
         <div class="row" style="gap:8px;flex-wrap:wrap" id="oppShapes">${Object.keys(OPP_SHAPES).map(f => chip('data-opp', f, false)).join('')}</div>
         <div class="row" style="gap:8px"><label class="check small"><input type="checkbox" id="sOpos" checked> Show positions (CB, ST…) on them</label></div>
         ${hasOpp ? '<button class="btn sm danger" id="sOclr" style="align-self:flex-start">Take the opponents off</button>' : ''}</div>
       <div class="stack tight" style="border-top:1px solid var(--line);padding-top:12px"><div class="label">Our team</div>
         <div class="row" style="gap:8px;flex-wrap:wrap" id="usShapes">${Object.keys(FORMATIONS).map(f => chip('data-us', f, f === t.formation)).join('')}</div>
         <p class="tiny muted" style="margin:0">Keeps the same players on the pitch where it can and moves them into position. Arrows and the ball stay.</p></div>
-      <p class="tiny muted" style="margin:0">Changes this frame only. Put the shapes on first, then use <b>Next frame</b> to show the movement.</p>
+      <p class="tiny muted" style="margin:0">Opponents go on every frame. Our team’s shape changes this frame only. Put the shapes on first, then use <b>Next frame</b> to show the movement.</p>
       <button class="btn" id="sX">Close</button></div>`);
     s.querySelectorAll('[data-us]').forEach(btn => btn.onclick = () => {
       const f = fr(); const cur = f.items.filter(i => i.kind === 'us').map(i => i.pid).filter(Boolean);
       const xi = autoXI(T, btn.dataset.us, cur.length >= 11 ? cur : null);
       f.items = f.items.filter(i => i.kind !== 'us').concat(xi); cv.o.changed(); cv.render(); closeSheet(); renderInsp();
     });
-    s.querySelectorAll('[data-opp]').forEach(btn => btn.onclick = () => {
-      const f = fr();
-      f.items = f.items.filter(i => i.kind !== 'opp').concat(oppItems(btn.dataset.opp, s.querySelector('#sOpos').checked));
-      f.oppShape = btn.dataset.opp; cv.o.changed(); cv.render(); closeSheet(); oppDropdown(); toast('Opponents in a ' + btn.dataset.opp);
-    });
-    s.querySelector('#sOclr')?.addEventListener('click', () => { const f = fr(); f.items = f.items.filter(i => i.kind !== 'opp'); f.oppShape = ''; cv.o.changed(); cv.render(); closeSheet(); oppDropdown(); });
+    s.querySelectorAll('[data-opp]').forEach(btn => btn.onclick = () => { const pos = s.querySelector('#sOpos').checked; closeSheet(); setOppAll(btn.dataset.opp, pos); });
+    s.querySelector('#sOclr')?.addEventListener('click', () => { closeSheet(); setOppAll(''); });
     s.querySelector('#sX').onclick = closeSheet;
   }
 
