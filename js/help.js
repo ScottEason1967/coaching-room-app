@@ -470,12 +470,13 @@ const cloudGuide = () => {
 };
 
 const more = () => ({
-  title: 'More',
-  purpose: 'Your own details, and the screens that are not in the bottom menu.',
+  title: 'Profile and settings',
+  purpose: 'Your own details, your links, and the screens that are not in the main menu.',
   loop: `${LOOP}. More holds the pathway, logbook, teams and cloud sync around it.`,
   steps: [
     st('**Add photo** puts your picture in the circle at the top right of every screen. Without one, your initials show there.', '#mePhoto'),
     st('**Your name** and **Initials**.', 'name'),
+    st('**My links** are your own quick links, shown in the menu under your initials (top right) and on your Pathway. England Football Learning is there to start with. To go straight to your UEFA C course, sign in there, open the course, copy the address from the browser and paste it into a new link. Only you see your links.', '#myLinks'),
     st('**Pathway** is your road from UEFA C to Pro and the evidence you are building.', '.list [href="#/pathway"]'),
     st('**Coaching logbook** records CPD and coaching hours.', '.list [href="#/logbook"]'),
     st('**Teams** lists every team you coach.', '.list [href="#/teams"]'),

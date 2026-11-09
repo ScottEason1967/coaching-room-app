@@ -46,3 +46,4 @@ Database rules (needs postgres on a spare port):
 - `staff.py`: Joe invites the manager and a viewer from the Staff screen; they join from the link; both edit one match plan; same-box edits; the analysis gate; roles changed and removed. Live updates and who's here need the real Supabase.
 - `captain.py`: captain and vice-captain from the squad list (C / VC), the player page and a pasted list; one of each per team.
 - `board_nav_filter.py`: locked arrows carry to the next frames and stay on screen when playing; on a laptop the main menu sits in the top bar and stays when scrolling; the practice library filter takes several themes, each card labelled.
+- `links.py`: My links: England Football Learning by default, your own course link, shown in the profile menu and on the Pathway.

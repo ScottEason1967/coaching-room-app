@@ -146,6 +146,10 @@ function profileMenu() {
       <a class="item" href="#/logbook"><span class="badge-num" style="background:var(--surface2);color:var(--text2)">${icon('book', 'style="width:20px;height:20px"')}</span><span class="grow"><span class="t" style="display:block">Logbook</span><span class="s">Hours, CPD and reflections</span></span></a>
       <a class="item" href="#/more"><span class="badge-num" style="background:var(--surface2);color:var(--text2)">${icon('cog', 'style="width:20px;height:20px"')}</span><span class="grow"><span class="t" style="display:block">Profile and settings</span><span class="s">Your photo, name, teams, backups</span></span></a>
       <a class="item" href="#/cloud"><span class="badge-num" style="background:var(--surface2);color:var(--text2)">${icon('cloud', 'style="width:20px;height:20px"')}</span><span class="grow"><span class="t" style="display:block">Cloud sync</span><span class="s">${esc(syncLabel())}</span></span></a>
+    </div>
+    <div class="ghead" style="padding-top:2px">My links</div>
+    <div class="gl" id="meLinks">${S.coachLinks().map(l => `<a class="gr" href="${esc(l.url)}" target="_blank" rel="noopener">${icon('link', 'style="width:18px;height:18px;flex:none"')}<span class="lbl">${esc(l.label || l.url)}<small>Opens in a new tab</small></span><span class="chev">›</span></a>`).join('')}
+      <a class="gr add" href="#/more">Add or change links</a>
     </div></div>`);
   el.querySelectorAll('a').forEach(a => a.addEventListener('click', () => closeSheet()));
 }

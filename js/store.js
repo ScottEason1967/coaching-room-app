@@ -263,6 +263,9 @@ export function importAll(text) {
 }
 
 /* ---------- Queries ---------- */
+// Each person's own links (their course, the FA's learning site). Private, like the rest of the profile.
+export const DEFAULT_LINKS = [{ id: 'efl', label: 'England Football Learning', url: 'https://learn.englandfootball.com/' }];
+export const coachLinks = () => { const c = get('coach'); return c && Array.isArray(c.links) ? c.links.filter(l => l && l.url) : DEFAULT_LINKS; };
 export const coach = () => get('coach') || put({ id: 'coach', kind: 'coach', team: null, name: 'Joe', initials: 'JE', ratings: {}, ratingLog: [] }, { quiet: true });
 export const teams = () => all('team').sort((a, b) => (!!a.archived - !!b.archived) || (a.order || 0) - (b.order || 0) || a.name.localeCompare(b.name));
 export const team = () => get(db.meta.activeTeam) || teams()[0] || null;

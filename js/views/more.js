@@ -2,18 +2,28 @@
 import * as S from '../store.js';
 import * as cloud from '../cloud.js';
 import { CPD_TYPES, PHASES } from '../store.js';
-import { esc, icon, today, fmtD, fmtDY, fmtAgo, bindFields, actions, debounce, confirmSheet, toast, sheet, closeSheet, shareFile, pickImage, avatar, logoImg, teamBadge } from '../util.js';
+import { esc, icon, uid, today, fmtD, fmtDY, fmtAgo, bindFields, actions, debounce, confirmSheet, toast, sheet, closeSheet, shareFile, pickImage, avatar, logoImg, teamBadge } from '../util.js';
 import { FORMATIONS } from '../pitch.js';
 import { sessionStats } from '../challenges.js';
 
 export default function more(el, params, ctx) {
   const c = S.coach(); ctx.setTop({ back: '#/home', title: 'Profile and settings' });
+  const links = (Array.isArray(c.links) ? c.links : S.DEFAULT_LINKS).map(l => ({ ...l }));
   const save = debounce(() => S.put(c), 400);
   const st = cloud.status();
   el.innerHTML = `<div class="stack" style="max-width:720px">
     <div class="card row nowrap" style="gap:14px;align-items:flex-start"><div class="stack tight" style="align-items:center;gap:6px">${avatar(c.photo, 72, `<span class="badge-num" style="width:72px;height:72px;font-size:28px;background:var(--surface2)">${esc(c.initials || 'JE')}</span>`)}
         <button class="btn sm" data-act="photo" id="mePhoto">${c.photo ? 'Change' : 'Add photo'}</button>${c.photo ? '<button class="btn sm" data-act="unphoto" style="min-height:32px">Remove</button>' : ''}</div>
       <div class="grow row" style="gap:10px"><label class="field grow"><span>Your name</span><input type="text" data-f="name"></label><label class="field" style="width:90px"><span>Initials</span><input type="text" data-f="initials" maxlength="3"></label></div></div>
+    <div class="card stack tight" id="myLinks"><div class="h3">My links</div>
+      <p class="small muted" style="margin:0">Quick links for you, in your profile menu (your initials, top right). Only you see them. Put your UEFA C course here: sign in to England Football Learning, open the course, and paste its address.</p>
+      <div class="stack tight" id="linkRows">${links.map((l, i) => `<div class="row nowrap" style="gap:8px;align-items:flex-end" data-li="${i}">
+        <label class="field" style="flex:1 1 40%"><span>Name</span><input type="text" data-lk="label" value="${esc(l.label || '')}" placeholder="e.g. My UEFA C course"></label>
+        <label class="field" style="flex:1 1 60%"><span>Web address</span><input type="url" inputmode="url" data-lk="url" value="${esc(l.url || '')}" placeholder="https://"></label>
+        <a class="btn icon" href="${esc(l.url || '#')}" target="_blank" rel="noopener" aria-label="Open ${esc(l.label || 'link')}" title="Open">${icon('link')}</a>
+        <button class="btn icon danger" data-act="rmLink" data-arg="${i}" aria-label="Remove ${esc(l.label || 'link')}">${icon('x')}</button></div>`).join('')}</div>
+      <div class="row"><button class="btn sm" data-act="addLink" id="addLink">${icon('plus')}Add a link</button></div>
+    </div>
     <div class="list">
       ${[['#/pathway', 'ladder', 'Pathway: UEFA C to Pro', 'Where you are, the competences, and the evidence you’re building'],
         ['#/logbook', 'book', 'Coaching logbook', 'CPD and coaching hours'],
@@ -24,7 +34,15 @@ export default function more(el, params, ctx) {
     </div>
     <p class="tiny muted">The Coaching Room</p></div>`;
   bindFields(el, c, () => save());
+  // Links: typed straight into the profile; an address without https:// gets it added.
+  const keepLinks = () => { c.links = links.map(l => ({ ...l, url: l.url && !/^https?:\/\//i.test(l.url) ? 'https://' + l.url.trim() : (l.url || '').trim() })); save(); };
+  el.querySelectorAll('#linkRows [data-li]').forEach(row => row.querySelectorAll('[data-lk]').forEach(inp => {
+    inp.oninput = () => { links[+row.dataset.li][inp.dataset.lk] = inp.value; keepLinks(); };
+    inp.onchange = () => { const a = row.querySelector('a.btn'); a.href = c.links[+row.dataset.li].url || '#'; if (inp.dataset.lk === 'url') inp.value = c.links[+row.dataset.li].url; };
+  }));
   actions(el, {
+    addLink: () => { links.push({ id: uid(), label: '', url: '' }); c.links = links; S.put(c); ctx.refresh(); setTimeout(() => el.querySelector(`[data-li="${links.length - 1}"] [data-lk="label"]`)?.focus(), 50); },
+    rmLink: i => { links.splice(+i, 1); c.links = links; S.put(c); ctx.refresh(); },
     startHere: () => { import('./home.js').then(M => M.openStartHere()); },
     photo: async () => { const src = await pickImage({ max: 320, square: true }); if (!src) return; c.photo = src; S.put(c); ctx.refresh(); toast('Photo saved'); },
     unphoto: () => { delete c.photo; S.put(c); ctx.refresh(); }
@@ -67,6 +85,7 @@ export function pathwayView(el, params, ctx) {
   const selfs = S.all('review').filter(r => (r.self || '').trim()).sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 8);
   const rung = (name, now, hrs, txt) => `<div class="card stack tight" style="${now ? 'border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)' : ''}"><div class="row between"><div class="h2">${name}</div>${now ? '<span class="pill">Enrolled</span>' : ''}</div><div class="tiny muted">${hrs}</div><div class="small" style="color:var(--text2)">${txt}</div></div>`;
   el.innerHTML = `<div class="stack">
+    <div class="row" style="gap:8px" id="pathLinks">${S.coachLinks().map(l => `<a class="btn" href="${esc(l.url)}" target="_blank" rel="noopener">${icon('link')}${esc(l.label || l.url)}</a>`).join('')}<a class="btn sm" href="#/more" style="min-height:36px">Change links</a></div>
     <p class="lead">Four UEFA licences, from the C to the Pro. This page keeps the destination in view and builds the evidence as you go, from what you already do in the app.</p>
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
       ${rung('UEFA C', true, 'At least 60 hours of course', 'Plan, deliver and review sessions that give players a positive experience. The FA assesses six competencies in four themes (below). You need to be coaching a team.')}
