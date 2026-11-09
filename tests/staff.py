@@ -122,10 +122,31 @@ async def main():
         await sync(V)
         check('a viewer’s change is refused and says why', srv.items[mid]['data']['opponent'] == 'Chester-le-Street' and 'can see this team but not change it' in await V.inner_text('.toast'))
 
+        # Two teams: an invite only gives the teams ticked; one link can cover several
+        await J.evaluate("import('./js/store.js').then(S => S.put({ id: 't-u18', kind: 'team', team: null, name: 'Thornaby U18', season: '2026/27' }))"); await sync(J)
+        await go(J, '#/staff')
+        check('the invite asks which teams', await J.locator('#iTeams [data-team]').count() == 2)
+        await J.fill('#iN', 'Sam Two'); await J.fill('#iE', 'sam@example.com'); await J.click('#iGo'); await J.wait_for_timeout(600); await J.click('#iX')
+        stoks = [t for t, i in srv.invites.items() if i['email'] == 'sam@example.com']
+        check('ticking just Thornaby FC Women makes one invite, for that team', len(stoks) == 1 and srv.invites[stoks[0]]['team_id'] == 't-thornaby')
+        Sm = await join(b, stoks[0], 'Sam Two', 'sam@example.com', 'sam-pass-123')
+        sid_ = srv.users['sam@example.com'][1]['id']
+        check('Sam sees Thornaby FC Women but not the U18s', srv.role(sid_, 't-thornaby') == 'coach' and srv.role(sid_, 't-u18') is None and not await Sm.evaluate("import('./js/store.js').then(S => !!S.get('t-u18'))"))
+        await go(J, '#/staff')
+        await J.fill('#iN', 'Ann Both'); await J.fill('#iE', 'ann@example.com'); await J.check('#iTeams [data-team="t-u18"]'); await J.click('#iGo'); await J.wait_for_timeout(600)
+        link = await J.inner_text('#invUrl'); await J.click('#iX')
+        both = link.split('#/join/')[1]
+        check('ticking both teams gives one link for both', both.count('.') == 1, both)
+        An = await join(b, both, 'Ann Both', 'ann@example.com', 'ann-pass-123')
+        aid = srv.users['ann@example.com'][1]['id']
+        check('one link joins both teams', srv.role(aid, 't-thornaby') == 'coach' and srv.role(aid, 't-u18') == 'coach')
+        await sync(J); await go(J, '#/home'); await go(J, '#/staff')
+        check('the staff list says who is on other teams too', 'Also on Thornaby U18' in await J.inner_text('#members') and 'Only this team' in await J.inner_text('#members'))
+
         # Staff management
         await sync(J); await go(J, '#/staff')
         await J.screenshot(path='shots/staff-three.png', full_page=True)
-        check('Staff lists all three', (await J.locator('#members [data-member]').count()) == 3)
+        check('Staff lists all five', (await J.locator('#members [data-member]').count()) == 5)
         vid = srv.users['viv@example.com'][1]['id']
         await J.select_option(f'[data-role="{vid}"]', 'coach'); await J.wait_for_timeout(500)
         check('the owner changes Viv to coach', next(m for m in srv.members if m['user_id'] == vid)['role'] == 'coach')

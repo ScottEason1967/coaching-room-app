@@ -211,6 +211,19 @@ export default function boardView(el, [id], ctx) {
     el.querySelector('#undoB').disabled = true; cv.render(); renderFrames(); frameFields(); renderInsp();
   }
 
+  // A locked arrow is copied, same id, onto every later frame, so it stays put from frame to frame
+  // and play-through keeps it on screen. Unlocking takes the copies off the later frames.
+  function setKeep(a, on) {
+    b.frames.forEach((f2, j) => {
+      if (j < fi) return;
+      const k = f2.arrows.findIndex(x => x.id === a.id);
+      if (j === fi) { if (k >= 0) f2.arrows[k].keep = on; return; }
+      if (on && k < 0) f2.arrows.push({ ...clone(a), keep: true });
+      else if (on) f2.arrows[k].keep = true;
+      else if (k >= 0) f2.arrows.splice(k, 1);
+    });
+    a.keep = on;
+  }
   function renderInsp() {
     const box = el.querySelector('#insp'); const it = cv.selected(); const f = fr();
     const onPitch = new Set(f.items.filter(i => i.kind === 'us').map(i => i.pid));
@@ -218,8 +231,13 @@ export default function boardView(el, [id], ctx) {
     const benchHtml = `<div class="eyebrow" style="margin-top:4px">Not on the pitch · tap to bring on</div>${bench.length ? `<div class="chips">${bench.map(p => `<button class="chip" data-bench="${p.id}"><b>${esc(p.num)}</b> ${esc(p.short || p.name)}</button>`).join('')}</div>` : '<div class="small muted">Everyone is on.</div>'}`;
     if (!it) { box.innerHTML = `<div class="small muted">Tap a player, arrow or label to change it. Drag to move. Pick an arrow tool and drag on the pitch to draw.</div>${benchHtml}`; }
     else if (cv.selT === 'a') {
-      box.innerHTML = `<div class="h3">Arrow</div><div class="seg">${Object.entries(ARROWS).map(([k, a]) => `<button data-st="${k}" class="${it.style === k ? 'on' : ''}">${a.lab}</button>`).join('')}</div><button class="btn sm danger" data-act="rm">${icon('trash')}Remove arrow</button>`;
+      const later = b.frames.length - 1 - fi;
+      box.innerHTML = `<div class="h3">Arrow</div><div class="seg">${Object.entries(ARROWS).map(([k, a]) => `<button data-st="${k}" class="${it.style === k ? 'on' : ''}">${a.lab}</button>`).join('')}</div>
+        <label class="check" id="keepArrow"><input type="checkbox" id="keepA" ${it.keep ? 'checked' : ''}> ${icon('lock', 'style="width:16px;height:16px"')} Keep on the next frames</label>
+        <p class="tiny muted" style="margin:0">${it.keep ? `Locked: it stays in place on ${later ? 'the ' + (later === 1 ? 'next frame' : 'next ' + later + ' frames') + ' and on' : ''} any frame you add after this one, and doesn’t flash off when you play it through.` : 'Tick to keep this arrow in the same place on the frames after this one.'}</p>
+        <button class="btn sm danger" data-act="rm">${icon('trash')}Remove arrow</button>`;
       box.querySelectorAll('[data-st]').forEach(x => x.onclick = () => { it.style = x.dataset.st; cv.o.changed(); cv.render(); renderInsp(); });
+      box.querySelector('#keepA').onchange = e => { setKeep(it, e.target.checked); cv.o.changed(); cv.render(); renderFrames(); renderInsp(); };
     } else if (it.kind === 'us') {
       const p = S.get(it.pid);
       box.innerHTML = `<div class="row nowrap"><span class="badge-num">${esc(p ? p.num : '?')}</span><div class="grow"><div class="h3">${esc(p ? p.name : 'Unassigned')}</div><div class="tiny muted">${esc(p ? p.pos : it.role || '')}</div></div></div>
@@ -258,7 +276,9 @@ export default function boardView(el, [id], ctx) {
       const tick = now => {
         const t = Math.min(1, (now - t0) / dur), e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
         const items = B.items.map(bi => { const ai = A.items.find(x => x.id === bi.id); return ai ? { ...bi, x: ai.x + (bi.x - ai.x) * e, y: ai.y + (bi.y - ai.y) * e } : bi; });
-        cv.render({ items, arrows: t > .85 ? B.arrows : [] });
+        // Arrows on both frames (locked ones) stay on screen; the rest swap over near the end.
+        const both = new Set(A.arrows.filter(a => B.arrows.some(x => x.id === a.id)).map(a => a.id));
+        cv.render({ items, arrows: t > .85 ? B.arrows : A.arrows.filter(a => both.has(a.id)) });
         if (t < 1) requestAnimationFrame(tick); else { i++; fi = i; renderFrames(); setTimeout(step, 600); }
       };
       requestAnimationFrame(tick);
@@ -276,7 +296,7 @@ export default function boardView(el, [id], ctx) {
     pan: a => { const [x, y] = a.split(',').map(Number); cv.pan(x * .4, y * .4); },
     rm: () => cv.remove(),
     addFrame: () => {
-      const f = clone(fr()); f.id = uid(); f.name = 'Frame ' + (b.frames.length + 1); f.notes = ''; f.arrows = [];
+      const f = clone(fr()); f.id = uid(); f.name = 'Frame ' + (b.frames.length + 1); f.notes = ''; f.arrows = f.arrows.filter(a => a.keep);
       b.frames.splice(fi + 1, 0, f); S.put(b); selectFrame(fi + 1); toast('New frame: move players to show what happens next');
     },
     shape: () => shapeSheet(),
@@ -293,6 +313,7 @@ export default function boardView(el, [id], ctx) {
       <button class="btn block" id="fmDup">${icon('dup')}Duplicate this frame</button>
       <button class="btn block" id="fmL" ${fi ? '' : 'disabled'}>Move earlier</button>
       <button class="btn block" id="fmR" ${fi < b.frames.length - 1 ? '' : 'disabled'}>Move later</button>
+      <button class="btn block" id="fmKeepA">${icon('lock')}Keep all this frame’s arrows on the next frames</button>
       <button class="btn block" id="fmClrA">Clear arrows in this frame</button>
       <button class="btn block danger" id="fmDel" ${b.frames.length > 1 ? '' : 'disabled'}>${icon('trash')}Delete this frame</button>
       <button class="btn block" id="fmX">Close</button></div>`);
@@ -301,6 +322,7 @@ export default function boardView(el, [id], ctx) {
     s.querySelector('#fmL').onclick = () => { const f = b.frames.splice(fi, 1)[0]; b.frames.splice(fi - 1, 0, f); done(fi - 1); };
     s.querySelector('#fmR').onclick = () => { const f = b.frames.splice(fi, 1)[0]; b.frames.splice(fi + 1, 0, f); done(fi + 1); };
     s.querySelector('#fmClrA').onclick = () => { fr().arrows = []; done(fi); };
+    s.querySelector('#fmKeepA').onclick = () => { fr().arrows.forEach(a => setKeep(a, true)); done(fi); toast('Arrows locked: they stay in place on the next frames'); };
     s.querySelector('#fmDel').onclick = () => { b.frames.splice(fi, 1); done(Math.max(0, fi - 1)); };
     s.querySelector('#fmX').onclick = closeSheet;
   }

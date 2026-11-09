@@ -15,7 +15,7 @@ import squad, { playerView } from './views/squad.js';
 import more, { pathwayView, logbookView, teamsView, teamView, cloudView } from './views/more.js';
 import blockView from './views/block.js';
 import matchTemplatesView from './views/mtemplates.js';
-import staffView, { joinView, reasonText, ROLE, ROLE_SAYS } from './views/staff.js';
+import staffView, { joinView, reasonText, ROLE, ROLE_SAYS, readInvites, acceptAll } from './views/staff.js';
 import ideasView, { ideaView } from './views/ideas.js';
 import { resetDock, focusField } from './challenges.js';
 import { helpFor, openHelp } from './help.js';
@@ -97,6 +97,8 @@ const BACK_WORD = h => (h || '').startsWith('#/training') || h === '#/ideas' ? '
   : h === '#/teamhome' ? 'Team' : h === '#/staff' ? 'Staff' : h === '#/model' ? 'Game model' : h === '#/squad' ? 'Squad' : h === '#/sketch' ? 'Sketch' : h === '#/more' ? 'Settings' : h === '#/home' ? 'Home'
   : h.startsWith('#/session/') ? 'Session' : h.startsWith('#/match/') ? 'Match plan' : h.startsWith('#/block/') ? 'Block' : h.startsWith('#/principle/') ? 'Principle' : 'Back';
 
+// On a laptop or iPad the main menu sits in the top bar, so it never scrolls away or slides under it.
+const topNav = () => { const on = (ROUTES[current.name] || {}).nav; return `<nav class="topnav" aria-label="Main">${NAV.map(([k, lab, ic, href]) => `<a href="${href}" class="${k} ${on === k ? 'on' : ''}" ${on === k ? 'aria-current="page"' : ''} title="${lab}">${icon(ic)}<span>${lab}</span></a>`).join('')}</nav>`; };
 function renderTop() {
   const t = S.team(); const c = S.coach(); const tb = $('#topbar');
   const guide = top.home ? `<button type="button" class="btn guide-btn" data-act="guide" id="guideBtn">Start here guide</button>` : '';
@@ -107,11 +109,11 @@ function renderTop() {
     const word = top.backLabel || BACK_WORD(top.back);
     const others = cloud.othersHere(here());
     const chips = others.length ? `<span class="here" id="hereChips" title="${esc(others.map(o => o.name).join(', '))} ${others.length > 1 ? 'are' : 'is'} here too">${others.slice(0, 3).map(o => `<span class="herec">${esc(((o.name || '?').trim()[0] || '?').toUpperCase())}</span>`).join('')}<span class="sr">${esc(others.map(o => o.name).join(', '))} ${others.length > 1 ? 'are' : 'is'} looking at this too</span></span>` : '';
-    tb.innerHTML = `<div class="bandrow"><a class="backlink" href="${top.back}">${icon('back')}<span class="sr">Back to </span>${esc(word)}</a><span class="grow"></span>${chips}${right}</div>
+    tb.innerHTML = `<div class="bandrow"><a class="backlink" href="${top.back}">${icon('back')}<span class="sr">Back to </span>${esc(word)}</a><span class="grow"></span>${topNav()}<span class="grow"></span>${chips}${right}</div>
       ${top.bug ? top.bug : `<div class="bandtitle" id="bandTitle">${esc(top.title || '')}</div>`}
       ${top.sub ? (top.onSub ? `<button type="button" class="bandsub" id="bandSub" aria-label="${esc(top.sub)}. Edit the details">${esc(top.sub)} ›</button>` : `<div class="bandsub">${esc(top.sub)}</div>`) : ''}`;
   } else {
-    tb.innerHTML = `<button class="team-switch hometitle" data-act="team" aria-label="Switch team: ${esc(t?.name || 'Add a team')}"><span class="tm">${teamBadge(t, 18, 10)}<span class="tmn">${esc(t?.name || 'Add a team')}${t?.season ? ' · ' + esc(t.season) : ''}</span>${icon('down')}</span><span class="bn">Coaching Room</span></button><div class="grow"></div>${right}`;
+    tb.innerHTML = `<button class="team-switch hometitle" data-act="team" aria-label="Switch team: ${esc(t?.name || 'Add a team')}"><span class="tm">${teamBadge(t, 18, 10)}<span class="tmn">${esc(t?.name || 'Add a team')}${t?.season ? ' · ' + esc(t.season) : ''}</span>${icon('down')}</span><span class="bn">Coaching Room</span></button><div class="grow"></div>${topNav()}<div class="grow"></div>${right}`;
   }
   const b = tb.querySelector('[data-act="team"]'); if (b) b.onclick = teamSwitcher;
   const gb = tb.querySelector('[data-act="guide"]'); if (gb) gb.onclick = openStartHere;
@@ -253,7 +255,7 @@ async function boot() {
   await cloud.init();
   if (recovering && cloud.signedIn()) return gate('reset');
   if (document.getElementById('gP')) return;
-  const joinTok = (location.hash.match(/^#\/join\/([A-Za-z0-9]+)/) || [])[1];
+  const joinTok = (location.hash.match(/^#\/join\/([A-Za-z0-9.]+)/) || [])[1];
   if (cloud.signedIn() || cloud.savedSession()) start();
   else if (joinTok) gateJoin(joinTok);
   else gate();
@@ -265,7 +267,7 @@ async function gateJoin(tok, have = false) {
   let g = document.getElementById('gate');
   if (!g) { g = document.createElement('div'); g.id = 'gate'; document.body.appendChild(g); }
   g.innerHTML = '<div class="gatebox stack"><p class="small muted" style="text-align:center;margin:0">Checking your invite…</p></div>';
-  const info = navigator.onLine ? await cloud.inviteInfo(tok) : { ok: false, reason: 'offline' };
+  const info = navigator.onLine ? await readInvites(tok) : { ok: false, reason: 'offline' };
   if (!info || !info.ok) {
     g.innerHTML = `<div class="gatebox stack"><div class="h2" style="text-align:center">This invite can’t be used</div><p class="small" style="margin:0;text-align:center">${esc(info && info.reason === 'offline' ? 'You’re offline. Connect to the internet and open the link again.' : reasonText(info && info.reason))}</p><button class="btn block" id="gSign">Sign in instead</button></div>`;
     g.querySelector('#gSign').onclick = () => { location.hash = ''; gate(); };
@@ -299,7 +301,7 @@ async function gateJoin(tok, have = false) {
         if (!ok) { joining = false; return msg('Your account is made, but this app’s database asks new people to confirm their email first, and that email can’t be sent. Ask whoever set the app up to switch off “Confirm email” in Supabase.'); }
       }
       msg('Joining…');
-      const r = await cloud.acceptInvite(tok);
+      const r = await acceptAll(info.toks);
       if (!r || !r.ok) { joining = false; return msg(reasonText(r && r.reason)); }
       await cloud.syncFully();
       if (S.get(r.team_id)) S.setTeam(r.team_id);

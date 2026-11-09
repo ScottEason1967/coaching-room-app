@@ -466,3 +466,20 @@ body.viewonly .content :is(input,textarea)::placeholder{color:transparent}
 .capt{min-width:36px;height:36px;border-radius:18px;border:1px solid var(--line2);background:var(--surface);color:var(--muted);font:700 12px var(--mono);cursor:pointer;padding:0 6px}
 .capt.on{background:#0B0F19;border-color:#0B0F19;color:#fff}
 @media (max-width:420px){#squadList .item{flex-wrap:wrap}#squadList .item>a{flex-basis:100%}#squadList select[data-pos]{flex:1}}
+/* Main menu in the top bar on wider screens (laptop, iPad landscape); the phone keeps its bottom bar. */
+.topnav{display:none}
+@media (min-width:900px){
+  #bottomnav{display:none!important}
+  .topnav{display:flex;gap:2px;flex:none;align-items:center}
+  .topnav a{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 12px;border-radius:10px;color:#4A4D57;text-decoration:none;font-size:14px;font-weight:600;white-space:nowrap}
+  .topnav a svg{width:19px;height:19px}
+  .topnav a:hover{background:rgba(0,0,0,.05)}
+  .topnav a.on{color:#0B0F19;box-shadow:inset 0 -3px 0 #0B0F19;border-radius:10px 10px 0 0}
+  .topnav a.training.on{box-shadow:inset 0 -3px 0 var(--c-training)}
+  .topnav a.match.on{box-shadow:inset 0 -3px 0 var(--c-match)}
+  .topnav a.analysis.on{box-shadow:inset 0 -3px 0 var(--c-analysis)}
+  .band .topnav a{color:#0B0F19}
+  .band .topnav a:hover{background:rgba(255,255,255,.35)}
+  .band .topnav a.on{box-shadow:inset 0 -3px 0 #0B0F19}
+}
+@media (min-width:900px) and (max-width:1180px){ .topnav a span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)} .topnav a{padding:0 10px} }

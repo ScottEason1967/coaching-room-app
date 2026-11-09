@@ -113,6 +113,7 @@ const board = () => ({
     st('**Open a board** from the list, or make a new one. The pitch shows frame 1. The small pictures under the pitch are the frames, in order. Tap one to go to it.', '#frames'),
     st('**Move** is the tool that is on when you open a board. Drag a player to where you want her.', '[data-tool="select"]'),
     st('**Pass**, **Run**, **Dribble** and **Press** each draw an arrow: pick the tool, then drag on the pitch from the start to the end. Tap an arrow afterwards to change its type or remove it. The tool stays on, so tap **Move** again when you have finished drawing.', '[data-tool="arrow:pass"]'),
+    st('To keep an arrow in the same place on the frames after this one, tap it and tick **Keep on the next frames**. It is copied onto the later frames and onto any frame you add, and stays on screen when you play the board through. **Frame** > **Keep all this frame’s arrows on the next frames** locks them all at once.'),
     st('**Opponent**, **Ball**, **Label**, **Cone** and **Mannequin** put something on the pitch: pick the tool, then tap where it goes. Opponent, Ball and Label switch back to Move by themselves.', '[data-tool="add:opp"]'),
     st('To show what happens next, tap **Next frame**. It copies the positions into a new frame without the arrows. Move the players to where they go next and draw the new arrows.', '[data-act="addFrame"]'),
     st('Each frame has a **Name**, a **Phase** and **Coaching notes for this moment** under the pitch. Write the notes for players: what they should see and do here.', '#fT'),
@@ -488,7 +489,7 @@ const ideas = params => ({
   purpose: 'Whole sessions and single practices from top-level coaches, sorted by what they train. Each one is written up in plain words with a diagram, coaching points, questions and progressions, and a link to the coach’s original.',
   steps: [
     st('**Train one of your principles**: tap a principle and the list shows ideas that train it. Principles whose wording doesn’t say what they train are listed separately underneath: tap one and choose from a short list, once.', '#ideaFilter'),
-    st('**Or pick what to work on**: the same list of themes under each moment of the game, if you want to browse.'),
+    st('**Or pick what to work on**: the same list of themes under each moment of the game. Tap as many as you like: the list shows practices for any of them, each labelled with its theme. Tap one again to take it off, or **Clear the filter**.'),
     st('**Whole sessions** are three or four practices in order, from a warm-up through to a game. Open one and **Plan a session from this** creates the session with every practice in it.', params[0] === 's' ? '' : '#ideaSessions'),
     st('**Practices**: open one to see the full write-up. **Edit and save as my own** gives you a copy to change, linked to your principles with the same theme. The library version never changes.', '#ideaDrills'),
     st(params[0] === 's' ? 'You came here from a session, so anything you pick goes straight into that session.' : 'Coming from a session’s **Add a practice** brings you here with the session’s principles already picked.'),
@@ -525,6 +526,7 @@ const staff = () => ({
   steps: [
     st('**Coaching staff** lists everyone on the team and their role. **Owner** set the team up. **Admin** can change everything and invite people. **Coach** can change everything. **Viewer** can look but not change anything. The owner or an admin can change a role or remove someone.', '#members'),
     st('**Invite someone**: their name, the email they will sign in with, and a role. **Make the invite link** gives you a link to send yourself by WhatsApp, text or email. It works once, for that email, within 14 days.', '#invF'),
+    st('If you run more than one team, tick **Which teams they can see**. They only see those teams; one link covers them all. To add someone already here to another team, invite them again with that team ticked. The staff list says who is also on your other teams.', '#invF'),
     st('**Waiting to join** lists invites not used yet. **Send** shows the link again; **Cancel** stops it working.', '#pending'),
     st('When two of you change the same thing, the newer change to each part is kept, so you rarely overwrite each other. If you both change the very same box, the later one wins and the other version is saved under your profile picture > Cloud sync.'),
     st('A circle with someone’s initial at the top of a screen means they have it open too. “Last change by…” on a session or match plan says who changed it last.'),
