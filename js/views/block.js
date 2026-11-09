@@ -84,7 +84,7 @@ export default function blockView(el, [id], ctx) {
           ${dn.length ? `<div class="tiny muted">${dn.map(d => esc(d.name)).join(' · ')}</div>` : '<div class="tiny muted">No drills yet.</div>'}
           ${(s.principleIds || []).some(x => sel.has(x)) || !sel.size ? '' : '<div class="tiny" style="color:var(--lamp)">Not on the block’s principles.</div>'}</div>`; }).join('')}
         ${ms.filter(m => inWeek(m, i)).map(m => `<a class="tiny" href="#/match/${m.id}">${fmtD(m.date)}: match v ${esc(m.opponent)}</a>`).join('')}
-        <div class="row" style="gap:6px"><button class="btn sm pri" data-act="newS" data-arg="${i}">${icon('plus')}New session</button><button class="btn sm" data-act="tplS" data-arg="${i}">From a template</button><button class="btn sm" data-act="moveS" data-arg="${i}">Move one here</button></div></div>`).join('')}
+        <div class="row" style="gap:6px"><button class="btn sm pri" data-act="newS" data-arg="${i}">${icon('plus')}Create a session</button><button class="btn sm" data-act="tplS" data-arg="${i}">${icon('grid')}Pick a template</button><button class="btn sm" data-act="moveS" data-arg="${i}">Move one here</button></div></div>`).join('')}
     </div>
     ${st === 'done' || st === 'now' ? `<div class="card stack" style="border-color:var(--lamp-line)"><label class="field"><span style="color:var(--lamp)">End of block: did the team get there? What’s the evidence, and what’s next?</span><textarea data-f="outcome" placeholder="Reviews, what you saw in games, what the players say. Then: next block, or go again?"></textarea></label></div>` : ''}
     <div class="row"><div class="grow"></div><button class="btn danger" data-act="del">${icon('trash')}Delete block</button></div>

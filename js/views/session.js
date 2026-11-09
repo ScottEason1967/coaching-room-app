@@ -86,7 +86,8 @@ export default function sessionView(el, [id], ctx) {
             <div class="stack tight" style="gap:6px"><button class="btn icon sm" data-act="up" data-arg="${i}" aria-label="Move up" ${i ? '' : 'disabled'}>${icon('up')}</button><button class="btn icon sm danger" data-act="rm" data-arg="${i}" aria-label="Remove">${icon('x')}</button></div>
           </div>
           <input type="text" data-f="blocks.${i}.note" placeholder="Note for this block (who, rotation, focus)" aria-label="Note for this block"></div></details>`; }).join('')}
-        <button class="gr add" data-act="add">${s.blocks.length ? '+ Add a practice' : '+ Add your first practice'}</button>
+        ${s.blocks.length ? `<button class="gr add" data-act="add">+ Add a practice</button><a class="gr add" href="#/ideas/s/${s.id}" id="sessTpl">${icon('grid', 'style="width:18px;height:18px"')}Pick from templates<span class="grow"></span><span class="tiny muted">whole sessions or single practices</span></a>`
+          : `<div class="bigpicks" style="padding:12px"><button type="button" class="bigpick pri" data-act="add">${icon('plus')}<span class="t">Create your own</span><span class="s">From your drills, or design a new one</span></button><a class="bigpick" href="#/ideas/s/${s.id}" id="sessTpl" style="text-decoration:none">${icon('grid')}<span class="t">Pick a template</span><span class="s">A whole session or single practices from top coaches</span></a></div>`}
       </div>
       <div class="tiny muted" style="padding:0 4px">Tap a practice for its minutes and talk time. “Talk” is explaining, stopping and setting up. Ball rolling = total minus talk.</div>
     </div>

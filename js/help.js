@@ -162,7 +162,8 @@ const training = params => {
     loop: `Programme sits between the model and the session: ${LOOP}.`,
     steps: [
       strip,
-      st('Tap **New block**. It starts when your last block ends, or today. You then give it a title, choose the principles and write what each week adds.', '#newBlock'),
+      st('**Create your own** starts a blank block. It starts when your last block ends, or today. You then give it a title, choose the principles and write what each week adds.', '#newBlock'),
+      st('**Pick a template** shows four-week blocks, one per theme, built from sessions by top coaches. Each week moves from the picture (numbers up) to the game under match pressure. **Plan this block** makes the block and its four sessions, drills included, ready to edit.', '#pickBlock'),
       st('Blocks are listed as **Running now**, **Coming up** and **Finished**. Tap one to open it.', when(T() && S.blocks(T()).length, '[href^="#/block/"]'))
     ]
   };
@@ -174,6 +175,7 @@ const matches = () => ({
   loop: `Matches come after training: ${LOOP}. The analysis you write afterwards feeds the opponent file.`,
   steps: [
     st('Tap **New match** to add the fixture. If an analysis is outstanding the app asks for it first. ' + GATE, '#newMatch'),
+    st('**Pick a template** shows ways The FA and top coaches plan a match: an opposition pack, a game plan, match day timelines, half-time processes and team targets. **Start a match with this** makes a new match with the template filled in.', '#pickMatchTpl'),
     st('Tap a match to open it. The row shows the opponent, the date and, once played, the score. The pill says whether it is waiting for its analysis.', when(T() && S.matches(T()).length, '[href^="#/match/"]')),
     st('Inside a match there are two parts. **Opposition analysis** is what you know about them. **Match day plan** is yours: how you will play, team selection, boards and set pieces, and the day itself. Share it with staff from the plan.')
   ]
@@ -204,7 +206,7 @@ const block = params => {
       st('Choose the **Principles this block is about**. One or two. Tap a chip to add or remove it. New sessions in the block start with these ticked.', '[data-act="pr"]'),
       st('**Why now**: what the reviews or the fixtures say. This is your evidence for choosing it.', 'aim'),
       st('**Week by week**: write what each week adds, simple to complex or part to whole. Sessions and matches in each week are listed under it, each session with its drills. A session on other principles is marked.', 'weeksPlan.0'),
-      st('Fill each week from here: **New session** adds one on your usual training night that week, on the block’s principles. **From a template** picks a whole session from top coaches and drops it into that week, drills included. **Move one here** brings in a session planned elsewhere.', '[data-act="newS"]'),
+      st('Fill each week from here: **Create a session** adds one on your usual training night that week, on the block’s principles. **Pick a template** picks a whole session from top coaches and drops it into that week, drills included. **Move one here** brings in a session planned elsewhere.', '[data-act="newS"]'),
       st('**Drill** on a session adds a practice to it: one of yours, one from the library, or a new one.', when(S.sessions(b.team || '').some(x => x.date >= (b.start || '') && b.start && x.date < S.blockEnd(b)), '[data-act="addDrill"]')),
       st('**End of block** appears once the block is running or finished. Did the team get there? What is the evidence, and what is next? Write it before you plan the next block.', when(live, 'outcome')),
       st('**Evidence in this block** (right on a laptop, bottom on a phone) counts sessions, matches and reviews, and how each principle scored.'),
@@ -230,7 +232,8 @@ const session = params => {
       st('**Carried forward**: the one thing you decided to change in your last review. Tick **This session acts on it**, then say **How**: which practice, which players, what will look different. The next review asks whether you did it.', when(lc, 'addresses')),
       st('**What I’m looking for tonight**: two or three things you could see or count. The review asks whether you saw them.', 'lookFor'),
       st('**Focus players** (tap the row to open it): pick one or two and the goal you are working on with them (it shows in brackets). Then write what you will watch for and what you will say to them.', '#focusChips'),
-      st('**Running order**: each practice is a row with its minutes. Tap a row to open it: the picture opens the drill (Back brings you here), the arrow moves it up and the cross removes it. **Add a practice** chooses from your drill library or designs a new one.', '[data-act="add"]'),
+      st('**Running order**: each practice is a row with its minutes. Tap a row to open it: the picture opens the drill (Back brings you here), the arrow moves it up and the cross removes it. **Add a practice** (or **Create your own** on an empty session) chooses from your drills or designs a new one.', '[data-act="add"]'),
+      st('**Pick a template** (or **Pick from templates**) opens the library for this session: drop in a whole session from top coaches, or single practices.', '#sessTpl'),
       st('Each practice has **Minutes** and **Talk**. Talk is the time you expect to spend explaining, stopping and setting up. Ball rolling is minutes minus talk, as a percentage. The England DNA aim is 70% or more. The figure above the list adds it up, and the strip shows how the time splits.', '#rollPill'),
       st('**Warm-up and kit**: tick **Warm-up includes injury-prevention work** if it does. If not, plan it in.', 'injuryPrev'),
       st('The kit to bring, in the same row, is worked out from the drill diagrams once you have added practices. **Staff and notes** is the last row.'),
@@ -304,6 +307,8 @@ const match = params => {
       st('**Squad**: tap the players in the squad (**All** and **None** help). Add selection notes, such as the starting XI.', '#squadChips', 'squad'),
       st('**Individual instructions**: one box per squad player. Each player sees only her own, on her player page. Write her job against this opponent.', when(hasSquad, '#instructions'), 'squad'),
       st('**Boards**: **Attach a board** adds a shape or set piece you have drawn, or **New board for this match** makes one. Attached boards print with the plan and, if marked for players, appear on their pages.', '#boards', 'boards'),
+      st('**Pick a template** (on the Match day plan, the Opposition and On the day) fills the parts of the plan that are still empty from a way The FA or a top coach does it. Anything you have written is kept.', '#matchTpl', 'over'),
+      st('**On the day** also holds **Team targets**, the **Match day timeline**, **Staff roles** and the **Half-time plan**. Templates fill these for you to edit.', 'plan.timeline', 'day'),
       st('**Team talk** (On the day): three things, in their language.', 'plan.talk', 'day'),
       st('**Print match plan** and **Print player cards** (one instruction card per player) give you paper for the day. **Share with staff** makes a private link and PIN.', '[data-act="print"]', 'day'),
       st('**Update player pages** sends the latest to every player who has a link: her own instruction, the keys, and boards marked for players. It needs cloud sync, and links are made in Squad.', '[data-act="players"]', 'day'),
@@ -497,7 +502,20 @@ const idea = params => ({
     st('**Where it comes from** names the coach and links to their original session. The diagram is our layout.', '#ideaSrc')
   ]
 });
-const GUIDES = { ideas, idea, home, teamhome, sketch, training, matches, analysis, model, principle, board, block, drill, session, match, review, squad, player, pathway, logbook, teams, team, cloud: cloudGuide, more };
+
+/* ----------------------------------------------------------------- Match day templates */
+const mtemplates = params => ({
+  title: 'Match day templates',
+  purpose: 'Ways The FA and top coaches plan a match, the day and half-time, in our own words with a link to each original.',
+  loop: `Templates feed the match plan: ${LOOP}. The review afterwards tells you which parts helped.`,
+  steps: [
+    st('They are grouped by part: **The opposition**, **The plan**, and **The day and half-time**. Each says where it comes from; **See the original** opens the source.'),
+    st('**What it adds to the plan** shows exactly what goes into which part of the match plan, and a few things worth knowing.', 'details'),
+    st((params || [])[0] ? '**Use on this match** fills only the parts that are still empty, so nothing you have written is lost. You can use more than one.' : '**Start a match with this** makes a new match with the template filled in. Inside a match, the button is **Use on this match**.', '[data-act="use"]')
+  ]
+});
+
+const GUIDES = { mtemplates, ideas, idea, home, teamhome, sketch, training, matches, analysis, model, principle, board, block, drill, session, match, review, squad, player, pathway, logbook, teams, team, cloud: cloudGuide, more };
 
 export function helpFor(routeName, params) {
   const g = GUIDES[routeName]; if (!g) return null;

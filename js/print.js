@@ -66,10 +66,11 @@ export function matchHtml(m) {
   return head('Match plan v ' + m.opponent, `${teamName(T)} · ${fmtDY(m.date)}${m.ko ? ' · ' + esc(m.ko) : ''}${m.venue ? ' · ' + esc(m.venue) : ''}${m.comp ? ' · ' + esc(m.comp) : ''}`, T)
     + `<h2>What wins us the game</h2><ol>${lines(p.keys).map(k => `<li>${esc(k)}</li>`).join('')}</ol>
        <h2>Their threat and our answer</h2><p>${nl2br(p.threat)}</p>
-       ${p.first || p.planB || p.subs ? `<h2>Match management</h2><table>${rows([['First ten minutes', p.first], ['Plan B', p.planB], ['Substitutions', p.subs]])}</table>` : ''}
+       ${p.first || p.planB || p.subs || p.whatIf ? `<h2>Match management</h2><table>${rows([['First ten minutes', p.first], ['Plan B', p.planB], ['Substitutions', p.subs], ['What if…', p.whatIf]])}</table>` : ''}
        <h2>How they play</h2><p>${Object.keys(TAGS).filter(k => (m.tags || {})[k]).map(k => `<b>${TAGS[k].lab}:</b> ${esc(m.tags[k])}`).join(' · ')}</p>
        <table>${rows([['In possession', o.ip], ['Out of possession', o.op], ['When they win it', o.ta], ['When they lose it', o.td], ['Set pieces', o.sp], ['Key individuals', o.people]])}</table>
-       <h2>Our plan</h2><table>${rows([['In possession', p.ip], ['Out of possession', p.op], ['Our set pieces', p.sp], ['Their set pieces', p.spAgainst], ['Selection', p.selection], ['Team talk', p.talk]])}</table>
+       <h2>Our plan</h2><table>${rows([['In possession', p.ip], ['Out of possession', p.op], ['Our set pieces', p.sp], ['Their set pieces', p.spAgainst], ['Unit jobs', p.units], ['Selection', p.selection], ['Team talk', p.talk]])}</table>
+       ${p.targets || p.timeline || p.staffRoles || p.halftime ? `<h2>On the day</h2><table>${rows([['Team targets', p.targets], ['Timeline', p.timeline], ['Staff roles', p.staffRoles], ['Half-time', p.halftime]])}</table>` : ''}
        ${(p.focusIds || []).map(S.get).filter(Boolean).length ? `<h2>Principles under test</h2><table>${rows((p.focusIds || []).map(S.get).filter(Boolean).map(pr => [esc(pr.title), (p.principleNotes || {})[pr.id] || '—']))}</table>` : ''}
        ${squad.length ? `<h2>Individual instructions</h2><table>${squad.map(pl => `<tr><th style="width:28%">${esc(pl.num)} · ${esc(pl.name)}</th><td>${nl2br((m.instructions || {})[pl.id] || '')}</td></tr>`).join('')}</table>` : ''}`
     + boards.map(b => `<div class="brk"></div><h1 style="font-size:16pt">${esc(b.name)}</h1>${boardHtml(b, pm)}`).join('');
@@ -80,7 +81,7 @@ export function printMatch(m) { doPrint(matchHtml(m)); }
 export function printInstructionCards(m) {
   const squad = (m.squadIds || []).map(S.get).filter(Boolean);
   doPrint(head('Player instructions v ' + m.opponent, `${teamName(m.team)} · ${fmtDY(m.date)}`, m.team)
-    + `<table>${squad.map(pl => `<tr class="avoid"><td style="padding:4mm"><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15pt;text-transform:uppercase">${esc(pl.num)} · ${esc(pl.name)}</div><div style="margin-top:2mm">${nl2br((m.instructions || {})[pl.id] || 'No individual instruction.')}</div><div style="margin-top:3mm;color:#555;font-size:9pt">Keys: ${lines((m.plan || {}).keys).map(esc).join(' · ')}</div></td></tr>`).join('')}</table>`);
+    + `<table>${squad.map(pl => `<tr class="avoid"><td style="padding:4mm"><div style="font-family:Oswald,'Barlow Condensed',sans-serif;font-weight:700;font-size:15pt;text-transform:uppercase">${esc(pl.num)} · ${esc(pl.name)}</div><div style="margin-top:2mm">${nl2br((m.instructions || {})[pl.id] || 'No individual instruction.')}</div><div style="margin-top:3mm;color:#555;font-size:9pt">Keys: ${lines((m.plan || {}).keys).map(esc).join(' · ')}</div></td></tr>`).join('')}</table>`);
 }
 
 window.addEventListener('afterprint', () => { const p = document.getElementById('print'); if (p) p.innerHTML = ''; });

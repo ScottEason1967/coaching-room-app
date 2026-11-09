@@ -40,3 +40,5 @@ Database rules (needs postgres on a spare port):
 - `block_build.py`: building a block from the top: sessions per week (new, template, moved in) and drills per session from the block page.
 - `sketch.py`: tactics and drill sketches, Save to (set piece, principle, match plan, drill, my drills, a session), Clear all.
 - `board_phone.py`: on a phone the frames sit above the pitch and the page scrolls from beside it.
+- `templates_everywhere.py`: a template route on every planning screen (Programme, block weeks, Sessions, empty and filled sessions, Drills); block templates make four sessions that get more game-like each week.
+- `match_templates.py`: match day templates from Match, the plan overview, Opposition and On the day; using one fills only empty parts and never overwrites; print shows the new parts.

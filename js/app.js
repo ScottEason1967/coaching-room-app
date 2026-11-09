@@ -14,6 +14,7 @@ import review from './views/review.js';
 import squad, { playerView } from './views/squad.js';
 import more, { pathwayView, logbookView, teamsView, teamView, cloudView } from './views/more.js';
 import blockView from './views/block.js';
+import matchTemplatesView from './views/mtemplates.js';
 import ideasView, { ideaView } from './views/ideas.js';
 import { resetDock, focusField } from './challenges.js';
 import { helpFor, openHelp } from './help.js';
@@ -32,6 +33,7 @@ const ROUTES = {
   ideas: { v: ideasView, nav: 'training', sec: 'training', detail: true }, idea: { v: ideaView, nav: 'training', sec: 'training', detail: true },
   matches: { v: matches, nav: 'match', sec: 'match' },
   match: { v: match, nav: 'match', sec: 'match', detail: true },
+  mtemplates: { v: matchTemplatesView, nav: 'match', sec: 'match', detail: true },
   analysis: { v: analysis, nav: 'analysis', sec: 'analysis' },
   review: { v: review, nav: 'analysis', sec: 'analysis', detail: true },
   more: { v: more, nav: '', detail: true }, pathway: { v: pathwayView, nav: '', detail: true },
@@ -86,7 +88,7 @@ function renderNav(on) {
 }
 
 // Where Back goes, in words: the band says "‹ Training", "‹ Match" and so on.
-const BACK_WORD = h => (h || '').startsWith('#/training') || h === '#/ideas' ? 'Training' : h.startsWith('#/matches') ? 'Match' : h.startsWith('#/analysis') ? 'Analysis'
+const BACK_WORD = h => (h || '').startsWith('#/training') || h === '#/ideas' ? 'Training' : h.startsWith('#/matches') ? 'Match' : h.startsWith('#/mtemplates') ? 'Templates' : h.startsWith('#/analysis') ? 'Analysis'
   : h === '#/teamhome' ? 'Team' : h === '#/model' ? 'Game model' : h === '#/squad' ? 'Squad' : h === '#/sketch' ? 'Sketch' : h === '#/more' ? 'Settings' : h === '#/home' ? 'Home'
   : h.startsWith('#/session/') ? 'Session' : h.startsWith('#/match/') ? 'Match plan' : h.startsWith('#/block/') ? 'Block' : h.startsWith('#/principle/') ? 'Principle' : 'Back';
 

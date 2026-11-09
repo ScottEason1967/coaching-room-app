@@ -3,9 +3,9 @@
 // #/ideas/t/<theme>; #/idea/<template>[/s|p/<id>] for one idea.
 import * as S from '../store.js';
 import { PHASES, PHASE_KEYS } from '../store.js';
-import { esc, icon, uid, actions, sheet, closeSheet, toast } from '../util.js';
+import { esc, icon, uid, actions, sheet, closeSheet, toast, today } from '../util.js';
 import { drillSvg } from '../pitch.js';
-import { THEMES, themesFor, themeOf, DRILL_TEMPLATES, SESSION_TEMPLATES, drillsForTheme, sessionsForTheme, tplById, sessionTplById } from '../templates.js';
+import { THEMES, THEME_KEYS, themesFor, themeOf, DRILL_TEMPLATES, SESSION_TEMPLATES, drillsForTheme, sessionsForTheme, tplById, sessionTplById } from '../templates.js';
 import { createSession } from './session.js';
 import { weekDate } from './block.js';
 import { reviewGate } from './review.js';
@@ -44,6 +44,35 @@ function addBlocks(s, drills) {
   S.put(s);
 }
 
+// Block templates: four weeks on one theme, built from the library. Each week takes three practices
+// from a ladder that runs from the least game-like (warm-up, skill) to the most (phase of play, game),
+// so week 1 sets the picture and week 4 plays it under match pressure.
+const RANK = { 'Warm-up': 0, 'Technical (unopposed)': 1, 'Skill (opposed)': 2, 'Functional': 3, 'Set piece': 3, 'Small-sided game': 4, 'Phase of play': 5, 'Game (11v11)': 6 };
+export const BLOCK_WEEKS = ['The picture: shape and roles, numbers up', 'Opposed, numbers up: read the triggers', 'Equal numbers, directional, with transitions', 'Phase of play and game: the trigger live under match pressure'];
+const WEEK_SHORT = ['the picture', 'opposed, numbers up', 'equal numbers', 'under match pressure'];
+export function blockLadder(th) {
+  const ids = [...new Set([...sessionsForTheme(th).flatMap(x => x.parts), ...drillsForTheme(th).map(t => t.id)])];
+  const pool = ids.map(tplById).filter(Boolean).filter(t => !t.general || drillsForTheme(th).includes(t));
+  const ladder = pool.map((t, i) => ({ t, i })).sort((a, b) => ((RANK[a.t.type] ?? 4) - (RANK[b.t.type] ?? 4)) || a.i - b.i).map(x => x.t);
+  const n = ladder.length; const per = Math.min(3, n);
+  return BLOCK_WEEKS.map((w, k) => { const at = n <= per ? 0 : Math.round(k * (n - per) / 3); return ladder.slice(at, at + per); });
+}
+export function planBlockFromTemplate(th) {
+  const T = S.team().id;
+  reviewGate(T, () => {
+    const pids = S.principles(T).filter(p => themeOf(p) === th).map(p => p.id).slice(0, 2);
+    const last = S.blocks(T)[0];
+    const start = last && S.blockEnd(last) > today() ? S.blockEnd(last) : today();
+    const b = S.create('block', T, { title: THEMES[th].lab, principleIds: pids, start, weeks: 4, aim: '', weeksPlan: BLOCK_WEEKS.slice(), outcome: '', fromTemplate: 'blk:' + th });
+    blockLadder(th).forEach((parts, k) => {
+      const se = createSession(T, { date: weekDate(T, b, k), theme: `${THEMES[th].lab}: ${WEEK_SHORT[k]}`, principleIds: pids.slice(), fromTemplate: 'blk:' + th });
+      addBlocks(se, parts.map(t => drillFromTemplate(t, T, linkFor(T, t, pids)).d));
+    });
+    toast('Block planned with four sessions. Check the dates and make it yours.');
+    location.hash = '#/block/' + b.id;
+  }, 'plan a new block');
+}
+
 function themePicker(p, onDone) {
   const opts = themesFor(p.phase);
   const el = sheet(`<div class="stack"><div class="h2">What is “${esc(p.title || 'this principle')}” about?</div>
@@ -60,7 +89,7 @@ export default function ideasView(el, params, ctx) {
   const T = S.team().id;
   const [kind, cid] = params;
   // From Training: "Pick a template" shows only whole sessions, "Pick from the library" only practices.
-  const only = kind === 'sessions' || kind === 'drills' ? kind : null;
+  const only = kind === 'sessions' || kind === 'drills' || kind === 'blocks' ? kind : null;
   S.setMeta('ideaFrom', only || '');
   const wkc = only === 'sessions' && S.meta().ideaWeek && Date.now() - S.meta().ideaWeek.at < 36e5 ? S.meta().ideaWeek : null;
   if (!only && S.meta().ideaWeek) S.setMeta('ideaWeek', null);
@@ -76,7 +105,7 @@ export default function ideasView(el, params, ctx) {
     : prin ? themeOf(prin) : sess ? (sess.principleIds || []).map(x => themeOf(S.get(x))).find(Boolean) || '' : (m.ideaTheme || '');
   if (th && !THEMES[th]) th = '';
   const suffix = sess ? `/s/${sess.id}` : prin ? `/p/${prin.id}` : '';
-  ctx.setTop({ back: sess ? '#/session/' + sess.id : prin ? '#/principle/' + prin.id : wkc ? '#/block/' + wkc.block : '#/training/' + (only || 'drills'), title: only === 'sessions' ? 'Session templates' : only === 'drills' ? 'Drill library' : 'Practice ideas', sub: sess ? 'Adding to a session' : prin ? 'For: ' + (prin.title || 'principle') : 'From top-level coaching' });
+  ctx.setTop({ back: sess ? '#/session/' + sess.id : prin ? '#/principle/' + prin.id : wkc ? '#/block/' + wkc.block : '#/training/' + (only === 'blocks' ? 'programme' : only || 'drills'), title: only === 'blocks' ? 'Block templates' : only === 'sessions' ? 'Session templates' : only === 'drills' ? 'Drill library' : 'Practice ideas', sub: sess ? 'Adding to a session' : prin ? 'For: ' + (prin.title || 'principle') : 'From top-level coaching' });
 
   const pChip = p => { const pt = themeOf(p); return `<button class="chip ${pt && pt === th ? 'on' : ''}" data-act="pick" data-arg="${p.id}">${esc(p.title || 'Untitled')}</button>`; };
   const drills = drillsForTheme(th), sessions = sessionsForTheme(th);
@@ -85,18 +114,28 @@ export default function ideasView(el, params, ctx) {
   el.innerHTML = `<div class="stack">
     ${wkc && S.get(wkc.block) ? `<div class="banner small">Pick a session and it goes into week ${wkc.week + 1} of “${esc(S.get(wkc.block).title || 'your block')}”.</div>` : ''}
     ${sess ? `<div class="banner small">Pick a practice or a whole session and it goes into the session for ${esc(S.get(sess.id) ? new Date(sess.date + 'T12:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '')}.</div>` : ''}
-    <div class="card stack tight" id="ideaFilter">
+    ${only === 'blocks' ? `<details class="gl" id="blockFilter"><summary class="gr"><span class="lbl">Filter by principle or theme<small>${th ? esc(THEMES[th].lab) : 'Showing all 15'}</small></span><span class="chev">›</span></summary><div class="fold"><div class="card stack tight" id="ideaFilter">
       <div class="label">Train one of your principles</div>
       ${ps.length ? PHASE_KEYS.filter(k => ps.some(p => p.phase === k && themeOf(p))).map(k => `<div class="tiny muted">${PHASES[k].lab}</div><div class="chips">${ps.filter(p => p.phase === k && themeOf(p)).map(pChip).join('')}</div>`).join('') : '<div class="small muted">No principles yet. <a href="#/model">Write your game model</a> and the ideas sort themselves by it.</div>'}
       ${ps.some(p => !themeOf(p)) ? `<div class="tiny muted" style="margin-top:4px">The app can’t tell what these train from their wording. Tap one to choose, and its ideas show here:</div><div class="chips">${ps.filter(p => !themeOf(p)).map(pChip).join('')}</div>` : ''}
       <div class="label" style="margin-top:6px">Or pick what to work on</div>
       ${PHASE_KEYS.map(k => `<div class="tiny muted">${PHASES[k].lab}</div><div class="chips">${themesFor(k).map(t => `<button class="chip ${t === th ? 'on' : ''}" data-act="theme" data-arg="${t}">${esc(THEMES[t].lab)}</button>`).join('')}</div>`).join('')}
-    </div>
+    </div></div></details>` : `<div class="card stack tight" id="ideaFilter">
+      <div class="label">Train one of your principles</div>
+      ${ps.length ? PHASE_KEYS.filter(k => ps.some(p => p.phase === k && themeOf(p))).map(k => `<div class="tiny muted">${PHASES[k].lab}</div><div class="chips">${ps.filter(p => p.phase === k && themeOf(p)).map(pChip).join('')}</div>`).join('') : '<div class="small muted">No principles yet. <a href="#/model">Write your game model</a> and the ideas sort themselves by it.</div>'}
+      ${ps.some(p => !themeOf(p)) ? `<div class="tiny muted" style="margin-top:4px">The app can’t tell what these train from their wording. Tap one to choose, and its ideas show here:</div><div class="chips">${ps.filter(p => !themeOf(p)).map(pChip).join('')}</div>` : ''}
+      <div class="label" style="margin-top:6px">Or pick what to work on</div>
+      ${PHASE_KEYS.map(k => `<div class="tiny muted">${PHASES[k].lab}</div><div class="chips">${themesFor(k).map(t => `<button class="chip ${t === th ? 'on' : ''}" data-act="theme" data-arg="${t}">${esc(THEMES[t].lab)}</button>`).join('')}</div>`).join('')}
+    </div>`}
     <div class="row between"><div class="h2" style="margin:0">${th ? esc(THEMES[th].lab) : 'Everything'}</div>${th ? '<button class="btn sm" data-act="theme" data-arg="">Show everything</button>' : ''}</div>
-    ${sessions.length && only !== 'drills' ? `<div class="eyebrow">Whole sessions</div><div class="grid3" id="ideaSessions">${sessions.map(st => `<a class="card link stack tight" href="#/idea/${st.id}${suffix}" style="text-decoration:none;display:flex">
+    ${only === 'blocks' ? `<div class="stack" id="ideaBlocks">${(th ? [th] : THEME_KEYS).map(k => { const wk = blockLadder(k); const who = [...new Set(wk.flat().map(t => t.src.who))].slice(0, 3);
+        return `<div class="card stack tight"><div class="row between nowrap"><span class="h3">${esc(THEMES[k].lab)}</span><span class="pill grey">4 weeks · ${wk.reduce((a, x) => a + x.length, 0)} practices</span></div>
+        <div class="gl" style="background:var(--bg)">${wk.map((parts, i) => `<div class="gr" style="cursor:default;min-height:0"><span class="ix">${String(i + 1).padStart(2, '0')}</span><span class="lbl">${esc(BLOCK_WEEKS[i])}<small>${parts.map(t => esc(t.name)).join(' · ')}</small></span></div>`).join('')}</div>
+        <div class="row between"><span class="tiny muted grow">From sessions by ${who.map(esc).join(', ')}</span><button class="btn sm pri" data-act="useB" data-arg="${k}">${icon('plus')}Plan this block</button></div></div>`; }).join('')}</div>` : ''}
+    ${sessions.length && only !== 'drills' && only !== 'blocks' ? `<div class="eyebrow">Whole sessions</div><div class="grid3" id="ideaSessions">${sessions.map(st => `<a class="card link stack tight" href="#/idea/${st.id}${suffix}" style="text-decoration:none;display:flex">
         <div class="row nowrap" style="gap:6px">${st.parts.slice(0, 4).map(pid => { const t = tplById(pid); return t ? drillSvg(tplDrill(t), { style: 'width:25%;height:54px;border-radius:6px' }) : ''; }).join('')}</div>
         <span class="h3">${esc(st.name)}</span><span class="small muted">${esc(st.why)}</span><span class="tiny muted">${st.parts.length} practices · ${esc(st.src)}</span></a>`).join('')}</div>` : ''}
-    ${only === 'sessions' ? (sessions.length ? '' : '<div class="empty">No whole sessions for this yet. Show everything to see them all.</div>') : `<div class="eyebrow">Practices</div>
+    ${only === 'blocks' ? '' : only === 'sessions' ? (sessions.length ? '' : '<div class="empty">No whole sessions for this yet. Show everything to see them all.</div>') : `<div class="eyebrow">Practices</div>
     <div class="grid3" id="ideaDrills">${drills.map(t => `<a class="card link stack tight" href="#/idea/${t.id}${suffix}" style="text-decoration:none;display:flex">${drillSvg(tplDrill(t), { style: 'width:100%;height:150px;border-radius:12px' })}
       <div class="row between nowrap"><span class="h3">${esc(t.name)}</span>${inLib.has(t.id) ? '<span class="pill good">In your drills</span>' : ''}</div>
       <span class="tiny muted">${esc(t.type)} · ${t.players} players · ${t.minutes} min · ${esc(t.src.who)}</span></a>`).join('')}</div>`}
@@ -104,6 +143,7 @@ export default function ideasView(el, params, ctx) {
   </div>`;
 
   actions(el, {
+    useB: k => planBlockFromTemplate(k),
     theme: t => {
       if (only) { S.setMeta('ideaTheme', t); ctx.refresh(); return; }
       if (key) { S.setMeta('ideaCtx', key); S.setMeta('ideaCtxTheme', t); ctx.refresh(); return; }

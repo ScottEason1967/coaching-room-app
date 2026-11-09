@@ -74,8 +74,8 @@ export function training(el, [tab], ctx) {
         : `<div class="empty">${q ? 'No drills match.' : 'No drills yet. Create your own, or pick one from the library to edit.'}</div>`}
       <p class="tiny muted" style="margin:0">Your drills come with you to any team you coach.</p>`;
   } else {
-    body = `<div class="row" style="justify-content:flex-end"><button class="btn pri" data-act="newB" id="newBlock">${icon('plus')}New block</button></div>
-      <p class="small muted" style="margin:0">A block is four to six weeks on one or two principles. Sessions fall into a block by their date.</p>${programmeHtml(T)}`;
+    body = `<div class="bigpicks">${bigBtn('newB', 'plus', 'Create your own', 'Start from a blank block', true, 'newBlock')}${bigBtn('tplB', 'grid', 'Pick a template', 'Four weeks on one theme, sessions and drills included', false, 'pickBlock')}</div>
+      ${programmeHtml(T)}`;
   }
   el.innerHTML = `<div class="stack">${head('training', 'Training', 'Programme holds sessions, sessions hold drills')}
     <div class="seg tabs3" role="tablist" id="trainTabs">${TTABS.map(([k, l]) => `<a role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''}" href="#/training/${k}">${l}</a>`).join('')}</div>
@@ -85,7 +85,7 @@ export function training(el, [tab], ctx) {
   actions(el, {
     newS: () => newSession(), tplS: () => { S.setMeta('ideaWeek', null); ctx.go('#/ideas/sessions'); },
     newD: () => { const d = newDrill(); location.hash = '#/drill/' + d.id; }, libD: () => ctx.go('#/ideas/drills'),
-    newB: () => newBlock()
+    newB: () => newBlock(), tplB: () => { S.setMeta('ideaWeek', null); ctx.go('#/ideas/blocks'); }
   });
 }
 
@@ -95,10 +95,10 @@ export function matches(el, params, ctx) {
   const all = S.matches(T); const up = all.filter(m => !m.date || m.date >= td).reverse(); const past = all.filter(m => m.date && m.date < td);
   const row = m => `<a class="item" href="#/match/${m.id}"><span class="badge-num">${icon('match', 'style="width:20px;height:20px"')}</span><span class="grow"><span class="t" style="display:block">v ${esc(m.opponent || 'Opponent not set')}${m.result && m.result.us !== '' && m.result.us != null ? ` · ${esc(m.result.us)}-${esc(m.result.them)}` : ''}</span><span class="s">${fmtD(m.date)}${m.ko ? ' · ' + esc(m.ko) : ''}${m.venue ? ' · ' + esc(m.venue) : ''}</span></span>${statusPill(m, td)}</a>`;
   el.innerHTML = `<div class="stack">${head('match', 'Match', 'Opposition analysis and your match day plan')}
-    <div class="bigpicks one">${bigBtn('newM', 'plus', 'New match', 'Add the fixture, then the opposition and your plan', true, 'newMatch')}</div>
+    <div class="bigpicks">${bigBtn('newM', 'plus', 'New match', 'Add the fixture, then the opposition and your plan', true, 'newMatch')}${bigBtn('tplM', 'grid', 'Pick a template', 'Match day plans, timelines and half-time from The FA and top coaches', false, 'pickMatchTpl')}</div>
     ${up.length ? `<div class="eyebrow">Coming up</div><div class="list" id="matchesUp">${up.map(row).join('')}</div>` : '<div class="empty">No matches in the diary.</div>'}
     ${past.length ? `<div class="eyebrow">Played</div><div class="list">${past.map(row).join('')}</div>` : ''}</div>`;
-  actions(el, { newM: () => newMatch() });
+  actions(el, { newM: () => newMatch(), tplM: () => ctx.go('#/mtemplates') });
 }
 
 /* ---------- Analysis ---------- */

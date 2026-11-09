@@ -10,11 +10,13 @@ import { reviewGate, startReview } from './review.js';
 import { shareSheet, refreshIfShared, refreshPlayers } from './sharing.js';
 import { newBoardSheet, BOARD_TYPES, BOARD_LABEL } from './board.js';
 import * as cloud from '../cloud.js';
+import { MATCH_FIELDS as MF } from '../matchTemplates.js';
 
+export const createMatch = T => S.create('match', T, { opponent: '', date: '', ko: '', venue: '', comp: '', src: '', tags: {}, opp: {}, plan: { keys: '', threat: '', first: '', planB: '', subs: '', ip: '', op: '', sp: '', spAgainst: '', selection: '', talk: '', whatIf: '', units: '', targets: '', timeline: '', staffRoles: '', halftime: '', focusIds: [], principleNotes: {} }, instructions: {}, boardIds: [], squadIds: [], result: { us: '', them: '' } });
 export function newMatch() {
   const T = S.team().id;
   reviewGate(T, () => {
-    const m = S.create('match', T, { opponent: '', date: '', ko: '', venue: '', comp: '', src: '', tags: {}, opp: {}, plan: { keys: '', threat: '', first: '', planB: '', subs: '', ip: '', op: '', sp: '', spAgainst: '', selection: '', talk: '', focusIds: [], principleNotes: {} }, instructions: {}, boardIds: [], squadIds: [], result: { us: '', them: '' } });
+    const m = createMatch(T);
     S.setMeta('matchTab', 'them');
     location.hash = '#/match/' + m.id;
   }, 'plan the next match');
@@ -46,7 +48,8 @@ export default function matchView(el, [id], ctx) {
   const ta = (f, label, ph, rows = '') => `<label class="field"><span>${label}</span><textarea data-f="${f}" placeholder="${esc(ph || '')}" ${rows}></textarea></label>`;
 
   const body = {
-    them: () => `${prev.length ? `<div class="card stack tight" id="oppFile" style="border-color:var(--accent-line)"><div class="h3">Opponent file: ${esc(m.opponent)}</div>
+    them: () => `<div class="gl"><a class="gr add" href="#/mtemplates/${m.id}" id="oppTpl">${icon('grid', 'style="width:18px;height:18px"')}Pick a template<span class="grow"></span><span class="tiny muted">opposition pack and more</span></a></div>
+      ${prev.length ? `<div class="card stack tight" id="oppFile" style="border-color:var(--accent-line)"><div class="h3">Opponent file: ${esc(m.opponent)}</div>
         ${prev.map(x => { const r = prevReview(x); return `<div class="small" style="padding:6px 0;border-top:1px solid var(--line)"><a href="#/match/${x.id}"><b>${fmtD(x.date)}</b>${x.result && x.result.us !== '' && x.result.us != null ? ` · ${esc(x.result.us)}-${esc(x.result.them)}` : ''}</a>${lines((x.plan || {}).keys).length ? `<br><span class="muted">Keys then:</span> ${lines(x.plan.keys).map(esc).join('; ')}` : ''}${r && r.them ? `<br><span class="muted">What they did that we didn’t expect:</span> ${esc(r.them)}` : ''}${r && r.didnt ? `<br><span class="muted">What didn’t work for us:</span> ${esc(r.didnt)}` : ''}</div>`; }).join('')}
         ${!(m.opp.ip || m.opp.op) && prev.some(x => x.opp && (x.opp.ip || x.opp.op)) ? `<button class="btn sm" data-act="copyPrev">Start from last time’s analysis</button>` : ''}</div>` : ''}
       <div class="card stack"><div class="h3">How they play</div>
@@ -57,8 +60,9 @@ export default function matchView(el, [id], ctx) {
         ${ta('plan.first', 'The first ten minutes: what we expect, what we want', 'e.g. They’ll go long early and foul. We keep the ball on the floor, no reaction, first switch inside two minutes.')}</div>
       <div class="card stack" style="border-color:var(--lamp-line)"><div class="h3">Match management</div>
         ${ta('plan.planB', 'Plan B: the trigger that tells you it isn’t working, and what you change', 'e.g. If we’ve lost it in our half three times by 20 minutes: GK goes long to the 9, 8s on second balls.')}
-        ${ta('plan.subs', 'Substitutions: who comes on for what, who moves where', 'e.g. 60 min: 14 for 11 if we’re chasing; 7 moves to the left. Keep 16 for the last 15 if we’re holding.')}</div>
-      <div class="card stack">${ta('plan.ip', 'Our plan in possession')}${ta('plan.op', 'Our plan out of possession')}${ta('plan.sp', 'Our set pieces', 'Corners, wide free kicks, throws: the routine and why against this keeper and marking')}${ta('plan.spAgainst', 'Their set pieces', 'Who marks whom, zonal or man, who stays up')}</div>
+        ${ta('plan.subs', 'Substitutions: who comes on for what, who moves where', 'e.g. 60 min: 14 for 11 if we’re chasing; 7 moves to the left. Keep 16 for the last 15 if we’re holding.')}
+        ${ta('plan.whatIf', MF.whatIf.lab, MF.whatIf.ph)}</div>
+      <div class="card stack">${ta('plan.ip', 'Our plan in possession')}${ta('plan.op', 'Our plan out of possession')}${ta('plan.units', MF.units.lab, MF.units.ph)}${ta('plan.sp', 'Our set pieces', 'Corners, wide free kicks, throws: the routine and why against this keeper and marking')}${ta('plan.spAgainst', 'Their set pieces', 'Who marks whom, zonal or man, who stays up')}</div>
       ${trained.length ? `<div class="card stack tight" id="trained"><div class="h3">Trained this week</div>${trained.map(x => `<div class="small"><a href="#/session/${x.id}">${fmtD(x.date)}: ${esc(x.theme || 'session')}</a>${(x.principleIds || []).length ? ` <span class="muted">· ${x.principleIds.map(S.get).filter(Boolean).map(p => esc(p.title)).join(', ')}</span>` : ''}${x.matchPrep ? ' <span class="pill good">match prep</span>' : ''}</div>`).join('')}<div class="tiny muted">If what you trained isn’t in the keys or the principles under test, either put it in or ask why you trained it.</div></div>` : ''}
       <div class="card stack" id="focusPrinciples"><div class="h3">Principles under test</div><p class="tiny muted" style="margin:0">Which two or three does this opponent threaten most? Pick them; the review scores these first.${suggested.length ? ' Suggested from the tags are marked.' : ''}</p>
         ${ps.length ? `<div class="chips">${ps.map(p => `<button class="chip ${focusSet.has(p.id) ? 'on' : ''}" data-act="focus" data-arg="${p.id}"><span class="dot" style="color:${PHASES[p.phase].col}"></span>${esc(p.title)}${suggested.includes(p.id) && !focusSet.has(p.id) ? ' <span style="color:var(--lamp)">?</span>' : ''}</button>`).join('')}</div>
@@ -70,7 +74,9 @@ export default function matchView(el, [id], ctx) {
         ${m.squadIds.map(S.get).filter(Boolean).map(p => `<label class="field"><span>${esc(p.num)} · ${esc(p.name)}${p.pos ? ` <span class="muted">(${esc(p.pos)})</span>` : ''}</span><textarea data-f="instructions.${p.id}" style="min-height:60px" placeholder="Her job against this opponent"></textarea></label>`).join('')}</div>` : ''}`,
     boards: () => `<div class="stack" id="boards">${boards.length ? `<div class="grid2">${boards.map(b => `<div class="card stack tight"><a href="#/board/${b.id}">${frameSvg(b.frames[0] || { items: [], arrows: [] }, pm, { orient: 'h', style: 'width:100%;height:auto;border-radius:12px' })}</a><div class="row between nowrap"><span class="h3">${esc(b.name)}</span><span class="pill ${b.type === 'setpiece' ? 'lamp' : 'grey'}">${BOARD_LABEL(b.type)}</span></div><div class="row"><span class="tiny muted grow">${b.sharePlayers ? 'On player pages' : 'Staff only'}</span><button class="btn sm" data-act="detach" data-arg="${b.id}">Remove</button></div></div>`).join('')}</div>` : '<div class="empty">No boards attached. Attach your shapes and set pieces so they print with the plan.</div>'}
       <div class="row"><button class="btn pri" data-act="attach">${icon('plus')}Attach a board</button><button class="btn" data-act="newBoard">New board for this match</button></div></div>`,
-    day: () => `<div class="card stack">${ta('plan.talk', 'Team talk', 'Three things, in their language', 'style="min-height:110px"')}</div>
+    day: () => `<div class="gl"><a class="gr add" href="#/mtemplates/${m.id}">${icon('grid', 'style="width:18px;height:18px"')}Pick a match day template<span class="grow"></span><span class="tiny muted">timelines, half-time, targets</span></a></div>
+      <div class="card stack">${ta('plan.targets', MF.targets.lab, MF.targets.ph)}${ta('plan.timeline', MF.timeline.lab, MF.timeline.ph)}${ta('plan.staffRoles', MF.staffRoles.lab, MF.staffRoles.ph)}${ta('plan.halftime', MF.halftime.lab, MF.halftime.ph)}</div>
+      <div class="card stack">${ta('plan.talk', 'Team talk', 'Three things, in their language', 'style="min-height:110px"')}</div>
       <div class="card stack tight"><div class="h3">Get it out</div>
         <div class="row"><button class="btn" data-act="print">${icon('print')}Print match plan</button><button class="btn" data-act="cards">${icon('print')}Print player cards</button></div>
         <div class="row"><button class="btn" data-act="share">${icon('share')}Share with staff</button><button class="btn pri" data-act="players">${icon('squad')}Update player pages</button></div>
@@ -87,8 +93,9 @@ export default function matchView(el, [id], ctx) {
       <button type="button" class="gr" role="tab" aria-selected="false" data-act="tab" data-arg="plan"><span class="lbl">How we play<small>Threat, first ten minutes, Plan B, subs, set pieces</small></span><span class="v"><span class="mono">${m.plan.focusIds.length ? m.plan.focusIds.length + ' UNDER TEST' : ''}</span><span class="chev">›</span></span></button>
       <button type="button" class="gr" role="tab" aria-selected="false" data-act="tab" data-arg="squad"><span class="lbl">Team selection<small>Squad and individual instructions</small></span><span class="v"><span class="mono">${m.squadIds.length}</span><span class="chev">›</span></span></button>
       <button type="button" class="gr" role="tab" aria-selected="false" data-act="tab" data-arg="boards"><span class="lbl">Boards and set pieces</span><span class="v"><span class="mono">${boards.length || ''}</span><span class="chev">›</span></span></button>
-      <button type="button" class="gr" role="tab" aria-selected="false" data-act="tab" data-arg="day"><span class="lbl">On the day<small>Team talk, print, share${played ? ', result' : ''}</small></span><span class="v"><span class="mono">${m.ko ? 'KO ' + esc(m.ko) : ''}</span><span class="chev">›</span></span></button>
-    </div>`;
+      <button type="button" class="gr" role="tab" aria-selected="false" data-act="tab" data-arg="day"><span class="lbl">On the day<small>Timeline, half-time, team talk, print, share${played ? ', result' : ''}</small></span><span class="v"><span class="mono">${m.ko ? 'KO ' + esc(m.ko) : ''}</span><span class="chev">›</span></span></button>
+    </div>
+    <div class="gl"><a class="gr add" href="#/mtemplates/${m.id}" id="matchTpl">${icon('grid', 'style="width:18px;height:18px"')}Pick a template<span class="grow"></span><span class="tiny muted">from The FA and top coaches</span></a></div>`;
 
   el.innerHTML = `<div class="split wide-right"><div class="stack">${chalJump()}
     ${m.example ? `<div class="row nowrap small" style="gap:10px;color:var(--lamp-text);background:var(--lamp-soft);border:1px solid var(--lamp-line);border-radius:14px;padding:10px 12px"><span class="grow">Example plan, to show how the challenge works. Set a date to make it real, or delete it.</span><button class="btn sm" data-act="unexample">Make it real</button></div>` : ''}
