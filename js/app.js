@@ -15,6 +15,7 @@ import squad, { playerView } from './views/squad.js';
 import more, { pathwayView, logbookView, teamsView, teamView, cloudView } from './views/more.js';
 import blockView from './views/block.js';
 import matchTemplatesView from './views/mtemplates.js';
+import staffView, { joinView, reasonText, ROLE, ROLE_SAYS } from './views/staff.js';
 import ideasView, { ideaView } from './views/ideas.js';
 import { resetDock, focusField } from './challenges.js';
 import { helpFor, openHelp } from './help.js';
@@ -25,7 +26,7 @@ const ROUTES = {
   home: { v: home, nav: 'home' },
   teamhome: { v: teamHome, nav: 'team' },
   model: { v: model, nav: 'team', detail: true }, principle: { v: principleView, nav: 'team', detail: true },
-  squad: { v: squad, nav: 'team', detail: true }, player: { v: playerView, nav: 'team', detail: true },
+  squad: { v: squad, nav: 'team', detail: true }, staff: { v: staffView, nav: 'team', detail: true }, join: { v: joinView, nav: 'home', detail: true }, player: { v: playerView, nav: 'team', detail: true },
   sketch: { v: sketch, nav: 'team', detail: true }, board: { v: board, nav: 'team', detail: true },
   training: { v: training, nav: 'training', sec: 'training' },
   drill: { v: drill, nav: 'training', sec: 'training', detail: true }, session: { v: session, nav: 'training', sec: 'training', detail: true },
@@ -44,7 +45,9 @@ const ROUTES = {
 const OLD = { plans: p => ({ sessions: '#/training/sessions', programme: '#/training/programme', drills: '#/training/drills', matches: '#/matches', reviews: '#/analysis' })[p[0]] || '#/training', boards: () => '#/sketch' };
 const NAV = [['home', 'Home', 'home', '#/home'], ['team', 'Team', 'model', '#/teamhome'], ['training', 'Training', 'training', '#/training'], ['match', 'Match', 'match', '#/matches'], ['analysis', 'Analysis', 'analysis', '#/analysis']];
 
-let current = { name: '', params: [] }, top = {}, pendingRefresh = false, pointerDown = false, cleanup = null;
+let current = { name: '', params: [] }, top = {}, pendingRefresh = false, pointerDown = false, cleanup = null, joining = false;
+// The screen someone has open, for "who's here": the route and its record.
+const here = () => current.name + (current.params[0] ? '/' + current.params[0] : '');
 
 function parse() {
   const h = location.hash.replace(/^#\/?/, '');
@@ -75,6 +78,8 @@ function route(keepScroll) {
   const el = old.cloneNode(false); el.style.minHeight = old.style.minHeight; old.replaceWith(el);
   try { cleanup = R.v(el, r.params, ctx) || null; }
   catch (e) { console.error(e); el.innerHTML = `<div class="card"><div class="h2">Something went wrong</div><p class="muted">${esc(e.message)}</p><a class="btn" href="#/home">Go home</a></div>`; }
+  const T0 = S.team(); document.body.classList.toggle('viewonly', !!T0 && S.roleIn(T0.id) === 'viewer');
+  cloud.setPresence(T0 ? T0.id : null, here());
   renderNav(R.nav); renderTop(); requestAnimationFrame(() => autosize(el));
   if (keepScroll && same) window.scrollTo(0, y); else window.scrollTo(0, 0);
   requestAnimationFrame(() => { el.style.minHeight = ''; });
@@ -89,7 +94,7 @@ function renderNav(on) {
 
 // Where Back goes, in words: the band says "‹ Training", "‹ Match" and so on.
 const BACK_WORD = h => (h || '').startsWith('#/training') || h === '#/ideas' ? 'Training' : h.startsWith('#/matches') ? 'Match' : h.startsWith('#/mtemplates') ? 'Templates' : h.startsWith('#/analysis') ? 'Analysis'
-  : h === '#/teamhome' ? 'Team' : h === '#/model' ? 'Game model' : h === '#/squad' ? 'Squad' : h === '#/sketch' ? 'Sketch' : h === '#/more' ? 'Settings' : h === '#/home' ? 'Home'
+  : h === '#/teamhome' ? 'Team' : h === '#/staff' ? 'Staff' : h === '#/model' ? 'Game model' : h === '#/squad' ? 'Squad' : h === '#/sketch' ? 'Sketch' : h === '#/more' ? 'Settings' : h === '#/home' ? 'Home'
   : h.startsWith('#/session/') ? 'Session' : h.startsWith('#/match/') ? 'Match plan' : h.startsWith('#/block/') ? 'Block' : h.startsWith('#/principle/') ? 'Principle' : 'Back';
 
 function renderTop() {
@@ -100,7 +105,9 @@ function renderTop() {
   tb.classList.toggle('band', !!top.back); tb.classList.toggle('compact', !!top.compact);
   if (top.back) {
     const word = top.backLabel || BACK_WORD(top.back);
-    tb.innerHTML = `<div class="bandrow"><a class="backlink" href="${top.back}">${icon('back')}<span class="sr">Back to </span>${esc(word)}</a><span class="grow"></span>${right}</div>
+    const others = cloud.othersHere(here());
+    const chips = others.length ? `<span class="here" id="hereChips" title="${esc(others.map(o => o.name).join(', '))} ${others.length > 1 ? 'are' : 'is'} here too">${others.slice(0, 3).map(o => `<span class="herec">${esc(((o.name || '?').trim()[0] || '?').toUpperCase())}</span>`).join('')}<span class="sr">${esc(others.map(o => o.name).join(', '))} ${others.length > 1 ? 'are' : 'is'} looking at this too</span></span>` : '';
+    tb.innerHTML = `<div class="bandrow"><a class="backlink" href="${top.back}">${icon('back')}<span class="sr">Back to </span>${esc(word)}</a><span class="grow"></span>${chips}${right}</div>
       ${top.bug ? top.bug : `<div class="bandtitle" id="bandTitle">${esc(top.title || '')}</div>`}
       ${top.sub ? (top.onSub ? `<button type="button" class="bandsub" id="bandSub" aria-label="${esc(top.sub)}. Edit the details">${esc(top.sub)} ›</button>` : `<div class="bandsub">${esc(top.sub)}</div>`) : ''}`;
   } else {
@@ -229,7 +236,9 @@ async function boot() {
   S.onChange(src => {
     if (src === 'remote') safeRefresh();
     if (src === 'savefail') toast('This device is out of storage space. Export a backup from More.', 5000);
-    if (src === 'conflict') toast('A newer edit from another device replaced an unsent edit made here. What you wrote is kept under your profile picture > Cloud sync.', 7000);
+    if (src === 'readonly') toast('You can see this team but not change it. Ask its owner or an admin for coach access.', 5000);
+    if (src === 'members') { const T1 = S.team(); document.body.classList.toggle('viewonly', !!T1 && S.roleIn(T1.id) === 'viewer'); if (['staff', 'teamhome', 'home'].includes(current.name)) safeRefresh(); else renderTop(); }
+    if (src === 'conflict') toast('Someone else changed the same thing more recently, so their version is kept. What you wrote is saved under your profile picture > Cloud sync.', 7000);
   });
   cloud.onStatus(() => { const s = $('#topbar'); if (s) renderTop(); const sd = $('#sideSync'); if (sd) sd.innerHTML = `${syncDot()}<span>${syncLabel()}</span>`; });
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
@@ -239,12 +248,67 @@ async function boot() {
   cloud.onAuth((ev, u) => {
     if (ev === 'PASSWORD_RECOVERY') return gate('reset');
     if (!u && ev === 'SIGNED_OUT') return gate('signin', 'You’re signed out.');
-    if (u && !started && !document.getElementById('gP')) start();
+    if (u && !started && !joining && !document.getElementById('gP')) start();
   });
   await cloud.init();
   if (recovering && cloud.signedIn()) return gate('reset');
   if (document.getElementById('gP')) return;
+  const joinTok = (location.hash.match(/^#\/join\/([A-Za-z0-9]+)/) || [])[1];
   if (cloud.signedIn() || cloud.savedSession()) start();
+  else if (joinTok) gateJoin(joinTok);
   else gate();
+}
+
+/* ---------- Joining from an invite link, before having an account ---------- */
+async function gateJoin(tok, have = false) {
+  window.__crStarted = true; started = false; hideApp(true);
+  let g = document.getElementById('gate');
+  if (!g) { g = document.createElement('div'); g.id = 'gate'; document.body.appendChild(g); }
+  g.innerHTML = '<div class="gatebox stack"><p class="small muted" style="text-align:center;margin:0">Checking your invite…</p></div>';
+  const info = navigator.onLine ? await cloud.inviteInfo(tok) : { ok: false, reason: 'offline' };
+  if (!info || !info.ok) {
+    g.innerHTML = `<div class="gatebox stack"><div class="h2" style="text-align:center">This invite can’t be used</div><p class="small" style="margin:0;text-align:center">${esc(info && info.reason === 'offline' ? 'You’re offline. Connect to the internet and open the link again.' : reasonText(info && info.reason))}</p><button class="btn block" id="gSign">Sign in instead</button></div>`;
+    g.querySelector('#gSign').onclick = () => { location.hash = ''; gate(); };
+    return;
+  }
+  g.innerHTML = `<div class="gatebox stack" id="joinBox">
+    <div style="text-align:center"><div class="display" style="font-size:24px;letter-spacing:.04em">The Coaching Room</div></div>
+    <div class="card stack tight" style="background:var(--bg)"><div class="h3">${esc(info.team || 'A team')}</div><div class="small">${esc(info.from || 'A coach')} has invited you to join as <b>${esc((ROLE[info.role] || '').toLowerCase())}</b>. ${esc(ROLE_SAYS[info.role] || '')}</div></div>
+    <form id="jF" class="stack" autocomplete="on">
+      ${have ? '' : `<label class="field"><span>Your name</span><input type="text" id="jN" value="${esc(info.name || '')}" autocomplete="name" required></label>`}
+      <label class="field"><span>Email</span><input type="email" id="jE" value="${esc(info.email || '')}" ${info.email ? 'readonly' : ''} autocomplete="username" required></label>
+      <label class="field"><span>${have ? 'Password' : 'Choose a password (8 or more characters)'}</span><input type="password" id="jP" autocomplete="${have ? 'current-password' : 'new-password'}" required ${have ? '' : 'minlength="8"'}></label>
+      <button class="btn pri block" type="submit" id="jGo">${have ? 'Sign in and join' : 'Create my account and join'}</button>
+      <button class="btn sm" type="button" id="jHave" style="align-self:center">${have ? 'I’m new: create an account' : 'I already have an account'}</button>
+    </form>
+    <div class="small" id="jM" role="status" style="min-height:20px;text-align:center;color:var(--lamp-text)"></div></div>`;
+  const msg = t => { g.querySelector('#jM').textContent = t; };
+  g.querySelector('#jHave').onclick = () => gateJoin(tok, !have);
+  g.querySelector('#jF').onsubmit = async e => {
+    e.preventDefault();
+    const em = g.querySelector('#jE').value.trim(), pw = g.querySelector('#jP').value;
+    if (!have && pw.length < 8) return msg('Use at least 8 characters.');
+    joining = true; msg(have ? 'Signing in…' : 'Making your account…');
+    try {
+      if (have) await cloud.signIn(em, pw);
+      else {
+        const name = g.querySelector('#jN').value.trim();
+        // A fresh start on this device: nothing from the example data, or anyone else's, comes with them.
+        S.resetLocal(); S.put({ id: 'coach', kind: 'coach', team: null, name, initials: name.split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase(), ratings: {}, ratingLog: [] });
+        const ok = await cloud.signUp(em, pw);
+        if (!ok) { joining = false; return msg('Your account is made, but this app’s database asks new people to confirm their email first, and that email can’t be sent. Ask whoever set the app up to switch off “Confirm email” in Supabase.'); }
+      }
+      msg('Joining…');
+      const r = await cloud.acceptInvite(tok);
+      if (!r || !r.ok) { joining = false; return msg(reasonText(r && r.reason)); }
+      await cloud.syncFully();
+      if (S.get(r.team_id)) S.setTeam(r.team_id);
+      joining = false; location.replace('#/home'); start(); toast('You’re in. Welcome to ' + (info.team || 'the team'));
+    } catch (er) {
+      joining = false;
+      msg(/already registered|already exists/i.test(er.message) ? 'There is already an account with this email. Tap “I already have an account”.' : /invalid/i.test(er.message) ? 'That email and password don’t match.' : er.message);
+    }
+  };
+  setTimeout(() => g.querySelector(have ? '#jP' : '#jN')?.focus(), 50);
 }
 boot();

@@ -40,6 +40,8 @@ export async function init() {
   set(navigator.onLine ? 'ok' : 'offline');
   sync();
 }
+// Wait for any sync under way, then run one to the end (used after joining a team).
+export async function syncFully() { for (let i = 0; i < 150 && busy; i++) await new Promise(r => setTimeout(r, 100)); await sync(); for (let i = 0; i < 150 && (busy || again); i++) await new Promise(r => setTimeout(r, 100)); }
 const pushSoon = debounce(() => sync({ pushOnly: true }), 1500);
 // Records this device pushed, so the pull that follows can measure this device's clock against the server's.
 const pushed = new Map();
@@ -57,7 +59,7 @@ export async function resetPassword(em) {
   const { error } = await sb.auth.resetPasswordForEmail(em.trim(), { redirectTo: location.href.split('#')[0] });
   if (error) throw error;
 }
-export async function signOut() { await sb.auth.signOut(); user = null; set('signedout'); authSubs.forEach(f => { try { f('SIGNED_OUT', null); } catch (e) {} }); }
+export async function signOut() { try { sb.removeAllChannels && sb.removeAllChannels(); } catch (e) {} live = null; presence = null; presenceTeam = null; here = {}; await sb.auth.signOut(); user = null; set('signedout'); authSubs.forEach(f => { try { f('SIGNED_OUT', null); } catch (e) {} }); }
 export async function setPassword(pw) {
   const { error } = await sb.auth.updateUser({ password: pw });
   if (error) throw error;
@@ -77,6 +79,7 @@ export async function sync({ pushOnly } = {}) {
     // must not be pushed into this one. Clear it, then pull this account's data.
     const m = store.meta();
     if (m.syncUser && m.syncUser !== user.id) { store.resetLocal(); store.setMeta('syncUser', user.id); store.setMeta('cursor', null); store.setMeta('photoCursor', null); }
+    if (store.meta().seedsUp !== user.id) { store.markSeedsDirty(); store.setMeta('seedsUp', user.id); }
     await push();
     if (!pushOnly) await pull();
     st.last = new Date().toISOString(); store.setMeta('lastSync', st.last);
@@ -90,23 +93,38 @@ export async function sync({ pushOnly } = {}) {
   }
 }
 
+const COLS = 'id,kind,team_id,data,updated_at,deleted,synced_at';
 async function push() {
   const recs = store.dirtyRecs(); if (!recs.length) return;
   for (let i = 0; i < recs.length; i += 200) {
     const chunk = recs.slice(i, i + 200);
-    const rows = chunk.map(r => ({ owner: user.id, ...store.toRow(r) }));
     const t = Date.now();
-    // Ask for the rows back: the database's last-edit-wins trigger drops any row that is older than
-    // what it already holds, and a dropped row is not returned. That is how we know an edit lost.
-    const { data, error } = await sb.from('items').upsert(rows, { onConflict: 'owner,id' }).select('id,updated_at');
-    if (error) throw error;
-    if (Array.isArray(data)) {
-      const ok = new Set(data.map(r => r.id + '|' + new Date(r.updated_at).toISOString()));
-      chunk.filter(r => !ok.has(r.id + '|' + r.upd)).forEach(r => store.noteRejected(r));
+    let back = await upsert(chunk);
+    // One record the rules refuse (a viewer's edit, a team you were taken off) must not hold up the
+    // rest: send them one at a time and keep each refused edit under Cloud sync.
+    if (back.error && /row-level security|permission|42501/i.test(back.error.message + ' ' + (back.error.code || ''))) {
+      const ok = [];
+      for (const r of chunk) { const one = await upsert([r]); if (one.error) store.noteRejected(r); else ok.push(...(one.data || [])); }
+      back = { data: ok, error: null };
     }
-    chunk.forEach(r => pushed.set(r.id, { upd: r.upd, t }));
+    if (back.error) throw back.error;
+    chunk.forEach(r => pushed.set(r.id === 'coach' ? 'coach:' + user.id : r.id, { upd: r.upd, t }));
+    // A field this device changed that someone else changed more recently: theirs is kept, and
+    // what was written here is saved under Cloud sync rather than lost.
+    const got = new Map((back.data || []).map(x => [x.id, x]));
+    chunk.forEach(r => {
+      const x = got.get(r.id === 'coach' ? 'coach:' + user.id : r.id); if (!x || !r._f) return;
+      const f = (x.data && x.data._f) || {};
+      if (store.pendOf(r.id).some(p => f[p] !== r._f[p])) store.noteRejected(r);
+    });
     store.clearDirty(chunk.map(r => ({ id: r.id, upd: r.upd })));
+    // What comes back is the merged record: other coaches' fields plus this device's.
+    if (Array.isArray(back.data) && back.data.length) store.applyRemote(back.data, user.id);
   }
+}
+function upsert(recs) {
+  const rows = recs.map(r => ({ owner: user.id, ...store.toRow(r, user.id) }));
+  return sb.from('items').upsert(rows, { onConflict: 'id' }).select(COLS);
 }
 
 // Rows this device just pushed come straight back in the next pull with the server's own
@@ -137,16 +155,17 @@ async function pull() {
   // Overlap by 30 seconds so a slow write from another device is never missed.
   if (cursor) cursor = new Date(new Date(cursor).getTime() - 30000).toISOString();
   for (let guard = 0; guard < 50; guard++) {
-    let q = sb.from('items').select('id,kind,team_id,data,updated_at,deleted,synced_at').order('synced_at', { ascending: true }).limit(500);
+    let q = sb.from('items').select(COLS).order('synced_at', { ascending: true }).limit(500);
     if (cursor) q = q.gt('synced_at', cursor);
     const { data, error } = await q; if (error) throw error;
     if (!data.length) break;
     checkClock(data);
-    store.applyRemote(data);
+    store.applyRemote(data, user.id);
     cursor = data[data.length - 1].synced_at;
     store.setMeta('cursor', cursor);
     if (data.length < 500) break;
   }
+  await pullMembers();
   await pullPhotos();
 }
 
@@ -196,3 +215,72 @@ export async function shareInfo(token) {
   if (error) return null;
   return data;
 }
+
+/* ---------- Coaching staff: members, invitations, live updates, who's here ---------- */
+async function pullMembers() {
+  const { data, error } = await sb.from('team_members').select('team_id,user_id,role,name,email,added_at').order('added_at', { ascending: true });
+  if (error) { console.warn('members', error.message); return; }   // missing until the updated schema.sql is run
+  store.setMembers(data || [], user.id);
+  watch();
+}
+export const myId = () => user ? user.id : null;
+
+// Live: another coach's change arrives within a second or two instead of at the next minute's check.
+let live = null, presence = null, presenceTeam = null, here = {};
+const pullSoon = debounce(() => sync(), 500);
+function watch() {
+  if (live || !sb.channel) return;
+  live = sb.channel('cr-items')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, () => pullSoon())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, () => pullSoon())
+    .subscribe();
+}
+// Who else is in the app on this team, and which screen they have open.
+export function setPresence(team, where) {
+  if (!sb || !user || !sb.channel) return;
+  const meName = (store.get('coach') || {}).name || email();
+  if (presenceTeam !== team) {
+    if (presence) { try { sb.removeChannel(presence); } catch (e) {} presence = null; here = {}; }
+    presenceTeam = team; if (!team) return;
+    presence = sb.channel('cr-here-' + team, { config: { presence: { key: user.id } } });
+    presence.on('presence', { event: 'sync' }, () => {
+      const st = presence.presenceState(); here = {};
+      Object.entries(st).forEach(([uid, metas]) => { if (uid !== user.id && metas && metas.length) here[uid] = metas[metas.length - 1]; });
+      emit();
+    }).subscribe(async status => { if (status === 'SUBSCRIBED') { try { await presence.track({ name: meName, where }); } catch (e) {} } });
+    return;
+  }
+  if (presence) { try { presence.track({ name: meName, where }); } catch (e) {} }
+}
+export const othersHere = where => Object.values(here).filter(h => !where || h.where === where);
+
+const rnd = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join(''); };
+export const joinUrl = tok => new URL('index.html#/join/' + tok, location.href.split('#')[0]).href;
+export async function createInvite({ team, role, name, email: em }) {
+  needCloud();
+  const token = rnd(24);
+  const { error } = await sb.from('invites').insert({ token, team_id: team, role, name: name || null, email: (em || '').trim() || null });
+  if (error) throw new Error(/row-level|permission/i.test(error.message) ? 'Only the team’s owner or an admin can invite people.' : error.message);
+  return token;
+}
+export async function listInvites(team) {
+  if (!sb || !user || !navigator.onLine) return [];
+  const { data, error } = await sb.from('invites').select('token,role,name,email,created_at,expires_at,used_at').eq('team_id', team).order('created_at', { ascending: false });
+  if (error) return [];
+  return (data || []).filter(i => !i.used_at && new Date(i.expires_at) > new Date());
+}
+export async function cancelInvite(token) { needCloud(); const { error } = await sb.from('invites').delete().eq('token', token); if (error) throw error; }
+export async function inviteInfo(token) {
+  if (!sb) return { ok: false, reason: 'cloud' };
+  const { data, error } = await sb.rpc('invite_info', { p_token: token });
+  if (error) return { ok: false, reason: 'error', message: error.message };
+  return data;
+}
+export async function acceptInvite(token) {
+  const { data, error } = await sb.rpc('accept_invite', { p_token: token });
+  if (error) throw error;
+  return data;
+}
+export async function setRole(team, uid, role) { needCloud(); const { error } = await sb.from('team_members').update({ role }).eq('team_id', team).eq('user_id', uid); if (error) throw error; await pullMembers(); }
+export async function removeMember(team, uid) { needCloud(); const { error } = await sb.from('team_members').delete().eq('team_id', team).eq('user_id', uid); if (error) throw error; await pullMembers(); }
+export const refreshMembers = () => (sb && user && navigator.onLine ? pullMembers() : Promise.resolve());

@@ -49,7 +49,8 @@ const teamhome = () => ({
   steps: [
     st('**Game model**: your identity and principles for each phase. Sessions, match plans and analysis are all tested against it.', '#tModel'),
     st('**Squad**: your players, their positions, development goals and private player pages.', '#tSquad'),
-    st('**Sketch**: a blank board with your team on it, for ideas and team talks. Your saved shapes, phases and set pieces are listed there too.', '#tSketch')
+    st('**Sketch**: a blank board with your team on it, for ideas and team talks. Your saved shapes, phases and set pieces are listed there too.', '#tSketch'),
+    st('**Staff**: who coaches the team with you, and invites for the manager, assistant or anyone else.', '#tStaff')
   ]
 });
 
@@ -515,7 +516,28 @@ const mtemplates = params => ({
   ]
 });
 
-const GUIDES = { mtemplates, ideas, idea, home, teamhome, sketch, training, matches, analysis, model, principle, board, block, drill, session, match, review, squad, player, pathway, logbook, teams, team, cloud: cloudGuide, more };
+/* ----------------------------------------------------------------- Staff */
+const staff = () => ({
+  title: 'Staff',
+  purpose: 'Who coaches this team with you. Everyone here works on the same game model, squad, sessions, match plans and analysis, and sees each other’s changes within a second or two.',
+  loop: `Shared staff share the loop: ${LOOP}. Any coach on the team can write the analysis that closes it.`,
+  steps: [
+    st('**Coaching staff** lists everyone on the team and their role. **Owner** set the team up. **Admin** can change everything and invite people. **Coach** can change everything. **Viewer** can look but not change anything. The owner or an admin can change a role or remove someone.', '#members'),
+    st('**Invite someone**: their name, the email they will sign in with, and a role. **Make the invite link** gives you a link to send yourself by WhatsApp, text or email. It works once, for that email, within 14 days.', '#invF'),
+    st('**Waiting to join** lists invites not used yet. **Send** shows the link again; **Cancel** stops it working.', '#pending'),
+    st('When two of you change the same thing, the newer change to each part is kept, so you rarely overwrite each other. If you both change the very same box, the later one wins and the other version is saved under your profile picture > Cloud sync.'),
+    st('A circle with someone’s initial at the top of a screen means they have it open too. “Last change by…” on a session or match plan says who changed it last.'),
+    st('Your profile, pathway and logbook are never shared. Your drills are yours, but the coaches on your teams can see and use them.')
+  ]
+});
+const join = () => ({
+  title: 'Join a team',
+  purpose: 'Someone has invited you to coach a team with them.',
+  loop: `Once you join, you work on the same loop: ${LOOP}.`,
+  steps: [st('Check the team and the role, then tap **Join**. If the invite is for another email address, sign out and open the link again.')]
+});
+
+const GUIDES = { staff, join, mtemplates, ideas, idea, home, teamhome, sketch, training, matches, analysis, model, principle, board, block, drill, session, match, review, squad, player, pathway, logbook, teams, team, cloud: cloudGuide, more };
 
 export function helpFor(routeName, params) {
   const g = GUIDES[routeName]; if (!g) return null;

@@ -75,6 +75,7 @@ export default function home(el, params, ctx) {
     <section aria-label="Your team" class="gl">
       <a class="gr" href="#/model" id="hModel"><span class="lbl">Game model</span><span class="v"><span class="mono">${ps.length}${ps.length ? ' · ' + agreed + ' agreed' : ''}</span><span class="chev">›</span></span></a>
       <a class="gr" href="#/squad" id="hSquad"><span class="lbl">Squad</span><span class="v"><span class="mono">${dummy ? dummy + ' to name' : pl.length}</span><span class="chev">›</span></span></a>
+      <a class="gr" href="#/staff" id="hStaff"><span class="lbl">Staff<small>Who coaches with you, and invites</small></span><span class="v">${S.members(T).length ? `<span class="mono">${S.members(T).length}</span>` : ''}<span class="chev">›</span></span></a>
       <a class="gr" href="#/sketch" id="hSketch"><span class="lbl">Sketch<small>A blank board for ideas</small></span><span class="chev">›</span></a>
     </section>
     ${!standalone && !S.meta().hideInstall ? `<div class="card row nowrap small muted" style="gap:12px"><span class="grow">Put it on your home screen: in Safari tap Share, then <b>Add to Home Screen</b>. On a laptop use the install icon in the address bar.</span><button class="btn sm" data-act="hideInstall">Hide</button></div>` : ''}

@@ -56,7 +56,7 @@ async def main():
         # a different account on the same device must not get Joe's data
         await A.fill('#cE', 'other@example.com'); await A.fill('#cP', 'other-pass-99'); await A.click('#cIn'); await A.wait_for_timeout(1500)
         oid = srv.users['other@example.com'][1]['id']
-        other = [v for (o, _), v in srv.items.items() if o == oid]
+        other = [v for v in srv.items.values() if v['owner'] == oid]
         print('   rows under the other account:', len(other), [v['id'] for v in other][:6])
         check('other account: none of Joe’s edits pushed into it', not any(v['data'].get('name') == 'Beth Smith' for v in other))
         d = await A.evaluate("JSON.parse(localStorage.getItem('coachingroom.v1'))")

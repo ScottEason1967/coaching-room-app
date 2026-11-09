@@ -6,7 +6,7 @@ import { FORMATIONS } from './pitch.js';
 
 const KEY = 'coachingroom.v1';
 const SEED_TS = '2026-01-01T00:00:00.000Z';
-let db = { recs: {}, dirty: {}, meta: {} };
+let db = { recs: {}, dirty: {}, meta: {}, base: {}, pend: {} };
 const subs = new Set();
 export const onChange = fn => subs.add(fn);
 const emit = (src) => subs.forEach(f => { try { f(src); } catch (e) { console.error(e); } });
@@ -60,14 +60,17 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) flush
 
 export function load() {
   try { const r = localStorage.getItem(KEY); if (r) db = JSON.parse(r); } catch (e) { console.error(e); }
-  db.recs ||= {}; db.dirty ||= {}; db.meta ||= {};
+  db.recs ||= {}; db.dirty ||= {}; db.meta ||= {}; db.pend ||= {};
+  // First run with field-by-field merging: what is on this device now is the starting point,
+  // so the next edit stamps only the fields it changes.
   if (!db.meta.seeded) { seed(); db.meta.seeded = true; persist(); }
+  db.base ||= {}; for (const id in db.recs) if (!db.base[id]) db.base[id] = clone(db.recs[id]);
   tidySeed();
   if (!db.meta.activeTeam || !get(db.meta.activeTeam)) db.meta.activeTeam = (teams()[0] || {}).id || null;
 }
 export const meta = () => db.meta;
 // Another account signed in on this device: start again with nothing, then the pull fills it.
-export function resetLocal() { db = { recs: {}, dirty: {}, meta: { seeded: true } }; persist(); emit('remote'); }
+export function resetLocal() { db = { recs: {}, dirty: {}, meta: { seeded: true }, base: {}, pend: {} }; persist(); emit('remote'); }
 // Player photos come from the players themselves (via their link), keyed by player id.
 export const photoOf = id => ((db.meta.photos || {})[id]) || null;
 export function setPhotos(pairs) {
@@ -84,10 +87,46 @@ export function all(kind, team) {
   for (const id in db.recs) { const r = db.recs[id]; if (r.kind === kind && !r.del && (team === undefined || r.team === team)) out.push(r); }
   return out;
 }
+// Field-by-field stamps. Two coaches can edit the same record: each field remembers when it was last
+// changed, and the newer edit of each field is kept (here and in the database). Objects one level
+// down (a match plan's keys, threat, Plan B...) are stamped field by field too.
+const NOSTAMP = new Set(['id', 'kind', 'team', 'upd', 'del', '_f']);
+const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+const J = v => JSON.stringify(v === undefined ? null : v);
+// Same content regardless of key order, for "is anything different?".
+const SJ = v => JSON.stringify(v, (k, x) => isObj(x) ? Object.keys(x).sort().reduce((o, key) => (o[key] = x[key], o), {}) : x);
+function changedPaths(a, b) {
+  const out = [];
+  new Set([...Object.keys(a || {}), ...Object.keys(b || {})]).forEach(k => {
+    if (NOSTAMP.has(k)) return;
+    const x = a ? a[k] : undefined, y = b[k];
+    if (isObj(x) && isObj(y)) new Set([...Object.keys(x), ...Object.keys(y)]).forEach(s => { if (J(x[s]) !== J(y[s])) out.push(k + '.' + s); });
+    else if (J(x) !== J(y)) out.push(k);
+  });
+  return out;
+}
+const getPath = (o, p) => p.split('.').reduce((a, k) => a == null ? undefined : a[k], o);
+function setPath(o, p, v) {
+  const ks = p.split('.'); let a = o;
+  for (let i = 0; i < ks.length - 1; i++) { if (!isObj(a[ks[i]])) a[ks[i]] = {}; a = a[ks[i]]; }
+  if (v === undefined) delete a[ks[ks.length - 1]]; else a[ks[ks.length - 1]] = clone(v);
+}
+// A viewer on a team can look but not change anything in it.
+export const roleIn = team => ((db.meta.roles || {})[team]) || null;
+export const canEdit = rec => { const t = rec && (rec.kind === 'team' ? rec.id : rec.team); return !t || roleIn(t) !== 'viewer'; };
 export function put(rec, { quiet } = {}) {
   if (!rec.id) rec.id = uid();
-  rec.upd = new Date().toISOString();
-  db.recs[rec.id] = rec; db.dirty[rec.id] = 1; db.meta.touched = true;
+  if (!canEdit(rec)) { emit('readonly'); return rec; }
+  const now = new Date().toISOString();
+  const ch = changedPaths(db.base[rec.id], rec);
+  if (ch.length) {
+    const me = db.meta.syncUser;
+    if (me && rec.kind !== 'coach' && rec.kind !== 'cpd') { const by = { id: me, n: (db.recs.coach && db.recs.coach.name) || '' }; if (J(rec.by) !== J(by)) { rec.by = by; ch.push('by'); } }
+    rec._f = { ...(rec._f || {}) }; const pe = db.pend[rec.id] ||= {};
+    ch.forEach(p => { rec._f[p] = now; pe[p] = 1; });
+  }
+  rec.upd = now;
+  db.recs[rec.id] = rec; db.base[rec.id] = clone(rec); db.dirty[rec.id] = 1; db.meta.touched = true;
   persist(); if (!quiet) emit('local');
   return rec;
 }
@@ -99,12 +138,13 @@ export function del(id) { const r = db.recs[id]; if (!r) return; r.del = true; p
 /* ---------- Sync hooks (used by cloud.js) ---------- */
 export function dirtyRecs() { return Object.keys(db.dirty).map(id => db.recs[id]).filter(Boolean); }
 // sent: [{id, upd}] that the server accepted. Only clear if not edited again since.
-export function clearDirty(sent) { sent.forEach(s => { const cur = db.recs[s.id]; if (!cur || cur.upd === s.upd) delete db.dirty[s.id]; }); persist(); }
+export function clearDirty(sent) { sent.forEach(s => { const cur = db.recs[s.id]; if (!cur || cur.upd === s.upd) { delete db.dirty[s.id]; delete db.pend[s.id]; } }); persist(); }
 export function hasDirty() { return Object.keys(db.dirty).length > 0; }
 const META_KEYS = ['id', 'kind', 'team', 'upd', 'del'];
-export function toRow(r) {
+// In the cloud each person's profile has its own id; a team record belongs to its own team.
+export function toRow(r, me) {
   const data = {}; for (const k in r) if (!META_KEYS.includes(k)) data[k] = r[k];
-  return { id: r.id, kind: r.kind, team_id: r.team || null, data, updated_at: r.upd, deleted: !!r.del };
+  return { id: r.id === 'coach' && me ? 'coach:' + me : r.id, kind: r.kind, team_id: r.kind === 'team' ? r.id : (r.team || null), data, updated_at: r.upd, deleted: !!r.del };
 }
 // Something readable to call a record in a message.
 export function label(r) {
@@ -138,30 +178,76 @@ export function tidySeed() {
   return fix.length;
 }
 
-export function applyRemote(rows) {
+export function applyRemote(rows, me) {
   let n = 0, lost = 0;
+  const take = (id, rec) => { db.recs[id] = rec; db.base[id] = clone(rec); delete db.dirty[id]; delete db.pend[id]; n++; };
+  const lose = (local, rt) => {
+    db.meta.conflicts = (db.meta.conflicts || []).filter(c => c.id !== local.id).slice(-19);
+    db.meta.conflicts.push({ id: local.id, kind: local.kind, name: label(local), at: new Date().toISOString(), theirs: rt, mine: clone(local) });
+    lost++;
+  };
   rows.forEach(row => {
-    const local = db.recs[row.id];
+    let id = row.id;
+    if (id.startsWith('coach:')) { if (me && id !== 'coach:' + me) return; id = 'coach'; }
     const rt = new Date(row.updated_at).toISOString();
-    if (local && local.upd >= rt) return;
-    // Last edit wins on the whole record. If this device had an unsent edit, the newer copy from
-    // another device replaces it. Keep what was written here so Joe can copy it back by hand.
-    if (local && db.dirty[row.id] && !local.del) {
-      db.meta.conflicts = (db.meta.conflicts || []).filter(c => c.id !== row.id).slice(-19);
-      db.meta.conflicts.push({ id: row.id, kind: local.kind, name: label(local), at: new Date().toISOString(), theirs: rt, mine: clone(local) });
-      lost++;
+    const remote = { ...(row.data || {}), id, kind: row.kind, team: row.kind === 'team' ? null : (row.team_id || null), upd: rt, del: !!row.deleted };
+    const local = db.recs[id];
+    if (!local) return take(id, remote);
+    const pend = Object.keys(db.pend[id] || {});
+    // Neither copy has field stamps (made before they existed): last edit wins on the whole record.
+    if (!remote._f && !local._f) {
+      if (local.upd >= rt) return;
+      if (db.dirty[id] && !local.del) lose(local, rt);
+      return take(id, remote);
     }
-    db.recs[row.id] = { ...(row.data || {}), id: row.id, kind: row.kind, team: row.team_id || null, upd: rt, del: !!row.deleted };
-    delete db.dirty[row.id]; n++;
+    if (!db.dirty[id] || !pend.length) {
+      if (db.dirty[id] && local.upd > rt) return;            // an unsent change with no field in it (a deletion): keep it
+      if (SJ({ ...local, upd: 0 }) === SJ({ ...remote, upd: 0 })) { if (local.upd < rt) local.upd = rt; return; }
+      return take(id, remote);
+    }
+    // Both changed it. Start from the other copy and put back each field changed here that is newer.
+    const res = clone(remote); res._f = { ...(remote._f || {}) }; const gone = [];
+    pend.forEach(p => {
+      const lt = (local._f || {})[p] || '', rp = (remote._f || {})[p] || '';
+      if (lt > rp) { setPath(res, p, getPath(local, p)); res._f[p] = lt; }
+      else { gone.push(p); delete db.pend[id][p]; }
+    });
+    if (local.del && local.upd > rt) res.del = true;
+    res.upd = local.upd > rt ? local.upd : rt;
+    if (gone.length && !local.del) lose(local, rt);
+    db.recs[id] = res; db.base[id] = clone(res); n++;
+    if (!Object.keys(db.pend[id] || {}).length && !(local.del && !remote.del)) { delete db.dirty[id]; delete db.pend[id]; }
   });
   if (n) { tidySeed(); persist(); if (db.meta.activeTeam && !get(db.meta.activeTeam)) db.meta.activeTeam = (teams()[0] || {}).id || null; emit('remote'); }
   if (lost) emit('conflict');
   return n;
 }
+// The coaching staff of each team this person belongs to, and their own role in each.
+export function setMembers(rows, me) {
+  const roles = {}; rows.forEach(r => { if (r.user_id === me) roles[r.team_id] = r.role; });
+  const before = J([db.meta.members, db.meta.roles]);
+  db.meta.members = rows; db.meta.roles = roles;
+  if (J([rows, roles]) !== before) { persist(); emit('members'); }
+}
+// "Last change by Dave, 5 min ago" when the last change to a record was someone else's.
+export function editedBy(rec, ago) {
+  if (!rec || !rec.by || !rec.by.id || rec.by.id === db.meta.syncUser) return '';
+  return 'Last change by ' + (rec.by.n || 'another coach') + (ago ? ', ' + ago(rec.upd) : '');
+}
+// Records from the starting data that were never edited have never been uploaded. Upload them once per
+// account, so a coach who joins sees the same team (its name, shapes, principles) as the one who set it up.
+// Anything already in the cloud is newer, and stays.
+export function markSeedsDirty() {
+  let n = 0; for (const id in db.recs) { const r = db.recs[id]; if (r.upd === SEED_TS && !r.del && canEdit(r)) { db.dirty[id] = 1; n++; } }
+  if (n) persist(); return n;
+}
+export const isSeed = r => !!r && r.upd === SEED_TS;
+export const pendOf = id => Object.keys(db.pend[id] || {});
+export const members = team => (db.meta.members || []).filter(m => m.team_id === team);
 // The server already holds a newer copy of this record (edited on another device), so the edit
 // made here was dropped. Keep it so Joe can copy it back by hand.
 export function noteRejected(local) {
-  if (!local || local.del) return;
+  if (!local || local.del || local.upd === SEED_TS) return;
   db.meta.conflicts = (db.meta.conflicts || []).filter(c => c.id !== local.id).slice(-19);
   db.meta.conflicts.push({ id: local.id, kind: local.kind, name: label(local), at: new Date().toISOString(), mine: clone(local) });
   persist(); emit('conflict');

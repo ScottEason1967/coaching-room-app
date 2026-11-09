@@ -59,7 +59,7 @@ This uses Supabase, a hosted database with logins.
    You can try this on your laptop first, before the site is on GitHub: fill in `js/config.js`, run the local server as in "What works straight away", and the Cloud screen should say **Not signed in** instead of **This device only**. Create the account there; that proves the database set-up worked.
 9. Sign in with the same email and password on the iPad and laptop.
    Once cloud sync is set up, the app opens on a **sign-in screen** and shows nothing until someone signs in, so nobody can pick up a phone and edit a copy that never reaches the cloud. There is no Create account button on that screen: with sign-ups turned off (step 10), a new account is added in Supabase under **Authentication** > **Users** > **Add user**. A device that has signed in before still opens with no signal at the ground; changes upload when it reconnects.
-10. Once Joe's account works: Supabase > **Authentication** > **Sign In / Providers** (or "Settings") and turn off **Allow new users to sign up**. Nobody else needs an account. Players and staff use links, not logins.
+10. Leave **Allow new users to sign up** switched on (Supabase > **Authentication** > **Sign In / Providers**). Coaching staff make their own account when they open an invite link (see Coaching staff below). Players still use links, not logins.
 
 ### Things to know about Supabase
 
@@ -80,6 +80,23 @@ It then opens full screen, has its own icon, and works without signal. Changes m
 - Every screen has a **?** at the top right. Tap it for a short guide to that screen. Each step with a **Show me** button takes you to the control and flashes it.
 - The first time you open the app, Home shows a **Start here** card: what the app is for, the order to set it up in, and the weekly loop. Tap **Got it** when you have finished with it.
 - To see it again, go to More > **Start here**.
+
+## Coaching staff (November 2026)
+
+Joe can invite the manager, the assistant or anyone else to work on the team with him: **Team** > **Staff** > **Invite someone**.
+
+- **Roles.** Owner (set the team up), Admin (changes everything and can invite people), Coach (changes everything), Viewer (sees everything, changes nothing).
+- **Shared:** squad, game model, boards, blocks, sessions, match plans and analysis. Any coach can write the analysis that unlocks the next session.
+- **Private to each person:** their profile, pathway and logbook. Drills belong to whoever made them; the coaches on their teams can see and use them.
+- **Invites are links Joe sends himself** (WhatsApp, text or email). Supabase's own email only reaches people on the Supabase account's team, so it can't send invites. A link works once, for the email it names, within 14 days.
+- **Working at the same time.** Changes reach the others within a second or two. Each part of a record keeps its own time, so if Joe edits the keys while the manager writes Plan B, both are kept. If two people change the very same box, the later one wins and the other version is saved under **Cloud sync**. A circle with someone's initial at the top of a screen means they have it open too.
+
+**Set-up, once:**
+
+1. Supabase > **SQL Editor** > **New query**: paste all of `supabase/schema.sql`, press **Run**. (Safe to run again. It upgrades the data already there: Joe keeps everything and becomes the owner of his team.)
+2. Supabase > **Authentication** > **Sign In / Providers**: **Allow new users to sign up** on, and under **Email**, **Confirm email** off. The confirmation email can't reach new people (see above), so with it on they could never finish joining.
+
+**Things to know.** With sign-ups on, anyone who finds the app's address could make an account, but they would see an empty app and nothing of Thornaby's. **Forgot password** emails won't reach the manager either until Supabase has its own email sender (custom SMTP, for example Brevo's free plan). Until then, if a member of staff forgets their password, delete their user in Supabase > **Authentication** > **Users** and have Joe invite them again.
 
 ## Player and staff links
 

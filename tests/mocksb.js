@@ -8,7 +8,7 @@
     const q = { table, filters: [], op: 'select', uid: () => session ? session.user.id : null };
     const run = async () => call('query', { table, op: q.op, rows: q.rows, patch: q.patch, filters: q.filters, order: q.order, limit: q.limit, single: q.single, uid: q.uid() });
     const b = {
-      select() { return b; }, upsert(rows) { q.op = 'upsert'; q.rows = rows; return b; }, update(p) { q.op = 'update'; q.patch = p; return b; }, delete() { q.op = 'delete'; return b; },
+      select() { return b; }, upsert(rows) { q.op = 'upsert'; q.rows = rows; return b; }, insert(rows) { q.op = 'insert'; q.rows = Array.isArray(rows) ? rows : [rows]; return b; }, update(p) { q.op = 'update'; q.patch = p; return b; }, delete() { q.op = 'delete'; return b; },
       order(c) { q.order = c; return b; }, limit(n) { q.limit = n; return b; }, gt(c, v) { q.filters.push(['gt', c, v]); return b; }, not(c, o, v) { q.filters.push(['not', c, v]); return b; }, eq(c, v) { q.filters.push(['eq', c, v]); return b; },
       maybeSingle() { q.single = true; return b; }, then(res, rej) { return run().then(res, rej); }
     };
@@ -25,6 +25,9 @@
       updateUser: async () => ({ data: {}, error: null })
     },
     from: query,
+    // Live updates and presence: the tests call sync themselves, so these do nothing.
+    channel: () => { const c = { on() { return c; }, subscribe(cb) { if (cb) setTimeout(() => cb('SUBSCRIBED'), 0); return c; }, track: async () => {}, presenceState: () => ({}) }; return c; },
+    removeChannel() {}, removeAllChannels() {},
     rpc: async (name, params) => call('rpc', { name, params, uid: session ? session.user.id : null })
   }) };
 })();

@@ -58,7 +58,7 @@ async def main():
         check('team switcher shows the badge', await A.query_selector('#topbar .team-switch img.logo') is not None)
         await A.screenshot(path='shots/pictures-home.png')
         await A.wait_for_timeout(1800)
-        check('badge and photo synced to the cloud', any(v['id'] == 't-thornaby' and v['data'].get('logo') for v in srv.items.values()) and any(v['id'] == 'coach' and v['data'].get('photo') for v in srv.items.values()))
+        check('badge and photo synced to the cloud', any(v['id'] == 't-thornaby' and v['data'].get('logo') for v in srv.items.values()) and any(v['id'].startswith('coach:') and v['data'].get('photo') for v in srv.items.values()))
         # print header carries the badge
         html = await A.evaluate("import('./js/print.js').then(m => m.sessionHtml ? 'n/a' : 'n/a')")
         # player link

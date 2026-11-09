@@ -87,8 +87,8 @@ async def main():
         await G.context.set_offline(False)
         await G.goto(U+'index.html#/cloud'); await G.wait_for_timeout(300); await G.click('#cSync'); await G.wait_for_timeout(1000)
         r=await rec(G,'pr-2'); print('T4 phone after reconnect: title =', r['title'], '| why =', r['why'][:40])
-        print('T4 offline edit survived anywhere?', 'OFFLINE' in json.dumps([v for v in srv.items.values()]))
-        tg=await G.evaluate("document.querySelector('#view').textContent"); print('T4 phone keeps a copy of the lost edit on the cloud screen?', 'OFFLINE EDIT' in tg, '| heading:', 'EDITS REPLACED' in tg.upper())
+        print('T4 offline edit (a different field from the laptop\'s) kept alongside the laptop\'s title?', 'OFFLINE' in json.dumps(srv.items['pr-2']['data']) and 'laptop' in srv.items['pr-2']['data']['title'])
+        tg=await G.evaluate("document.querySelector('#view').textContent"); print('T4 nothing was lost, so no copy is listed on the cloud screen:', 'OFFLINE EDIT' not in tg)
 
         for pg in (A,F,G): print('errs', pg.errs) if pg.errs else None
         await b.close()

@@ -1,7 +1,7 @@
 // Session planner: theme from the game model, practices from the library, carried-forward change, DNA checks.
 import * as S from '../store.js';
 import { PHASES, PHASE_KEYS } from '../store.js';
-import { esc, icon, uid, today, addDays, fmtD, bindFields, actions, debounce, confirmSheet, toast } from '../util.js';
+import { esc, icon, uid, today, addDays, fmtD, fmtAgo, bindFields, actions, debounce, confirmSheet, toast } from '../util.js';
 import { drillSvg } from '../pitch.js';
 import { sessionChallenges, sessionStats, sessionKit, chalJump, paintChal } from '../challenges.js';
 import { printSession, kitLabel } from '../print.js';
@@ -58,7 +58,7 @@ export default function sessionView(el, [id], ctx) {
     ${s.cancelled ? `<div class="card row between" style="border-color:var(--line2)"><span class="small">Marked as didn’t happen.</span><button class="btn sm" data-act="uncancel">Undo</button></div>` : ''}
     ${happened && !s.cancelled ? `<div class="challenge row between" id="reviewBar" style="flex-direction:row;align-items:center"><span class="small" style="color:var(--lamp-text)">${rvDone ? 'Reviewed.' : rv ? 'Review started but not finished.' : s.date < today() ? 'This session has happened. Review it to close the loop.' : 'Session day. Review it when you’re done.'}</span><button class="btn sm lamp" data-act="review">${rvDone ? 'Open review' : rv ? 'Finish review' : 'Review now'}</button></div>` : ''}
     <div class="gl">
-      <details id="sessDetails" data-fold="details" ${op('details', !s.theme || !s.date)}><summary class="gr"><span class="lbl">Theme, date and venue<small>${s.theme ? 'Tap the line under the title, or here, to change them' : 'Start with the theme'}</small></span><span class="chev">›</span></summary>
+      <details id="sessDetails" data-fold="details" ${op('details', !s.theme || !s.date)}><summary class="gr"><span class="lbl">Theme, date and venue<small>${s.theme ? 'Tap the line under the title, or here, to change them' : 'Start with the theme'}</small>${S.editedBy(s, fmtAgo) ? `<small class="editedby" id="editedBy">${esc(S.editedBy(s, fmtAgo))}</small>` : ''}</span><span class="chev">›</span></summary>
       <div class="fold">
         <label class="field"><span>Theme: what will the team be better at by the end?</span><input type="text" data-f="theme" placeholder="e.g. Playing out through the 6 against a two-player press" ${s.theme ? '' : 'autofocus'}></label>
         <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))">

@@ -1,6 +1,6 @@
 // Offline support. Online: always fetch the latest files (so updates appear
 // straight away) and keep a copy. Offline or slow: use the saved copy.
-const CACHE = 'coaching-room-v20';
+const CACHE = 'coaching-room-v21';
 const SHELL = [
   './',
   'css/app.css',
@@ -44,6 +44,7 @@ const SHELL = [
   'js/views/session.js',
   'js/views/sharing.js',
   'js/views/squad.js',
+  'js/views/staff.js',
   'manifest.webmanifest',
   'vendor/supabase.js',
   'view.html',

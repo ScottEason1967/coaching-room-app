@@ -2,7 +2,7 @@
 // individual instructions, boards, and the challenge that asks what will win it.
 import * as S from '../store.js';
 import { PHASES, TAGS } from '../store.js';
-import { esc, icon, today, fmtD, lines, bindFields, actions, debounce, confirmSheet, toast, sheet, closeSheet } from '../util.js';
+import { esc, icon, today, fmtD, fmtAgo, lines, bindFields, actions, debounce, confirmSheet, toast, sheet, closeSheet } from '../util.js';
 import { frameSvg } from '../pitch.js';
 import { matchChallenges, openCount, threatened, chalJump, paintChal, focusField } from '../challenges.js';
 import { printMatch, printInstructionCards } from '../print.js';
@@ -101,7 +101,7 @@ export default function matchView(el, [id], ctx) {
     ${m.example ? `<div class="row nowrap small" style="gap:10px;color:var(--lamp-text);background:var(--lamp-soft);border:1px solid var(--lamp-line);border-radius:14px;padding:10px 12px"><span class="grow">Example plan, to show how the challenge works. Set a date to make it real, or delete it.</span><button class="btn sm" data-act="unexample">Make it real</button></div>` : ''}
     ${played && !m.cancelled ? (() => { const rv = S.reviewOf(m), done = S.reviewDone(rv); return `<div class="challenge row between" id="reviewBar" style="flex-direction:row;align-items:center"><span class="small" style="color:var(--lamp-text)">${done ? 'Reviewed.' : rv ? 'Review started but not finished.' : m.date < today() ? 'This match has been played. Review it.' : 'Match day. Review it after the game.'}</span><button class="btn sm lamp" data-act="review">${done ? 'Open review' : rv ? 'Finish review' : 'Review'}</button></div>`; })() : ''}
     ${m.cancelled ? `<div class="card row between"><span class="small">Marked as didn’t happen.</span><button class="btn sm" data-act="uncancel">Undo</button></div>` : ''}
-    <div class="gl"><details id="matchDetails" ${OPEN.has(m.id) || !m.opponent || !m.date ? 'open' : ''}><summary class="gr"><span class="lbl">Opponent, date and venue<small>${m.opponent ? 'Tap the line under the score, or here, to change them' : 'Start with who you are playing'}</small></span><span class="chev">›</span></summary>
+    <div class="gl"><details id="matchDetails" ${OPEN.has(m.id) || !m.opponent || !m.date ? 'open' : ''}><summary class="gr"><span class="lbl">Opponent, date and venue<small>${m.opponent ? 'Tap the line under the score, or here, to change them' : 'Start with who you are playing'}</small>${S.editedBy(m, fmtAgo) ? `<small class="editedby" id="editedBy">${esc(S.editedBy(m, fmtAgo))}</small>` : ''}</span><span class="chev">›</span></summary>
       <div class="fold">
       <label class="field"><span>Opponent</span><input type="text" data-f="opponent" list="oppList" autocomplete="off" placeholder="Who are you playing?" ${m.opponent ? '' : 'autofocus'}></label>
       <datalist id="oppList">${[...new Set(S.matches(T).map(x => (x.opponent || '').trim()).filter(Boolean))].sort().map(o => `<option value="${esc(o)}">`).join('')}</datalist>
