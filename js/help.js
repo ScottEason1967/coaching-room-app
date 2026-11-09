@@ -368,6 +368,7 @@ const squad = () => ({
   steps: [
     st('**Paste a list** sets up the whole squad at once: number then name, for example `7 Jane Smith`. Each player keeps her squad number. Check the line under the box says how many players it found. Leave **Replace the whole squad** ticked to clear out anyone not on the list.', '[data-act="import"]'),
     st('**Position** is the dropdown on each row. Every position comes from the same list, so the board can put the right player in the right slot.', '#squadList select[data-pos]'),
+    st('**C** and **VC** on each row make that player captain or vice-captain. There is one of each, so giving the armband to one player takes it from the other. Tap again to take it off. In a pasted list, put (c) or (vc) after the name.', '[data-capt]'),
     st('**Add player** adds one: number, name and position.', '[data-act="add"]'),
     st('Tap a player to open her page: goals, notes and her link. The green **Link** tag means she has a player page.', '[href^="#/player/"]'),
     st('**Player pages** (the box on the right, below the list on a phone): tick what goes on every page: agreed principles, the keys to winning for the next match, and boards marked “show on player pages”. Her number, goals and her own match instruction are always on. Your private notes never are.', '[data-o="principles"]'),

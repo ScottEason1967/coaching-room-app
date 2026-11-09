@@ -53,7 +53,7 @@ with sync_playwright() as p:
       M.parseSquad('19\\tmarina boni\\r\\n4. Liv Little'), M.parseSquad('7 Jane Smith ST\\n5 Amy Jones RWB')])""")
     print('  ', got)
     check('joined-up list split into players with their numbers', [(r['num'], r['name']) for r in got[0]] == [(1,'Elen Valentine'),(2,'Isabelle Moore'),(24,'Jen Knowles')])
-    check('numeric position at end of line kept', got[1][0]['pos'] == '8' and got[1][1] == {'num': 9, 'name': 'Sophie Curle', 'pos': 'CF'})
+    check('numeric position at end of line kept', got[1][0]['pos'] == '8' and got[1][1] == {'num': 9, 'name': 'Sophie Curle', 'pos': 'CF', 'capt': ''} and got[0][2]['capt'] == 'c')
     check('tabs, CRLF and "4." handled', [(r['num'], r['name']) for r in got[2]] == [(19,'marina boni'),(4,'Liv Little')])
     check('typed positions mapped onto the dropdown list', [r['pos'] for r in got[3]] == ['CF', 'RB'])
     # the mess: one player with the whole list as her name, plus others; replace fixes it

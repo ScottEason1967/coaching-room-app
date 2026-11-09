@@ -44,3 +44,4 @@ Database rules (needs postgres on a spare port):
 - `match_templates.py`: match day templates from Match, the plan overview, Opposition and On the day; using one fills only empty parts and never overwrites; print shows the new parts.
 - `pg_team.sql` (with `pg_team_before.sql`): coaching staff rules in a real Postgres. Load pg_stub.sql, the old schema (schema.sql up to section 3), pg_team_before.sql, then schema.sql twice, then run pg_team.sql: upgrade of existing data, invites, roles, merging edits field by field, viewers, privacy. (`pg_rules.sql` is for the rules before section 3.)
 - `staff.py`: Joe invites the manager and a viewer from the Staff screen; they join from the link; both edit one match plan; same-box edits; the analysis gate; roles changed and removed. Live updates and who's here need the real Supabase.
+- `captain.py`: captain and vice-captain from the squad list (C / VC), the player page and a pasted list; one of each per team.
