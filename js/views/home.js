@@ -33,6 +33,8 @@ export function openStartHere() {
   el.querySelector('#startDone').onclick = done;
 }
 
+const daysTo = d => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12:00')) / 864e5);
+
 export default function home(el, params, ctx) {
   const t = S.team(); const T = t.id; const td = today();
   ctx.setTop({ home: true });
@@ -45,43 +47,38 @@ export default function home(el, params, ctx) {
   const mList = nm ? matchChallenges(nm, T) : []; const mOpen = openCount(mList);
   const pl = S.players(T); const dummy = pl.filter(p => /^Player \d+$/.test(p.name)).length;
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const md = nm && nm.date ? daysTo(nm.date) : null;
 
-  const tile = (sec, href, ic, title, sub, status, id) => `<a class="wtile ${sec}" href="${href}" id="${id}"><span class="ic">${icon(ic)}</span><span class="t">${title}</span><span class="s">${sub}</span><span class="st">${status}</span></a>`;
+  const band = (sec, href, id, title, sub, big, small) => `<a class="bandtile ${sec}" href="${href}" id="${id}"><span class="grow"><span class="t">${title}</span><span class="s">${sub}</span></span><span class="k"><b>${big}</b><small>${small}</small></span></a>`;
 
-  el.innerHTML = `<div class="stack home">
-    ${S.meta().startHereDone ? '' : `<div class="card row nowrap" id="startHereCard" style="gap:12px;border-color:var(--accent-line)"><span class="grow small"><b>New here?</b> The start here guide sets the app up in five steps.</span><button class="btn sm pri" data-act="guide">Start here</button><button class="btn sm" data-act="guideHide">Hide</button></div>`}
-    ${due.length ? `<section class="challenge" aria-label="Analysis due"><div class="head"><div class="title">${icon('bulb', 'style="width:18px;height:18px"')}Analysis due</div><span class="pill lamp">${due.length}</span></div>
-      <div class="small" style="color:var(--lamp-text)">Close the loop before you plan anything new. Your next session is built from what you write here.</div>
-      ${due.map(d => `<button class="item" data-act="rev" data-arg="${d.rec.id}" style="background:rgba(10,16,32,.5);border-color:var(--lamp-line)"><span class="grow"><span class="t" style="display:block">${d.kind === 'match' ? 'v ' + esc(d.rec.opponent) : esc(d.rec.theme || 'Session')}</span><span class="s">${d.kind === 'match' ? 'Match' : 'Session'} · ${fmtD(d.rec.date)}${d.started ? ' · started' : ''}</span></span><span class="btn sm lamp">${d.started ? 'Finish' : 'Start'}</span></button>`).join('')}</section>` : ''}
+  el.innerHTML = `<div class="stack home" style="gap:10px">
+    ${S.meta().startHereDone ? '' : `<div class="card row nowrap" id="startHereCard" style="gap:12px"><span class="grow small"><b>New here?</b> The start here guide sets the app up in five steps.</span><button class="btn sm pri" data-act="guide">Start here</button><button class="btn sm" data-act="guideHide">Hide</button></div>`}
+    <div class="homegrid"><div class="stack" style="gap:10px">
+    ${due.length ? `<section class="mustbox" aria-label="Analysis due"><div class="mh"><span>Analysis due</span><span class="pill lamp">${due.length}</span></div>
+      <div class="small" style="padding:0 14px 8px;color:var(--lamp-text)">Close the loop before you plan anything new. Your next session is built from what you write here.</div>
+      ${due.map(d => `<button class="gr" data-act="rev" data-arg="${d.rec.id}"><span class="lbl">${d.kind === 'match' ? 'v ' + esc(d.rec.opponent) : esc(d.rec.theme || 'Session')}<small>${d.kind === 'match' ? 'Match' : 'Session'} · ${fmtD(d.rec.date)}${d.started ? ' · started' : ''}</small></span><span class="btn sm lamp">${d.started ? 'Finish' : 'Start'}</span></button>`).join('')}</section>` : ''}
 
-    <div class="nextup">
-      ${nm ? `<a class="next match" href="#/match/${nm.id}" id="nextMatch" aria-label="Next match"><span class="lab">Next match</span><span class="t">${esc(nm.opponent || 'Opponent not set')}</span><span class="s">${fmtD(nm.date)}${nm.ko ? ' · ' + esc(nm.ko) : ''}${mOpen ? ` · plan has ${mOpen} must-do${mOpen > 1 ? 's' : ''}` : ' · plan ready'}</span></a>`
-        : `<button type="button" class="next match" data-act="newMatch" id="nextMatch" aria-label="Next match"><span class="lab">Next match</span><span class="t">Nothing in the diary</span><span class="s">Add the next fixture</span></button>`}
-      <a class="next training" href="${ns ? '#/session/' + ns.id : '#/training/sessions'}" id="nextSession" aria-label="Next session"><span class="lab">Next session</span><span class="t">${ns ? esc(ns.theme || 'No theme yet') : 'Not planned yet'}</span><span class="s">${ns ? fmtD(ns.date) : 'Plan it from your block'}</span></a>
-    </div>
-    ${lc ? `<section aria-label="Carried forward" class="card row nowrap small" style="gap:12px;align-items:flex-start"><span style="flex:none;color:var(--lamp)">${icon('bulb', 'style="width:20px;height:20px"')}</span><span><b>Carried forward</b> from your analysis of ${fmtD(lc.date)}: “${esc(lc.change)}”<br><span class="muted">${acted ? `<a href="#/session/${acted.id}">Acted on in the session of ${fmtD(acted.date)}</a>. The next analysis will tell you whether it worked.` : 'Not acted on yet. Plan the next session from it.'}</span></span></section>` : ''}
+    ${nm ? `<a class="nextcard" href="#/match/${nm.id}" id="nextMatch" aria-label="Next match: ${esc(t.name)} v ${esc(nm.opponent || 'opponent not set')}"><span class="scorebug"><span class="us">${esc(t.short || t.name.split(' ')[0])}</span><span class="vs">V</span><span class="them ${nm.opponent ? '' : 'unset'}">${esc(nm.opponent || 'Opponent?')}</span></span>
+        <span class="meta"><span>${nm.date ? fmtD(nm.date) : 'No date yet'}${nm.ko ? ' · ' + esc(nm.ko) : ''}${nm.venue ? ' · ' + esc(nm.venue) : ''}</span><span class="mono ${mOpen ? 'todo' : ''}">${mOpen ? mOpen + ' MUST-DO' : 'PLAN READY'}</span></span></a>`
+      : `<button type="button" class="nextcard" data-act="newMatch" id="nextMatch" aria-label="Next match"><span class="scorebug"><span class="us">${esc(t.short || t.name.split(' ')[0])}</span><span class="vs">V</span><span class="them unset">No fixture</span></span><span class="meta"><span>Add the next fixture</span><span class="chev">›</span></span></button>`}
+    <div class="gl"><a class="gr" href="${ns ? '#/session/' + ns.id : '#/training/sessions'}" id="nextSession" aria-label="Next session"><span class="lbl">${ns ? esc(ns.theme || 'No theme yet') : 'Next session not planned yet'}<small>${ns ? 'Next session · ' + fmtD(ns.date) + (ns.time ? ' · ' + esc(ns.time) : '') : 'Plan it from your block'}</small></span><span class="chev">›</span></a></div>
 
-    <section aria-label="Your week" class="stack tight">
-      <div class="eyebrow">Your week</div>
-      <div class="week">
-        ${tile('training', '#/training', 'training', 'Training', 'Programme, sessions and drills, one inside the other.', cb ? `Block: ${esc(cb.title || 'untitled')} · week ${wk} of ${cb.weeks}` : 'No block running', 'wTraining')}
-        <span class="arrow" aria-hidden="true">${icon('chev')}</span>
-        ${tile('match', '#/matches', 'match', 'Match', 'Opposition analysis and your match day plan.', nm ? `Next: ${esc(nm.opponent || 'opponent not set')}${mOpen ? ` · ${mOpen} must-do` : ''}` : 'Nothing in the diary', 'wMatch')}
-        <span class="arrow" aria-hidden="true">${icon('chev')}</span>
-        ${tile('analysis', '#/analysis', 'analysis', 'Analysis', 'What worked, what didn’t, the one thing to change.', due.length ? `${due.length} to write up` : (lc ? 'Next: ' + esc(lc.change.slice(0, 50)) : 'Nothing waiting'), 'wAnalysis')}
-      </div>
+    <div class="ghead">This week</div>
+    <section aria-label="Your week" class="bands">
+      ${band('training', '#/training', 'wTraining', 'Training', cb ? ((cb.weeksPlan || [])[wk - 1] ? 'This week: ' + esc(cb.weeksPlan[wk - 1]) : esc(cb.title || 'Untitled block')) : 'No block running', cb ? `${wk}/${cb.weeks}` : '–', cb ? 'Weeks' : 'No block')}
+      ${band('match', '#/matches', 'wMatch', 'Match', nm ? (nm.opponent ? 'v ' + esc(nm.opponent) : 'Opponent not set') : 'Nothing in the diary', md == null ? '–' : md === 0 ? 'Today' : md + 'd', md == null ? 'No date' : md === 0 ? 'Kick-off' : 'To go')}
+      ${band('analysis', '#/analysis', 'wAnalysis', 'Analysis', due.length ? 'Write it up while you remember' : (lc ? 'Next: ' + esc(lc.change) : 'Nothing waiting'), due.length, 'To do')}
     </section>
-
-    <section aria-label="Your team" class="stack tight">
-      <div class="eyebrow">Your team</div>
-      <div class="teamtiles">
-        <a class="ttile" href="#/model" id="hModel">${icon('model')}<span><span class="t">Game model</span><span class="s">${ps.length} principle${ps.length === 1 ? '' : 's'}${ps.length ? ', ' + agreed + ' agreed' : ''}</span></span></a>
-        <a class="ttile" href="#/squad" id="hSquad">${icon('squad')}<span><span class="t">Squad</span><span class="s">${dummy ? dummy + ' still to name' : pl.length + ' players'}</span></span></a>
-        <a class="ttile" href="#/sketch" id="hSketch">${icon('sketch')}<span><span class="t">Sketch</span><span class="s">A blank board for ideas</span></span></a>
-      </div>
+    </div><div class="stack" style="gap:10px">
+    ${lc ? `<section aria-label="Carried forward" class="card row nowrap small" style="gap:12px;align-items:flex-start"><span style="flex:none;color:#B38F00">${icon('bulb', 'style="width:20px;height:20px"')}</span><span><b>Carried forward</b> from your analysis of ${fmtD(lc.date)}: “${esc(lc.change)}”<br><span class="muted">${acted ? `<a href="#/session/${acted.id}">Acted on in the session of ${fmtD(acted.date)}</a>. The next analysis will tell you whether it worked.` : 'Not acted on yet. Plan the next session from it.'}</span></span></section>` : ''}
+    <div class="ghead">The team</div>
+    <section aria-label="Your team" class="gl">
+      <a class="gr" href="#/model" id="hModel"><span class="lbl">Game model</span><span class="v"><span class="mono">${ps.length}${ps.length ? ' · ' + agreed + ' agreed' : ''}</span><span class="chev">›</span></span></a>
+      <a class="gr" href="#/squad" id="hSquad"><span class="lbl">Squad</span><span class="v"><span class="mono">${dummy ? dummy + ' to name' : pl.length}</span><span class="chev">›</span></span></a>
+      <a class="gr" href="#/sketch" id="hSketch"><span class="lbl">Sketch<small>A blank board for ideas</small></span><span class="chev">›</span></a>
     </section>
-
     ${!standalone && !S.meta().hideInstall ? `<div class="card row nowrap small muted" style="gap:12px"><span class="grow">Put it on your home screen: in Safari tap Share, then <b>Add to Home Screen</b>. On a laptop use the install icon in the address bar.</span><button class="btn sm" data-act="hideInstall">Hide</button></div>` : ''}
+    </div></div>
   </div>`;
 
   actions(el, {

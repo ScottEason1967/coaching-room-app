@@ -85,18 +85,28 @@ function renderNav(on) {
   document.body.dataset.sec = ROUTES[current.name].sec || '';
 }
 
+// Where Back goes, in words: the band says "‹ Training", "‹ Match" and so on.
+const BACK_WORD = h => (h || '').startsWith('#/training') || h === '#/ideas' ? 'Training' : h.startsWith('#/matches') ? 'Match' : h.startsWith('#/analysis') ? 'Analysis'
+  : h === '#/teamhome' ? 'Team' : h === '#/model' ? 'Game model' : h === '#/squad' ? 'Squad' : h === '#/sketch' ? 'Sketch' : h === '#/more' ? 'Settings' : h === '#/home' ? 'Home'
+  : h.startsWith('#/session/') ? 'Session' : h.startsWith('#/match/') ? 'Match plan' : h.startsWith('#/block/') ? 'Block' : h.startsWith('#/principle/') ? 'Principle' : 'Back';
+
 function renderTop() {
   const t = S.team(); const c = S.coach(); const tb = $('#topbar');
-  const left = top.back
-    ? `<a class="btn icon" href="${top.back}" aria-label="Back" style="border:0;background:rgba(255,255,255,.05)">${icon('back')}</a><div class="grow" style="min-width:0"><div class="h2" style="font-size:21px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(top.title || '')}</div>${top.sub ? `<div class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(top.sub)}</div>` : ''}</div>`
-    : `<span class="brand">${ringMini()}<span>Coaching Room</span></span><button class="team-switch" data-act="team">
-        ${teamBadge(t, 34, 17)}
-        <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;min-width:0"><span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${esc(t?.name || 'Add a team')}</span><span class="tiny muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${esc(t?.season || '')}${t?.season ? ' · ' : ''}switch team</span></span>${icon('down', 'style="width:16px;height:16px;color:var(--muted);flex:none"')}</button><div class="grow"></div>`;
   const guide = top.home ? `<button type="button" class="btn guide-btn" data-act="guide" id="guideBtn">Start here guide</button>` : '';
-  const help = helpFor(current.name, current.params) ? `<button type="button" class="btn icon" data-act="help" aria-label="How to use this screen" title="How to use this screen" style="background:var(--surface2);font-family:var(--display);font-weight:700;font-size:20px">?</button>` : '';
-  tb.innerHTML = `${left}<div class="row nowrap" style="gap:8px">${top.actions || ''}${guide}${help}<a href="#/cloud" class="btn icon" aria-label="Sync: ${esc(syncLabel())}" title="${esc(syncLabel())}" style="border:0;width:36px">${syncDot()}</a><button type="button" class="btn icon" id="meBtn" data-act="me" aria-label="Your profile, pathway and settings" style="background:var(--surface2);font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.04em;${c.photo ? 'padding:0;overflow:hidden' : ''}">${avatar(c.photo, 40, esc(c.initials || 'JE'))}</button></div>`;
+  const help = helpFor(current.name, current.params) ? `<button type="button" class="btn icon" data-act="help" aria-label="How to use this screen" title="How to use this screen" style="font-weight:700;font-size:17px">?</button>` : '';
+  const right = `<div class="row nowrap" style="gap:6px">${top.actions || ''}${guide}${help}<a href="#/cloud" class="btn icon" aria-label="Sync: ${esc(syncLabel())}" title="${esc(syncLabel())}" style="border:0;width:36px;background:transparent!important">${syncDot()}</a><button type="button" class="btn icon" id="meBtn" data-act="me" aria-label="Your profile, pathway and settings" style="font-weight:600;font-size:14px;${c.photo ? 'padding:0;overflow:hidden' : ''}">${avatar(c.photo, 40, esc(c.initials || 'JE'))}</button></div>`;
+  tb.classList.toggle('band', !!top.back); tb.classList.toggle('compact', !!top.compact);
+  if (top.back) {
+    const word = top.backLabel || BACK_WORD(top.back);
+    tb.innerHTML = `<div class="bandrow"><a class="backlink" href="${top.back}">${icon('back')}<span class="sr">Back to </span>${esc(word)}</a><span class="grow"></span>${right}</div>
+      ${top.bug ? top.bug : `<div class="bandtitle" id="bandTitle">${esc(top.title || '')}</div>`}
+      ${top.sub ? (top.onSub ? `<button type="button" class="bandsub" id="bandSub" aria-label="${esc(top.sub)}. Edit the details">${esc(top.sub)} ›</button>` : `<div class="bandsub">${esc(top.sub)}</div>`) : ''}`;
+  } else {
+    tb.innerHTML = `<button class="team-switch hometitle" data-act="team" aria-label="Switch team: ${esc(t?.name || 'Add a team')}"><span class="tm">${teamBadge(t, 18, 10)}<span class="tmn">${esc(t?.name || 'Add a team')}${t?.season ? ' · ' + esc(t.season) : ''}</span>${icon('down')}</span><span class="bn">Coaching Room</span></button><div class="grow"></div>${right}`;
+  }
   const b = tb.querySelector('[data-act="team"]'); if (b) b.onclick = teamSwitcher;
   const gb = tb.querySelector('[data-act="guide"]'); if (gb) gb.onclick = openStartHere;
+  const sb = tb.querySelector('#bandSub'); if (sb && top.onSub) sb.onclick = top.onSub;
   tb.querySelector('[data-act="me"]').onclick = profileMenu;
   const hb = tb.querySelector('[data-act="help"]');
   if (hb) hb.onclick = () => openHelp(current.name, current.params, { goTab: (tab, show) => { S.setMeta('matchTab', tab); ctx.refresh(); setTimeout(() => focusField(show, document), 60); } });

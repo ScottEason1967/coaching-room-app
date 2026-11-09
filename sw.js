@@ -1,12 +1,13 @@
 // Offline support. Online: always fetch the latest files (so updates appear
 // straight away) and keep a copy. Offline or slow: use the saved copy.
-const CACHE = 'coaching-room-v17';
+const CACHE = 'coaching-room-v18';
 const SHELL = [
   './',
   'css/app.css',
-  'fonts/barlow-condensed-latin-500-normal.woff2',
-  'fonts/barlow-condensed-latin-600-normal.woff2',
-  'fonts/barlow-condensed-latin-700-normal.woff2',
+  'fonts/jetbrains-mono-latin-500-normal.woff2',
+  'fonts/jetbrains-mono-latin-700-normal.woff2',
+  'fonts/oswald-latin-500-normal.woff2',
+  'fonts/oswald-latin-700-normal.woff2',
   'fonts/inter-latin-400-normal.woff2',
   'fonts/inter-latin-500-normal.woff2',
   'fonts/inter-latin-600-normal.woff2',

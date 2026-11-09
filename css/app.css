@@ -2,22 +2,28 @@
 @font-face{font-family:Inter;font-weight:500;font-display:swap;src:url(../fonts/inter-latin-500-normal.woff2) format('woff2')}
 @font-face{font-family:Inter;font-weight:600;font-display:swap;src:url(../fonts/inter-latin-600-normal.woff2) format('woff2')}
 @font-face{font-family:Inter;font-weight:700;font-display:swap;src:url(../fonts/inter-latin-700-normal.woff2) format('woff2')}
-@font-face{font-family:'Barlow Condensed';font-weight:500;font-display:swap;src:url(../fonts/barlow-condensed-latin-500-normal.woff2) format('woff2')}
-@font-face{font-family:'Barlow Condensed';font-weight:600;font-display:swap;src:url(../fonts/barlow-condensed-latin-600-normal.woff2) format('woff2')}
-@font-face{font-family:'Barlow Condensed';font-weight:700;font-display:swap;src:url(../fonts/barlow-condensed-latin-700-normal.woff2) format('woff2')}
+
+@font-face{font-family:Oswald;font-weight:500;font-display:swap;src:url(../fonts/oswald-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:Oswald;font-weight:700;font-display:swap;src:url(../fonts/oswald-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'JetBrains Mono';font-weight:500;font-display:swap;src:url(../fonts/jetbrains-mono-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'JetBrains Mono';font-weight:700;font-display:swap;src:url(../fonts/jetbrains-mono-latin-700-normal.woff2) format('woff2')}
 
 :root{
-  --bg:#0A1020; --surface:#121A2E; --surface2:#18233D; --input:#0E1528;
-  --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.12);
-  --text:#EEF2FA; --text2:#C6CFE0; --muted:#9AA6BF;
-  --accent:#3D7BFF; --accent-soft:color-mix(in srgb,var(--accent) 16%,transparent);
-  --accent-line:color-mix(in srgb,var(--accent) 45%,transparent);
-  --lamp:#FFD34D; --lamp-soft:rgba(255,211,77,.09); --lamp-line:rgba(255,211,77,.28); --lamp-text:#FFF1C7;
-  --good:#3DDC97; --good-soft:rgba(61,220,151,.12); --good-text:#7BE8B8;
-  --bad:#FF6B6B; --opp:#D63B3B; --on-accent:#fff;
-  --c-training:#3D7BFF; --c-match:#2FB67A; --c-analysis:#FF8A3D;
-  --r:20px; --r-sm:14px;
-  --display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --bg:#F2F2F7; --surface:#FFFFFF; --surface2:#E9E9EE; --input:#FFFFFF;
+  --line:#E5E5EA; --line2:#D1D1D6;
+  --text:#0B0F19; --text2:#3A3D46; --muted:#62656F;
+  --accent:#2563EB; --accent-ink:#1D4ED8; --accent-soft:color-mix(in srgb,var(--accent) 12%,transparent);
+  --accent-line:color-mix(in srgb,var(--accent) 40%,transparent);
+  --band:#8AB4FF;
+  --lamp:#FFD34D; --lamp-soft:#FFF6D6; --lamp-line:#F2C94C; --lamp-text:#4A3A00;
+  --good:#1E8A55; --good-soft:#E3F6EC; --good-text:#166C42;
+  --bad:#D92D20; --opp:#D63B3B; --on-accent:#fff;
+  --c-training:#2563EB; --c-match:#2FB67A; --c-analysis:#FF8A3D;
+  --b-training:#8AB4FF; --b-match:#7FDDA6; --b-analysis:#FFB27F;
+  --navy:#0E1A33; --club:#1D4ED8;
+  --r:14px; --r-sm:12px;
+  --display:Oswald,'Barlow Condensed','Arial Narrow',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
   --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
 }
 *{box-sizing:border-box}
@@ -46,8 +52,9 @@ svg{display:block}
 .btn.guide-btn{display:none}
 @media (min-width:700px){.btn.guide-btn{display:inline-flex}}
 /* Each area has its own colour: buttons, tabs and highlights follow it. */
-body[data-sec="match"]{--accent:var(--c-match);--on-accent:#06150F}
-body[data-sec="analysis"]{--accent:var(--c-analysis);--on-accent:#1A0E05}
+body[data-sec="training"]{--band:var(--b-training)}
+body[data-sec="match"]{--accent:#1E8A55;--accent-ink:#166C42;--on-accent:#fff;--band:var(--b-match)}
+body[data-sec="analysis"]{--accent:#C2410C;--accent-ink:#9A3412;--on-accent:#fff;--band:var(--b-analysis)}
 .bottomnav svg,.sidebar svg{width:24px;height:24px}
 
 @media (min-width:900px){
@@ -299,3 +306,151 @@ body.helpflash .flash{outline-color:var(--accent)!important}
 .bigpick .s{font-size:12.5px;opacity:.85}
 .tabs3{grid-auto-flow:column}
 .group{padding:12px}
+
+/* ================= Light look (Nov 2026): Native base, colour-block headers, scorebug, mono numbers ================= */
+a{color:var(--accent-ink)}
+.glow{display:none}
+.mono,.num{font-family:var(--mono);font-weight:700;letter-spacing:0}
+.num{color:var(--accent-ink)}
+.card,.item{border-color:transparent}
+.card.link:hover,.item:hover{border-color:var(--line2)}
+.btn:hover{background:rgba(0,0,0,.04)}
+.btn.pri:hover{background:var(--accent)}
+.btn.on,.tool.on{color:var(--accent-ink)}
+.pill{color:var(--accent-ink)}
+.pill.grey{background:var(--surface2);color:var(--text2)}
+.pill.lamp{background:var(--lamp);color:#1b1400}
+.pill.opp{background:#FDE3E3;color:#A51D1D}
+.pill.an{background:#FFE8D6;color:#9A3412}
+.chip{background:var(--surface)}
+.seg button,.seg a{background:var(--surface)}
+.seg button.on.good,.seg button.on.no{color:#fff}
+input::placeholder,textarea::placeholder{color:#8A8D96}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2362656F' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
+.scrim{background:rgba(0,0,0,.35)}
+.sheet{border-color:transparent}
+.toast{background:#0B0F19;color:#fff}
+.tool{background:var(--surface)}
+.empty{background:transparent}
+/* The yellow is only ever "you need to do this". */
+.challenge .title{color:var(--lamp-text)}
+.q{color:var(--text)}
+.q.ok{color:var(--text2)}
+.q .ic{color:#0B0F19}
+.q.ok .ic,.q.req .ic{color:#fff}
+.q .src{color:#7A6400}
+.q .qd{color:#4A3A00}
+.q .qt{color:#7A6400}
+.q .qh.go{text-decoration-color:rgba(122,100,0,.4)}
+.qx{border-color:var(--lamp-line);color:#4A3A00}
+.qx:hover{border-color:#B38F00;color:#1b1400}
+@media (max-width:899px){
+  .chaldock{background:var(--surface);border-color:var(--lamp-line);box-shadow:0 8px 24px rgba(0,0,0,.14)}
+  .chaldock .dockbar{background:var(--lamp-soft);color:var(--lamp-text)}
+}
+
+/* Top bar: plain on Home and the area pages, a coloured band on the screens inside an area. */
+.topbar{background:rgba(242,242,247,.92);border-bottom:0}
+.topbar .btn.icon{background:var(--surface2)!important;border:0}
+.topbar #meBtn{background:#0B0F19!important;color:#fff}
+.team-switch{background:transparent;border:0;padding:0;min-height:44px;max-width:none;border-radius:8px}
+.hometitle{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;text-align:left;min-width:0}
+.hometitle .tm{font-size:13px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.hometitle .tm svg{width:14px;height:14px}
+.hometitle .bn{font-family:var(--display);font-weight:700;font-size:28px;text-transform:uppercase;letter-spacing:.01em;color:var(--text)}
+.topbar.band{flex-direction:column;align-items:stretch;gap:0;background:var(--band);color:#0B0F19;padding:calc(4px + var(--safe-t)) 8px 12px}
+body:not([data-sec]) .topbar.band,body[data-sec=""] .topbar.band{--band:#E3E3E8}
+.band .bandrow{display:flex;align-items:center;gap:6px;min-height:46px}
+.band .backlink{display:inline-flex;align-items:center;min-height:44px;padding:0 8px;color:#0B0F19;text-decoration:none;font-size:16px;font-weight:500;white-space:nowrap}
+.band .backlink svg{width:20px;height:20px;margin-left:-4px}
+.band .btn{color:#0B0F19}
+.band .btn.icon{background:rgba(255,255,255,.45)!important}
+.band .bandtitle{padding:0 8px;font-family:var(--display);font-weight:700;font-size:26px;text-transform:uppercase;line-height:1.05;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.band .bandsub{margin:4px 8px 0;padding:0;border:0;background:none;color:#0B0F19;font:500 14px Inter,system-ui,sans-serif;text-align:left;cursor:pointer;align-self:flex-start;min-height:28px}
+.band .bandsub[disabled]{cursor:default}
+.band.compact .bandtitle{font-size:21px;-webkit-line-clamp:1}
+@media (min-width:900px){
+  .topbar.band{padding:calc(8px + var(--safe-t)) 20px 16px}
+  .band .bandtitle{font-size:34px}
+}
+
+/* Main bar: the phone's own tab bar look. The lit item gets a bar in its area's colour. */
+.bottomnav{background:rgba(249,249,249,.96);border-top:1px solid var(--line2)}
+.bottomnav a{color:#6B6E78}
+.bottomnav a.on,.bottomnav a.training.on,.bottomnav a.match.on,.bottomnav a.analysis.on{color:#0B0F19;background:transparent;box-shadow:inset 0 3px 0 #0B0F19;border-radius:0}
+.bottomnav a.training.on{box-shadow:inset 0 3px 0 var(--c-training)}
+.bottomnav a.match.on{box-shadow:inset 0 3px 0 var(--c-match)}
+.bottomnav a.analysis.on{box-shadow:inset 0 3px 0 var(--c-analysis)}
+@media (min-width:900px){.bottomnav{background:transparent;border-bottom:1px solid var(--line2)}.bottomnav a.on{box-shadow:inset 0 -3px 0 #0B0F19}.bottomnav a.training.on{box-shadow:inset 0 -3px 0 var(--c-training)}.bottomnav a.match.on{box-shadow:inset 0 -3px 0 var(--c-match)}.bottomnav a.analysis.on{box-shadow:inset 0 -3px 0 var(--c-analysis)}}
+
+/* Grouped lists: white rounded blocks of rows, a grey caption above. */
+.ghead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em;padding:10px 4px 0;font-weight:500}
+.ghead .mono{font-size:12px}
+.gl{background:var(--surface);border-radius:var(--r);overflow:hidden}
+.gl>.gr,.gl>details>summary.gr,.gl>details.gr>summary{border-bottom:1px solid var(--line)}
+.gl>:last-child.gr,.gl>details:last-child>summary.gr,.gl>details.gr:last-child>summary{border-bottom:0}
+.gl>details[open]:not(:last-child){border-bottom:1px solid var(--line)}
+.gr{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:10px 14px;background:transparent;border:0;color:var(--text);text-decoration:none;font:400 16px Inter,system-ui,sans-serif;text-align:left;cursor:pointer}
+.gr .lbl{flex:1;min-width:0}
+.gr .lbl small{display:block;font-size:12.5px;color:var(--muted)}
+.gr .v{color:var(--muted);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.gr .v .mono{font-size:13px;color:var(--text2)}
+.gr .ix{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--muted);flex:none;width:22px}
+.gr .chev{color:#A0A3AB;font-size:18px;line-height:1}
+.gr.add{color:var(--accent-ink)}
+details>summary{list-style:none}
+details>summary::-webkit-details-marker{display:none}
+details[open]>summary.gr .chev,details.gr[open]>summary .chev{transform:rotate(90deg)}
+.fold{padding:4px 14px 14px;display:flex;flex-direction:column;gap:10px}
+.gr.must{background:var(--lamp-soft);color:#0B0F19}
+.gr.must .dotm{width:8px;height:8px;border-radius:50%;background:#E0A800;flex:none}
+.gl.must{border:1px solid var(--lamp-line)}
+.minstrip{display:flex;height:6px;gap:2px}
+.minstrip span{background:var(--band)}
+.minstrip span:nth-child(4n+1){background:color-mix(in srgb,var(--band) 45%,#fff)}
+.minstrip span:nth-child(4n+2){background:color-mix(in srgb,var(--band) 70%,#fff)}
+.minstrip span:nth-child(4n+4){background:color-mix(in srgb,var(--band) 75%,#0B0F19 25%)}
+
+/* Native segmented control */
+.nseg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);background:#E3E3E8;border-radius:9px;padding:2px}
+.nseg button{min-height:34px;border:0;background:transparent;border-radius:7px;font:500 14px Inter,system-ui,sans-serif;color:#0B0F19;cursor:pointer}
+.nseg button.on{background:#fff;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+
+/* Scorebug: the next match, broadcast style */
+.scorebug{display:flex;align-items:stretch;background:var(--navy);color:#fff;border-radius:10px;overflow:hidden;font-family:var(--display);font-weight:700;font-size:19px;text-transform:uppercase;line-height:1.1}
+.scorebug .us{background:var(--club);padding:9px 12px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scorebug .vs{padding:9px 8px;color:#AEB9D0;font-family:var(--mono);font-size:13px;display:flex;align-items:center}
+.scorebug .them{padding:9px 12px;flex:1;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scorebug .them.unset{color:#AEB9D0}
+.band .scorebug{margin:2px 8px 0}
+.nextcard{display:block;text-decoration:none;color:var(--text);background:var(--surface);border-radius:12px;overflow:hidden;border:0;padding:0;width:100%;text-align:left;cursor:pointer}
+.nextcard .meta{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;font-size:13px}
+.nextcard .meta .mono{font-size:12px;color:var(--good-text)}
+.nextcard .meta .mono.todo{color:#8A6A00}
+
+/* Home: the week as three colour bands */
+.bands{display:flex;flex-direction:column;border-radius:var(--r);overflow:hidden}
+.bandtile{display:flex;align-items:center;gap:12px;padding:14px 16px;color:#0B0F19;text-decoration:none;min-height:72px}
+.bandtile.training{background:var(--b-training)}.bandtile.match{background:var(--b-match)}.bandtile.analysis{background:var(--b-analysis)}
+.bandtile .t{display:block;font-family:var(--display);font-weight:700;font-size:28px;text-transform:uppercase;line-height:1}
+.bandtile .s{display:block;font-size:13px;font-weight:500;margin-top:3px}
+.bandtile .k{text-align:right;flex:none}
+.bandtile .k b{display:block;font-family:var(--mono);font-size:20px;font-weight:700}
+.bandtile .k small{font-family:var(--mono);font-size:10px;font-weight:500;text-transform:uppercase}
+@media (min-width:900px){
+  .bands{flex-direction:row}
+  .bandtile{flex:1;flex-direction:column;align-items:flex-start;min-height:170px;padding:22px}
+  .bandtile .t{font-size:36px}
+  .bandtile .k{margin-top:auto;text-align:left}
+}
+.homegrid{display:grid;gap:10px}
+@media (min-width:900px){.homegrid{grid-template-columns:minmax(0,2fr) minmax(0,1fr);align-items:start;gap:18px}}
+.mustbox{background:var(--lamp-soft);border:1px solid var(--lamp-line);border-radius:var(--r);overflow:hidden}
+.mustbox .gr{border-bottom:1px solid var(--lamp-line)}
+.mustbox .gr:last-child{border-bottom:0}
+.mustbox .mh{display:flex;justify-content:space-between;align-items:center;padding:10px 14px 4px;font-weight:700;font-size:14px}
+.btn.kick{min-height:54px;background:var(--navy);color:#fff;border:0;font-family:var(--display);font-size:20px;text-transform:uppercase;letter-spacing:.04em;border-radius:14px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hometitle .tmn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.hometitle .tm svg,.hometitle .tm .badge-num,.hometitle .tm img{flex:none}
+.bandtile .grow{min-width:0}.bandtile .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

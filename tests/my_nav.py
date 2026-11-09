@@ -9,10 +9,10 @@ async def main():
         await pg.click('[data-act="newS"]'); await pg.wait_for_timeout(400); sid=(await pg.evaluate('location.hash')).split('/')[-1]
         await pg.click('[data-act="add"]'); await pg.wait_for_timeout(300); await pg.click('#pdNew'); await pg.wait_for_timeout(400)
         print('new drill from session, hash:', await pg.evaluate('location.hash'))
-        print('back button goes to:', await pg.evaluate("document.querySelector('#topbar a[aria-label=Back]').getAttribute('href')"), '| session id', sid)
+        print('back button goes to:', await pg.evaluate("document.querySelector('#topbar a.backlink').getAttribute('href')"), '| session id', sid)
         # review loop -> acted-on line on Home
         yest=(datetime.date.today()-datetime.timedelta(days=1)).isoformat()
-        await pg.goto(U+'#/session/'+sid); await pg.wait_for_timeout(300); await pg.fill('[data-f="date"]',yest); await pg.fill('[data-f="theme"]','Old session'); await pg.wait_for_timeout(600)
+        await pg.goto(U+'#/session/'+sid); await pg.wait_for_timeout(300); await pg.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await pg.fill('[data-f="date"]',yest); await pg.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await pg.fill('[data-f="theme"]','Old session'); await pg.wait_for_timeout(600)
         await pg.goto(U+'#/home'); await pg.wait_for_timeout(300); await pg.click('[data-act="rev"]'); await pg.wait_for_timeout(300)
         for f,v in [('worked','a'),('didnt','b'),('change','Fewer stoppages in the rondo'),('self','c')]: await pg.fill(f'[data-f="{f}"]',v)
         await pg.wait_for_timeout(600); await pg.goto(U+'#/home'); await pg.wait_for_timeout(300)

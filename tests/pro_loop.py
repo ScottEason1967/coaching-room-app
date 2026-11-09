@@ -27,17 +27,17 @@ async def main():
         bid=(await pg.evaluate('location.hash')).split('/')[-1]
         await pg.fill('[data-f="title"]','Play out against a two-player press'); await pg.click('[data-act="pr"][data-arg="pr-1"]'); await pg.wait_for_timeout(300)
         await pg.fill('[data-f="weeksPlan.0"]','Shape unopposed, the picture'); await pg.fill('[data-f="weeksPlan.1"]','Opposed 7v5, triggers'); await pg.wait_for_timeout(600)
-        await pg.goto(U+'#/home'); await pg.wait_for_timeout(300); t=await txt(); print('home shows block:', 'WEEK 1 OF 4' in t.upper(), 'Shape unopposed' in t)
+        await pg.goto(U+'#/home'); await pg.wait_for_timeout(300); t=await txt(); print('home shows block:', '1/4' in t, 'Shape unopposed' in t)
         # --- session this week: created inside the block, inherits its principle
         await pg.goto(U+'#/plans/sessions'); await pg.wait_for_timeout(300); await pg.click('[data-act="newS"]'); await pg.wait_for_timeout(400)
         sid=(await pg.evaluate('location.hash')).split('/')[-1]
         t=await txt(); print('session shows block + week:', 'WEEK 1 OF 4' in t.upper(), '| principle pre-selected:', await pg.evaluate("document.querySelector('[data-act=pr][data-arg=\"pr-1\"]').classList.contains('on')"))
-        await pg.fill('[data-f="theme"]','Playing out v two'); await pg.fill('[data-f="date"]',D(1)); await pg.wait_for_timeout(500)
+        await pg.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await pg.fill('[data-f="theme"]','Playing out v two'); await pg.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await pg.fill('[data-f="date"]',D(1)); await pg.wait_for_timeout(500)
         await pg.fill('[data-f="lookFor"]','CBs split on the keeper first touch; 6 shows before the pass')
         # focus player: give pl-6 a goal first, then pick her
         await pg.evaluate("""(async()=>{const S=await import('./js/store.js');const p=S.get('pl-6');p.goals=[{id:'g1',text:'Show early for the CB',status:'on',how:''}];S.put(p);})()""")
         await pg.wait_for_timeout(600); await pg.goto(U+'#/home'); await pg.wait_for_timeout(200); await pg.goto(U+'#/session/'+sid); await pg.wait_for_timeout(400)
-        await pg.click('[data-act="focus"][data-arg="pl-6"]'); await pg.wait_for_timeout(300)
+        await pg.evaluate("document.querySelector('details[data-fold=focus]').open=true"); await pg.click('[data-act="focus"][data-arg="pl-6"]'); await pg.wait_for_timeout(300)
         await pg.fill('[data-f="focusHow"]','Watch her first movement; ask where the CB wants her'); await pg.wait_for_timeout(500)
         await pg.click('[data-act="add"]'); await pg.wait_for_timeout(300); await pg.click('[data-d="dr-rondo"]'); await pg.wait_for_timeout(400)
         c=await chal(); print('session check mentions focus/lookFor still?', 'looking for tonight' in c, '| focus ask:', 'coaching tonight' in c, '| arc/transition rules present:', 'game-like' in c or 'looks like the game' in c)
@@ -49,10 +49,10 @@ async def main():
         # --- match on Sunday with plan B etc.
         await pg.goto(U+'#/plans/matches'); await pg.wait_for_timeout(300); await pg.click('[data-act="newM"]'); await pg.wait_for_timeout(400)
         mid=(await pg.evaluate('location.hash')).split('/')[-1]
-        await pg.fill('[data-f="opponent"]','Chester-le-Street'); await pg.fill('[data-f="date"]',D(2)); await pg.wait_for_timeout(500)
+        await pg.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await pg.fill('[data-f="opponent"]','Chester-le-Street'); await pg.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await pg.fill('[data-f="date"]',D(2)); await pg.wait_for_timeout(500)
         t=await txt(); print('opponent file shown (example match is undated so should NOT appear):', 'OPPONENT FILE' in t.upper())
         await pg.select_option('[data-f="tags.press"]','high organised press'); await pg.fill('[data-f="opp.ip"]','Go long'); await pg.fill('[data-f="opp.op"]','Press high in a 4-3-3'); await pg.wait_for_timeout(500)
-        await pg.click('[data-act="tab"][data-arg="plan"]'); await pg.wait_for_timeout(400)
+        await pg.click('#matchPart button:nth-child(2)'); await pg.wait_for_timeout(300); await pg.click('[data-act="tab"][data-arg="plan"]'); await pg.wait_for_timeout(400)
         c=await chal(); print('match check: plan B required:', 'Plan B' in c, '| suggests principles under test:', 'From the tags' in c, '| trained this week mentioned:', 'trained' in c.lower())
         print('suggested chips marked:', await pg.evaluate("[...document.querySelectorAll('[data-act=focus]')].filter(x=>x.textContent.includes('?')).map(x=>x.textContent.trim())"))
         await pg.fill('[data-f="plan.keys"]','Switch early\nBack post runs'); await pg.fill('[data-f="plan.threat"]','Long throws: 6 marks the flick'); await pg.fill('[data-f="plan.planB"]','Lost it in our half 3 times by 20 min: keeper goes long')
@@ -60,8 +60,8 @@ async def main():
         await pg.fill('[data-f="plan.principleNotes.pr-1"]','Keep it: their 9 presses alone, play round her'); await pg.wait_for_timeout(600)
         c=await chal(); print('match must-dos after filling:', c.split('|')[1].strip() if 'must-do' in c else c[:60], '| under test note placeholder shows trigger:', 'Trigger:' in (await pg.evaluate("document.querySelector('[data-f=\"plan.principleNotes.pr-1\"]').placeholder")))
         # --- move the match and the session to the past, review them
-        await pg.fill('[data-f="date"]',D(-1)); await pg.wait_for_timeout(500)
-        await pg.goto(U+'#/session/'+sid); await pg.wait_for_timeout(300); await pg.fill('[data-f="date"]',D(-2)); await pg.wait_for_timeout(500)
+        await pg.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await pg.fill('[data-f="date"]',D(-1)); await pg.wait_for_timeout(500)
+        await pg.goto(U+'#/session/'+sid); await pg.wait_for_timeout(300); await pg.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await pg.fill('[data-f="date"]',D(-2)); await pg.wait_for_timeout(500)
         await pg.goto(U+'#/home'); await pg.wait_for_timeout(400)
         print('home due count 2 (session + match):', (await txt()).count('REVIEW'))
         # review the session first
@@ -91,7 +91,7 @@ async def main():
         await pg.fill('[data-f="addressesHow"]','7v5 build-up with their 9 on the 6; CBs told to wait for the drop'); await pg.wait_for_timeout(600)
         c=await chal(); print('with how -> ok:', 'Acts on the last review' in c)
         # that session happens; its review must ask whether the change was made
-        await pg.fill('[data-f="date"]',D(-1)); await pg.wait_for_timeout(500)
+        await pg.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await pg.fill('[data-f="date"]',D(-1)); await pg.wait_for_timeout(500)
         await pg.click('[data-act="review"]'); await pg.wait_for_timeout(400)
         t=await txt(); print('next review asks "did you do it":', 'LAST TIME YOU DECIDED' in t.upper() and 'Did you do it?' in t)
         c=await chal(); print('follow-up is a must-do:', 'Did you do it' in c)
@@ -105,7 +105,7 @@ async def main():
             await pg.goto(U+'#/review/'+(await pg.evaluate("(async()=>{const S=await import('./js/store.js');return S.get('"+sid2+"').reviewId})()"))); await pg.wait_for_timeout(300)
             for f,v in [('worked','a'),('didnt','b'),('change','x'),('self','y'),('lastChangeEffect','worked')]: await pg.fill(f'[data-f="{f}"]',v)
             await pg.wait_for_timeout(600); await pg.goto(U+'#/plans/matches'); await pg.wait_for_timeout(300); await pg.click('[data-act="newM"]'); await pg.wait_for_timeout(400)
-        await pg.fill('[data-f="opponent"]','chester-le-street'); await pg.fill('[data-f="date"]',D(9)); await pg.wait_for_timeout(500)
+        await pg.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await pg.fill('[data-f="opponent"]','chester-le-street'); await pg.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await pg.fill('[data-f="date"]',D(9)); await pg.wait_for_timeout(500)
         t=await txt(); print('opponent file for 2nd meeting:', 'OPPONENT FILE' in t.upper(), '| shows what they did:', 'dropped the 9' in t, '| copy button:', bool(await pg.query_selector('[data-act=copyPrev]')))
         i=t.upper().find('OPPONENT FILE'); print('FILE TEXT:', t[i:i+400].replace('\n',' | '))
         print('prev matches:', await pg.evaluate("(async()=>{const S=await import('./js/store.js');return S.matches(S.team().id).map(m=>[m.opponent,m.date,!!(m.opp&&m.opp.ip),m.reviewId&&(S.get(m.reviewId)||{}).them])})()"))

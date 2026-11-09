@@ -72,7 +72,7 @@ function render() {
         <div class="small" id="phM" role="status" style="color:var(--lamp-text);min-height:18px"></div></div><div class="stack">`;
     if (d.match) {
       h += `<div class="card stack tight"><div class="eyebrow">Next match</div><div class="h1" style="font-size:34px">v ${esc(d.match.opponent)}</div><div class="small muted">${fmtD(d.match.date)}${d.match.ko ? ' · ' + esc(d.match.ko) : ''}${d.match.venue ? ' · ' + esc(d.match.venue) : ''}</div>
-        ${d.match.instruction ? `<div class="job stack tight" style="margin-top:8px"><div class="eyebrow" style="color:#8FB4FF">Your job</div><div style="font-size:16px">${nl2br(d.match.instruction)}</div></div>` : ''}
+        ${d.match.instruction ? `<div class="job stack tight" style="margin-top:8px"><div class="eyebrow" style="color:var(--accent-ink)">Your job</div><div style="font-size:16px">${nl2br(d.match.instruction)}</div></div>` : ''}
         ${d.match.keys && d.match.keys.length ? `<div class="eyebrow" style="margin-top:8px">What wins us the game</div><ol class="small" style="margin:0;padding-left:20px">${d.match.keys.map(k => `<li>${esc(k)}</li>`).join('')}</ol>` : ''}</div>`;
     }
     if ((d.goals || []).length) h += `<div class="card stack tight"><div class="h3">Your development goals</div>${d.goals.map(g => `<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row between nowrap"><span style="font-weight:600">${esc(g.text)}</span><span class="pill ${g.status === 'Achieved' ? 'good' : ''}">${esc(g.status)}</span></div>${g.how ? `<div class="small muted">${nl2br(g.how)}</div>` : ''}</div>`).join('')}</div>`;

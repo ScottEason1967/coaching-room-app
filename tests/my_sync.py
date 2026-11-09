@@ -41,7 +41,7 @@ async def main():
         await A.goto(U+'index.html#/plans/sessions'); await A.wait_for_timeout(300)
         await A.click('[data-act="newS"]'); await A.wait_for_timeout(400)
         sid=(await A.evaluate('location.hash')).split('/')[-1]
-        await A.fill('[data-f="theme"]','Session to be reviewed'); await A.fill('[data-f="date"]',yest); await A.wait_for_timeout(700)
+        await A.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await A.fill('[data-f="theme"]','Session to be reviewed'); await A.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await A.fill('[data-f="date"]',yest); await A.wait_for_timeout(700)
         await A.goto(U+'index.html#/home'); await A.wait_for_timeout(400)
         print('T2 home shows review due:', 'ANALYSIS DUE' in (await A.inner_text('#view')).upper())
         await A.click('[data-act="rev"]'); await A.wait_for_timeout(400)   # opens the review (empty)

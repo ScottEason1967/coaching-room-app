@@ -22,6 +22,7 @@ export function newMatch() {
 
 const TABS = [['them', 'Them'], ['plan', 'Plan'], ['squad', 'Squad'], ['boards', 'Boards'], ['day', 'Day']];
 // Two parts: the opposition analysis, and the match day plan (plan, team selection, boards, the day).
+const OPEN = new Set();
 const PLAN_TABS = [['plan', 'How we play'], ['squad', 'Team selection'], ['boards', 'Boards and set pieces'], ['day', 'On the day']];
 
 export default function matchView(el, [id], ctx) {
@@ -32,7 +33,12 @@ export default function matchView(el, [id], ctx) {
   const focusSet = new Set(m.plan.focusIds); const suggested = threatened(m, T);
   const prevReview = x => S.reviewOf(x);
   const tab = S.meta().matchTab || 'them';
-  ctx.setTop({ back: '#/matches', title: m.opponent ? 'v ' + m.opponent : 'New match plan', sub: fmtD(m.date) });
+  const us = (S.team().name || 'Us').split(' ')[0];
+  const summary = () => m.date || m.ko || m.venue ? [m.date ? fmtD(m.date) : 'No date', m.ko ? 'KO ' + m.ko : '', m.venue, m.comp].filter(Boolean).join(' · ') : 'Set the date, kick-off and venue';
+  const top = () => ctx.setTop({ back: '#/matches', title: m.opponent ? 'v ' + m.opponent : 'New match plan', sub: summary(),
+    bug: `<h1 class="sr" id="bandTitle">${esc(m.opponent ? 'v ' + m.opponent : 'New match plan')}</h1><div class="scorebug" aria-hidden="true"><span class="us">${esc(us)}</span><span class="vs">V</span><span class="them ${m.opponent ? '' : 'unset'}" id="bugThem">${esc(m.opponent || 'Opponent?')}</span></div>`,
+    onSub: () => { const d = el.querySelector('#matchDetails'); d.open = true; OPEN.add(m.id); d.scrollIntoView({ block: 'start', behavior: 'smooth' }); } });
+  top();
   const save = debounce(() => S.put(m), 400);
   const ps = S.principles(T); const squad = new Set(m.squadIds); const players = S.players(T);
   const boards = m.boardIds.map(S.get).filter(Boolean); const pm = S.playerMap(T);
@@ -72,19 +78,33 @@ export default function matchView(el, [id], ctx) {
       ${played ? `<div class="card stack tight"><div class="h3">Result</div><div class="row"><label class="field" style="width:90px"><span>Us</span><input type="number" inputmode="numeric" data-f="result.us"></label><label class="field" style="width:90px"><span>Them</span><input type="number" inputmode="numeric" data-f="result.them"></label></div></div>` : ''}`
   };
 
+  const keys = lines(m.plan.keys);
+  const overview = () => `<div class="ghead"><span>Keys to winning</span><span class="mono">${keys.length}</span></div>
+    ${keys.length ? `<div class="gl" id="keysList">${keys.map((k, i) => `<button type="button" class="gr" data-act="goField" data-arg="plan.keys"><span class="ix" style="color:var(--good-text)">${String(i + 1).padStart(2, '0')}</span><span class="lbl">${esc(k)}</span></button>`).join('')}</div>`
+      : `<div class="gl must"><button type="button" class="gr must" data-act="goField" data-arg="plan.keys"><span class="dotm"></span><span class="lbl">Write what wins this game<small>Two or three things, one per line</small></span><span class="chev">›</span></button></div>`}
+    ${!(m.plan.planB || '').trim() ? `<div class="gl must"><button type="button" class="gr must" data-act="goField" data-arg="plan.planB" id="planBMust"><span class="dotm"></span><span class="lbl">Add a Plan B<small>The trigger that says it isn’t working, and what you change</small></span><span class="chev">›</span></button></div>` : ''}
+    <div class="gl" role="tablist" id="planTabs">
+      <button type="button" class="gr" role="tab" aria-selected="false" data-act="tab" data-arg="plan"><span class="lbl">How we play<small>Threat, first ten minutes, Plan B, subs, set pieces</small></span><span class="v"><span class="mono">${m.plan.focusIds.length ? m.plan.focusIds.length + ' UNDER TEST' : ''}</span><span class="chev">›</span></span></button>
+      <button type="button" class="gr" role="tab" aria-selected="false" data-act="tab" data-arg="squad"><span class="lbl">Team selection<small>Squad and individual instructions</small></span><span class="v"><span class="mono">${m.squadIds.length}</span><span class="chev">›</span></span></button>
+      <button type="button" class="gr" role="tab" aria-selected="false" data-act="tab" data-arg="boards"><span class="lbl">Boards and set pieces</span><span class="v"><span class="mono">${boards.length || ''}</span><span class="chev">›</span></span></button>
+      <button type="button" class="gr" role="tab" aria-selected="false" data-act="tab" data-arg="day"><span class="lbl">On the day<small>Team talk, print, share${played ? ', result' : ''}</small></span><span class="v"><span class="mono">${m.ko ? 'KO ' + esc(m.ko) : ''}</span><span class="chev">›</span></span></button>
+    </div>`;
+
   el.innerHTML = `<div class="split wide-right"><div class="stack">${chalJump()}
     ${m.example ? `<div class="row nowrap small" style="gap:10px;color:var(--lamp-text);background:var(--lamp-soft);border:1px solid var(--lamp-line);border-radius:14px;padding:10px 12px"><span class="grow">Example plan, to show how the challenge works. Set a date to make it real, or delete it.</span><button class="btn sm" data-act="unexample">Make it real</button></div>` : ''}
     ${played && !m.cancelled ? (() => { const rv = S.reviewOf(m), done = S.reviewDone(rv); return `<div class="challenge row between" id="reviewBar" style="flex-direction:row;align-items:center"><span class="small" style="color:var(--lamp-text)">${done ? 'Reviewed.' : rv ? 'Review started but not finished.' : m.date < today() ? 'This match has been played. Review it.' : 'Match day. Review it after the game.'}</span><button class="btn sm lamp" data-act="review">${done ? 'Open review' : rv ? 'Finish review' : 'Review'}</button></div>`; })() : ''}
     ${m.cancelled ? `<div class="card row between"><span class="small">Marked as didn’t happen.</span><button class="btn sm" data-act="uncancel">Undo</button></div>` : ''}
-    <div class="card stack tight">
+    <div class="gl"><details id="matchDetails" ${OPEN.has(m.id) || !m.opponent || !m.date ? 'open' : ''}><summary class="gr"><span class="lbl">Opponent, date and venue<small>${m.opponent ? 'Tap the line under the score, or here, to change them' : 'Start with who you are playing'}</small></span><span class="chev">›</span></summary>
+      <div class="fold">
       <label class="field"><span>Opponent</span><input type="text" data-f="opponent" list="oppList" autocomplete="off" placeholder="Who are you playing?" ${m.opponent ? '' : 'autofocus'}></label>
       <datalist id="oppList">${[...new Set(S.matches(T).map(x => (x.opponent || '').trim()).filter(Boolean))].sort().map(o => `<option value="${esc(o)}">`).join('')}</datalist>
       <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr))"><label class="field"><span>Date</span><input type="date" data-f="date"></label><label class="field"><span>Kick-off</span><input type="text" data-f="ko" placeholder="14:00"></label>
       <label class="field"><span>Venue</span><input type="text" data-f="venue" placeholder="Home / away ground"></label><label class="field"><span>Competition</span><input type="text" data-f="comp"></label></div>
-    </div>
-    <div class="seg" role="tablist" id="matchPart"><button type="button" role="tab" aria-selected="${tab === 'them'}" class="${tab === 'them' ? 'on' : ''}" data-act="tab" data-arg="them" style="min-height:48px;font-size:14px">Opposition analysis</button><button type="button" role="tab" aria-selected="${tab !== 'them'}" class="${tab !== 'them' ? 'on' : ''}" data-act="tab" data-arg="${S.meta().matchPlanTab || 'plan'}" style="min-height:48px;font-size:14px">Match day plan</button></div>
-    ${tab !== 'them' ? `<div class="chips scroll" role="tablist" id="planTabs">${PLAN_TABS.map(([k, l]) => `<button class="chip ${k === tab ? 'on' : ''}" role="tab" aria-selected="${k === tab}" data-act="tab" data-arg="${k}">${l}</button>`).join('')}</div>` : ''}
-    ${body[tab]()}
+    </div></details></div>
+    <div class="nseg" role="tablist" id="matchPart"><button type="button" role="tab" aria-selected="${tab === 'them'}" class="${tab === 'them' ? 'on' : ''}" data-act="tab" data-arg="them">Opposition</button><button type="button" role="tab" aria-selected="${tab !== 'them'}" class="${tab !== 'them' ? 'on' : ''}" data-act="tab" data-arg="over">Match day plan</button></div>
+    ${tab === 'over' ? overview() : tab !== 'them' ? `<div class="row nowrap" style="gap:8px"><button type="button" class="btn sm" data-act="tab" data-arg="over" id="planBack">${icon('back')}Match day plan</button></div>
+      <div class="chips scroll" role="tablist" id="planTabs">${PLAN_TABS.map(([k, l]) => `<button class="chip ${k === tab ? 'on' : ''}" role="tab" aria-selected="${k === tab}" data-act="tab" data-arg="${k}">${l}</button>`).join('')}</div>` : ''}
+    ${tab === 'over' ? '' : body[tab]()}
     <div class="row">${!m.cancelled && m.date ? '<button class="btn" data-act="cancel">Didn’t happen</button>' : ''}<div class="grow"></div><button class="btn danger" data-act="del">${icon('trash')}Delete plan</button></div>
   </div>
   <div><div id="chal" style="position:sticky;top:80px"></div></div></div>`;
@@ -93,14 +113,17 @@ export default function matchView(el, [id], ctx) {
   chal();
   bindFields(el, m, p => {
     save(); chal();
+    if (p === 'ko' || p === 'venue' || p === 'comp') top();
     if (p === 'opponent' || p === 'date') {
-      ctx.setTop({ back: '#/matches', title: m.opponent ? 'v ' + m.opponent : 'New match plan', sub: fmtD(m.date) });
+      const bt = document.getElementById('bugThem'); if (bt) { bt.textContent = m.opponent || 'Opponent?'; bt.classList.toggle('unset', !m.opponent); }
+      if (p === 'date') top();
       // The opponent file and "trained this week" depend on these two fields; redraw when they change what is shown.
       if (S.previousMeetings(T, m).length !== prev.length || S.trainedBefore(T, m).length !== trained.length) { save.flush(); ctx.refresh(); }
     }
   });
   actions(el, {
-    tab: k => { save.flush(); S.setMeta('matchTab', k); if (k !== 'them') S.setMeta('matchPlanTab', k); ctx.refresh(); },
+    tab: k => { save.flush(); S.setMeta('matchTab', k); if (k !== 'them' && k !== 'over') S.setMeta('matchPlanTab', k); ctx.refresh(); },
+    goField: f => { save.flush(); S.setMeta('matchTab', 'plan'); ctx.refresh(); setTimeout(() => focusField(f), 60); },
     unexample: () => { delete m.example; S.put(m); toast('Now set the date'); ctx.refresh(); },
     focus: pid => { m.plan.focusIds = focusSet.has(pid) ? m.plan.focusIds.filter(x => x !== pid) : m.plan.focusIds.concat(pid); S.put(m); ctx.refresh(); },
     copyPrev: () => { const x = prev.find(y => y.opp && (y.opp.ip || y.opp.op)); if (!x) return; m.tags = { ...(x.tags || {}) }; m.opp = { ...(x.opp || {}) }; m.src = 'From the plan of ' + fmtD(x.date) + (x.src ? ' (' + x.src + ')' : '') + '. Update it.'; S.put(m); toast('Copied. Now update it.'); ctx.refresh(); },

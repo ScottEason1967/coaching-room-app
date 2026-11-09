@@ -12,7 +12,7 @@ async def main():
         print('controlled after reload:', await pg.evaluate('!!navigator.serviceWorker.controller'))
         await ctx.set_offline(True)
         await pg.reload(); await pg.wait_for_timeout(1500)
-        t=await pg.inner_text('#view'); print('offline reload shows app:', 'NEXT MATCH' in t.upper())
+        t=await pg.inner_text('#view'); print('offline reload shows app:', 'THIS WEEK' in t.upper() and await pg.locator('#nextMatch').count()==1)
         await pg.evaluate("location.hash='#/board/bd-shape'"); await pg.wait_for_timeout(600)
         print('offline board renders tokens:', await pg.evaluate("document.querySelectorAll('#pitch [data-t=i]').length"))
         fonts=await pg.evaluate("document.fonts.check('700 20px \"Barlow Condensed\"')"); print('display font available offline:', fonts)

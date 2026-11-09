@@ -33,7 +33,7 @@ async def main():
         await A.click('[data-act="del"]'); await A.click('.sheet [data-x="1"]'); await A.wait_for_timeout(300)
         await A.goto(U+'index.html#/plans/sessions'); await A.wait_for_timeout(300); await A.click('[data-act="newS"]'); await A.wait_for_timeout(400)
         sid=(await A.evaluate('location.hash')).split('/')[-1]
-        await A.fill('[data-f="theme"]','Synced session from the phone'); await A.wait_for_timeout(600)
+        await A.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await A.fill('[data-f="theme"]','Synced session from the phone'); await A.wait_for_timeout(600)
         await sync(A)
         print('server rows:', len(srv.items))
         # B signs in
@@ -42,7 +42,7 @@ async def main():
         print('B pl-9:', (await rec(B,'pl-9'))['name'], '| B pl-18 deleted:', (await rec(B,'pl-18') or {}).get('del'), '| B session:', ((await rec(B,sid)) or {}).get('theme'))
         # B edits the session theme; A pulls it
         await B.goto(U+f'index.html#/session/{sid}'); await B.wait_for_timeout(400)
-        await B.fill('[data-f="theme"]','Edited on the iPad'); await B.wait_for_timeout(600)
+        await B.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await B.fill('[data-f="theme"]','Edited on the iPad'); await B.wait_for_timeout(600)
         await sync(B); await sync(A)
         print('A sees iPad edit:', (await rec(A,sid))['theme'])
         # LWW: A edits principle first, B later; both push; B wins everywhere
@@ -54,7 +54,7 @@ async def main():
         await A.goto(U+'index.html#/match/mt-cls'); await A.wait_for_timeout(300)
         await A.click('[data-act="unexample"]'); await A.wait_for_timeout(200)
         import datetime; d=(datetime.date.today()+datetime.timedelta(days=2)).isoformat()
-        await A.fill('[data-f="date"]',d); await A.wait_for_timeout(300)
+        await A.evaluate("document.querySelectorAll('#sessDetails,#matchDetails').forEach(d=>d.open=true)"); await A.fill('[data-f="date"]',d); await A.wait_for_timeout(300)
         await A.click('#matchPart button:nth-child(2)'); await A.wait_for_timeout(300); await A.click('#planTabs [data-arg="squad"]'); await A.wait_for_timeout(300)
         await A.click('[data-act="sq"][data-arg="pl-9"]'); await A.wait_for_timeout(300)
         await A.fill('[data-f="instructions.pl-9"]','Pin their centre-backs and attack the back post'); await A.wait_for_timeout(700)
