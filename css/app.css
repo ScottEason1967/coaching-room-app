@@ -291,7 +291,7 @@ body.helpflash .flash{outline-color:var(--accent)!important}
 .sec-head .sec-ic{width:48px;height:48px;border-radius:14px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;flex:none}
 .sec-head .sec-ic svg{width:26px;height:26px}
 .tiles{display:grid;gap:12px}
-@media (min-width:700px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:700px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .tile{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px;min-height:150px}
 .tile svg{width:30px;height:30px;color:var(--text2)}
 .tile .t{font-family:var(--display);font-weight:700;font-size:28px;text-transform:uppercase;line-height:1}

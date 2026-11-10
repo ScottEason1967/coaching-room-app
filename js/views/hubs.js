@@ -43,7 +43,7 @@ export function teamHome(el, params, ctx) {
       <a class="tile" href="#/model" id="tModel">${icon('model')}<span class="t">Game model</span><span class="s">${ps.length} principle${ps.length === 1 ? '' : 's'}${ps.length ? ', ' + agreed + ' agreed' : ''}. Your shape and how you play.</span></a>
       <a class="tile" href="#/squad" id="tSquad">${icon('squad')}<span class="t">Squad</span><span class="s">${pl} player${pl === 1 ? '' : 's'}, development goals and player pages.</span></a>
       <a class="tile" href="#/sketch" id="tSketch">${icon('sketch')}<span class="t">Sketch</span><span class="s">A blank board for ideas and team talks.</span></a>
-      <a class="tile" href="#/staff" id="tStaff">${icon('squad')}<span class="t">Staff</span><span class="s">${S.members(T).length > 1 ? S.members(T).length + ' coaches. ' : ''}Who coaches the team with you, and invites.</span></a>
+      <a class="tile" href="#/staff" id="tStaff">${icon('staff')}<span class="t">Staff</span><span class="s">${S.members(T).length > 1 ? S.members(T).length + ' coaches. ' : ''}Who coaches the team with you, and invites.</span></a>
     </div>
     <a class="small" href="#/team/${T}">Team details: name, season, badge</a></div>`;
 }

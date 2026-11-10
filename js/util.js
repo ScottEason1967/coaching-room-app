@@ -148,6 +148,7 @@ const P = {
   model: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>',
   board: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/><circle cx="12" cy="12" r="3"/>',
   plans: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h3"/>',
+  staff: '<circle cx="10" cy="8" r="3.4"/><path d="M3.5 20c0-3.6 2.9-6.4 6.5-6.4 1.6 0 3 .5 4.1 1.4"/><path d="M18 14v6M15 17h6"/>',
   squad: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.8.2 5 2.6 5 5.8"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   back: '<path d="M15 6l-6 6 6 6"/>',
