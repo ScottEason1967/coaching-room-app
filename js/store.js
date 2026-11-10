@@ -65,6 +65,7 @@ export function load() {
   // so the next edit stamps only the fields it changes.
   if (!db.meta.seeded) { seed(); db.meta.seeded = true; persist(); }
   db.base ||= {}; for (const id in db.recs) if (!db.base[id]) db.base[id] = clone(db.recs[id]);
+  repairIds();
   tidySeed();
   if (!db.meta.activeTeam || !get(db.meta.activeTeam)) db.meta.activeTeam = (teams()[0] || {}).id || null;
 }
@@ -136,7 +137,29 @@ export function create(kind, team, fields) {
 export function del(id) { const r = db.recs[id]; if (!r) return; r.del = true; put(r); }
 
 /* ---------- Sync hooks (used by cloud.js) ---------- */
-export function dirtyRecs() { return Object.keys(db.dirty).map(id => db.recs[id]).filter(Boolean); }
+// A record must be stored under its own id. Two ways that broke on some devices: a copy of the
+// profile kept under its cloud name ('coach:<user>') beside 'coach', and a record whose id was
+// changed after it was stored. Both put the same id in one upload twice, which the database refuses
+// ("ON CONFLICT DO UPDATE command cannot affect row a second time") and sync stopped for good.
+function repairIds() {
+  let changed = false;
+  for (const key of Object.keys(db.recs)) {
+    const r = db.recs[key];
+    if (!r || typeof r !== 'object') { delete db.recs[key]; delete db.dirty[key]; changed = true; continue; }
+    if (key.startsWith('coach:')) {
+      const c = db.recs.coach;
+      delete db.recs[key]; delete db.dirty[key]; delete db.base[key]; delete db.pend[key]; changed = true;
+      // The newer copy wins, stamped as an edit so it reaches the cloud.
+      if (!c || (r.upd || '') > (c.upd || '')) put({ ...clone(r), id: 'coach', kind: 'coach' }, { quiet: true });
+      continue;
+    }
+    if (r.id !== key) { db.recs[key] = { ...r, id: key }; db.dirty[key] = 1; changed = true; }
+  }
+  for (const key of Object.keys(db.dirty)) if (!db.recs[key]) { delete db.dirty[key]; changed = true; }
+  if (changed) persist();
+  return changed;
+}
+export function dirtyRecs() { repairIds(); return Object.keys(db.dirty).map(id => db.recs[id]).filter(Boolean); }
 // sent: [{id, upd}] that the server accepted. Only clear if not edited again since.
 export function clearDirty(sent) { sent.forEach(s => { const cur = db.recs[s.id]; if (!cur || cur.upd === s.upd) { delete db.dirty[s.id]; delete db.pend[s.id]; } }); persist(); }
 export function hasDirty() { return Object.keys(db.dirty).length > 0; }

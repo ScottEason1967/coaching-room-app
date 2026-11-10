@@ -123,7 +123,10 @@ async function push() {
   }
 }
 function upsert(recs) {
-  const rows = recs.map(r => ({ owner: user.id, ...store.toRow(r, user.id) }));
+  // Never the same id twice in one upload (the database refuses the whole batch): keep the newest.
+  const byId = new Map();
+  recs.forEach(r => { const row = { owner: user.id, ...store.toRow(r, user.id) }; const o = byId.get(row.id); if (!o || row.updated_at > o.updated_at) byId.set(row.id, row); });
+  const rows = [...byId.values()];
   return sb.from('items').upsert(rows, { onConflict: 'id' }).select(COLS);
 }
 

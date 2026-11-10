@@ -47,3 +47,4 @@ Database rules (needs postgres on a spare port):
 - `captain.py`: captain and vice-captain from the squad list (C / VC), the player page and a pasted list; one of each per team.
 - `board_nav_filter.py`: locked arrows carry to the next frames and stay on screen when playing; on a laptop the main menu sits in the top bar and stays when scrolling; the practice library filter takes several themes, each card labelled.
 - `links.py`: My links: England Football Learning by default, your own course link, shown in the profile menu and on the Pathway.
+- `dup_sync.py`: the red dot "ON CONFLICT DO UPDATE command cannot affect row a second time". Plants a profile copy under its cloud name and a record stored under the wrong id, then checks sync recovers, the newer profile reaches the cloud, and the Staff screen loads. The stand-in server now refuses a doubled id in one upload, as Supabase does.

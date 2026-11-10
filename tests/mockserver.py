@@ -69,6 +69,8 @@ class Server:
         eqs={c:v for f,c,v in p['filters'] if f=='eq'}
         if p['table']=='items':
             if p['op']=='upsert':
+                ids=[r['id'] for r in p['rows']]
+                if len(ids)!=len(set(ids)): return {'error':{'message':'ON CONFLICT DO UPDATE command cannot affect row a second time','code':'21000'}}
                 out=[]; staged={}
                 for r in p['rows']:
                     r=dict(r); r.setdefault('deleted',False)
