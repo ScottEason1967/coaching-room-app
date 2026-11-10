@@ -4,7 +4,7 @@
 // #/join/<token> opens an invitation for someone already signed in (the sign-in screen handles the rest).
 import * as S from '../store.js';
 import * as cloud from '../cloud.js';
-import { esc, icon, actions, toast, sheet, closeSheet, confirmSheet, fmtD } from '../util.js';
+import { esc, icon, actions, toast, sheet, closeSheet, confirmSheet, fmtD, teamBadge } from '../util.js';
 
 export const ROLE = { owner: 'Owner', admin: 'Admin', coach: 'Coach', viewer: 'Viewer', player: 'Player' };
 export const ROLE_SAYS = { owner: 'Set up the team. Can do everything.', admin: 'Can change everything, and invite and manage staff.', coach: 'Can change everything.', viewer: 'Can see everything, change nothing.' };
@@ -49,17 +49,21 @@ export default function staffView(el, params, ctx) {
   const ms = S.members(T);
   const who = m => m.user_id === me ? ((S.coach() || {}).name || 'You') : (m.name || m.email || 'Coach');
   const row = m => `<div class="gr" style="cursor:default" data-member="${m.user_id}">
-      <span class="badge-num" style="width:36px;height:36px;font-size:14px;background:${m.user_id === me ? '#0B0F19' : 'var(--surface2)'};color:${m.user_id === me ? '#fff' : 'var(--text)'}">${esc((who(m)[0] || '?').toUpperCase())}</span>
+      <span class="face ${m.role}">${esc((who(m).trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2) || '?').toUpperCase())}</span>
       <span class="lbl">${esc(who(m))}${m.user_id === me ? ' <span class="muted">(you)</span>' : ''}<small>${esc(m.email || '')}${m.email ? ' · ' : ''}${esc(ROLE_SAYS[m.role] || '')}${(() => { const o = (S.meta().members || []).filter(x => x.user_id === m.user_id && x.team_id !== T).map(x => (S.get(x.team_id) || {}).name).filter(Boolean); return o.length ? ` · Also on ${esc(o.join(', '))}` : ` · Only this team`; })()}</small></span>
       ${admin && m.role !== 'owner' && m.user_id !== me ? `<select data-role="${m.user_id}" aria-label="Role for ${esc(who(m))}" style="width:auto;min-height:36px;padding:4px 30px 4px 10px">${['admin', 'coach', 'viewer'].map(r => `<option value="${r}" ${r === m.role ? 'selected' : ''}>${ROLE[r]}</option>`).join('')}</select>`
         : `<span class="pill ${m.role === 'owner' ? '' : 'grey'}">${ROLE[m.role] || m.role}</span>`}
       ${(admin && m.role !== 'owner' && m.user_id !== me) ? `<button class="btn icon sm danger" data-act="rm" data-arg="${m.user_id}" aria-label="Remove ${esc(who(m))} from the team">${icon('x')}</button>` : ''}
     </div>`;
-  el.innerHTML = `<div class="stack" style="max-width:760px">
-    <p class="small muted" style="margin:0">Everyone here works on the same game model, squad, sessions, match plans and analysis, and sees each other’s changes within a second or two. Your profile, pathway and logbook stay private to you.</p>
+  const cnt = r => ms.filter(m => m.role === r).length;
+  el.innerHTML = `<div class="stack">
+    <div class="tband lite"><div class="small">Everyone here works on the same game model, squad, sessions, match plans and analysis, and sees each other’s changes within a second or two. Your profile, pathway and logbook stay private to you.</div>
+      <div class="tstats">${[[ms.length, ms.length === 1 ? 'Person' : 'People'], [cnt('owner') + cnt('admin'), 'Admins'], [cnt('coach'), 'Coaches'], [cnt('viewer'), 'Viewers']].map(([n, l]) => `<div class="tstat"><span class="n">${n}</span><span class="l">${l}</span></div>`).join('')}</div></div>
+    <div class="staffgrid"><div class="stack">
     <div class="ghead">Coaching staff</div>
     <div class="gl" id="members">${ms.map(row).join('') || '<div class="gr">Only you so far.</div>'}</div>
     ${mine && mine !== 'owner' ? `<div class="row"><button class="btn sm" data-act="leave">Leave this team</button></div>` : ''}
+    </div><div class="stack">
     ${admin ? `<div class="ghead">Invite someone</div>
     <form class="card stack" id="invF">
       <div class="grid2"><label class="field"><span>Name</span><input type="text" id="iN" placeholder="e.g. Dave Smith" autocomplete="off"></label>
@@ -70,7 +74,7 @@ export default function staffView(el, params, ctx) {
       <p class="tiny muted" style="margin:0">You send the link yourself, by WhatsApp, text or email. It works once, for that email address, within 14 days.</p>
     </form>
     <div class="ghead">Waiting to join</div><div class="gl" id="pending"><div class="gr" style="cursor:default"><span class="lbl muted">Checking…</span></div></div>` : `<p class="small muted">Only the team’s owner or an admin can invite people.</p>`}
-  </div>`;
+  </div></div></div>`;
 
   let role = 'coach';
   el.querySelectorAll('#iR [data-r]').forEach(b => b.onclick = () => { role = b.dataset.r; el.querySelectorAll('#iR [data-r]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); }); el.querySelector('#iRs').textContent = ROLE_SAYS[role]; });

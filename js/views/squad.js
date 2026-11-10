@@ -13,12 +13,15 @@ const POS_MAP = { ST: 'CF', 9: 'CF', DM: '6', AM: '10', RWB: 'RB', LWB: 'LB', RM
 const toPos = x => { const u = String(x || '').toUpperCase(); return POS.includes(u) ? u : (POS_MAP[u] || ''); };
 
 export default function squad(el, params, ctx) {
-  const t = S.team(); const T = t.id; ctx.setTop({});
-  const ps = S.players(T); const opt = t.playerShare || { principles: true, keys: true, setpieces: true };
+  const t = S.team(); const T = t.id;
+  const ps = S.players(T); ctx.setTop({ back: '#/teamhome', title: 'Squad', sub: ps.length + ' players · ' + t.name }); const opt = t.playerShare || { principles: true, keys: true, setpieces: true };
   const links = ps.filter(p => p.share && p.share.token).length;
   el.innerHTML = `<div class="split wide-right"><div class="stack">
-    <div class="row between"><div><div class="h1">Squad</div><div class="small muted" style="margin-top:4px">${ps.length} players · ${esc(t.name)}</div></div>
-      <div class="row" style="gap:8px"><button class="btn" data-act="import">Paste a list</button><button class="btn pri" data-act="add">${icon('plus')}Add player</button></div></div>
+    ${ps.length ? (() => { const U = { GK: 'GK', RB: 'Defence', CB: 'Defence', LB: 'Defence', FB: 'Defence', 6: 'Midfield', 8: 'Midfield', CM: 'Midfield', 10: 'Midfield', RW: 'Attack', LW: 'Attack', W: 'Attack', CF: 'Attack' };
+      const c = ps.find(p => p.capt === 'c'), v = ps.find(p => p.capt === 'vc'); const none = ps.filter(p => !U[p.pos]).length;
+      return `<div class="tband lite" id="squadSum"><div class="tunits">${['GK', 'Defence', 'Midfield', 'Attack'].map(k => `<span class="tunit ${k === 'GK' ? 'gk' : ''}"><b>${ps.filter(p => U[p.pos] === k).length}</b>${k}</span>`).join('')}${none ? `<span class="tunit none"><b>${none}</b>No position</span>` : ''}</div>
+        <div class="row between" style="gap:10px"><div class="small">${c ? `<b>Captain</b> ${esc(c.name)}` : '<span class="muted">No captain picked</span>'}${v ? ` · <b>Vice</b> ${esc(v.name)}` : ''}</div><div class="row" style="gap:8px"><button class="btn" data-act="import">Paste a list</button><button class="btn pri" data-act="add">${icon('plus')}Add player</button></div></div></div>`; })()
+      : `<div class="row" style="gap:8px"><button class="btn" data-act="import">Paste a list</button><button class="btn pri" data-act="add">${icon('plus')}Add player</button></div>`}
     ${ps.length ? `<div class="list" id="squadList">${ps.map(p => { const g = (p.goals || []).filter(x => x.status === 'on').length;
       return `<div class="item" style="cursor:default"><a class="row nowrap grow" style="gap:12px;color:inherit;text-decoration:none;min-width:0" href="#/player/${p.id}">${avatar(S.photoOf(p.id), 40, `<span class="badge-num" style="${p.pos === 'GK' ? 'background:#2FB67A' : ''}">${esc(p.num)}</span>`)}<span class="grow" style="min-width:0"><span class="t" style="display:block">${S.photoOf(p.id) ? `<span class="muted">${esc(p.num)}</span> ` : ''}${esc(p.name)}</span><span class="s">${p.capt ? `<b style="color:var(--text)">${p.capt === 'c' ? 'Captain' : 'Vice-captain'}</b> · ` : ''}${g ? `${g} goal${g > 1 ? 's' : ''} on the go` : 'No development goal'}</span></span>${p.share && p.share.token ? `<span class="pill ${p.share.enabled === false ? 'grey' : 'good'}">${icon('link', 'style="width:12px;height:12px"')}Link</span>` : ''}</a>
         <select data-pos="${p.id}" aria-label="Position for ${esc(p.name)}" style="width:auto;min-width:96px;flex:none">${posOptions(p.pos)}</select>

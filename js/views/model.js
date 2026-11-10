@@ -16,7 +16,7 @@ export const versionCount = T => S.principles(T).reduce((a, p) => a + (p.history
 
 export default function model(el, params, ctx) {
   const t = S.team(); const T = t.id;
-  ctx.setTop({});
+  ctx.setTop({ back: '#/teamhome', title: 'Game model', sub: 'How ' + t.name + ' play, phase by phase' });
   const ph = S.meta().modelPhase || 'ip';
   const ps = S.principles(T); const list = ps.filter(p => p.phase === ph);
   const drafts = ps.filter(p => p.status !== 'agreed' && p.note).length;
@@ -24,7 +24,7 @@ export default function model(el, params, ctx) {
   const st = t.style || {}; const cb = S.currentBlock(T);
 
   el.innerHTML = `<div class="split wide-right"><div class="stack">
-    <div class="row between"><div><div class="h1">Game model</div><div class="small muted" style="margin-top:4px">How ${esc(t.name)} play, phase by phase</div></div>
+    <div class="row between"><div class="small muted">${ps.filter(p => p.status === 'agreed').length} of ${ps.length} principles agreed</div>
       <button class="btn sm" data-act="history">${icon('book')}Version ${versionCount(T) + 1} · history</button></div>${chalJump()}
     <div class="chips scroll" role="tablist" aria-label="Phases">${PHASE_KEYS.map(k => `<button class="chip ${k === ph ? 'on' : ''}" role="tab" aria-selected="${k === ph}" data-act="phase" data-arg="${k}">${PHASES[k].lab} <span style="opacity:.7">${ps.filter(p => p.phase === k).length}</span></button>`).join('')}<button class="chip ${ph === 'shape' ? 'on' : ''}" data-act="phase" data-arg="shape">Shape &amp; roles</button></div>
     ${ph === 'shape' ? shapeHtml(t, roles, st) : `

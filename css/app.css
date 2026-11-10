@@ -553,3 +553,34 @@ img.logo{object-fit:contain}
 .scorebug .us{display:flex;align-items:center;gap:8px}
 .scorebug .sbb{width:24px;height:24px;object-fit:contain;flex:none;background:#fff;border-radius:50%;padding:1px}
 @media (max-width:600px){.hometitle .bn{font-size:22px;white-space:nowrap}.hometitle .hbadge img,.hometitle .hbadge .badge-num{width:40px!important;height:40px!important}.hometitle{gap:9px}}
+/* Narrow screens (forms, settings, staff) sit in the middle, not pinned to the left */
+.content > [style*="max-width"]{margin-left:auto;margin-right:auto}
+/* The header lines up with the page below it */
+@media (min-width:900px){.topbar.band > *{width:100%;max-width:1148px;margin-left:auto;margin-right:auto}}
+.bandmain{display:flex;align-items:center;gap:12px;min-width:0}
+.bandtext{min-width:0;flex:1}
+.bandbadge{flex:none;display:flex;padding-left:8px}
+.bandbadge img,.bandbadge .badge-num{width:48px!important;height:48px!important;border-radius:50%;background:#fff;padding:3px;box-sizing:border-box}
+.bandbadge + .bandtext .bandtitle,.bandbadge + .bandtext .bandsub{padding-left:0;margin-left:0}
+/* Team and settings screens: the club's navy */
+body:not([data-sec]) .topbar.band,body[data-sec=""] .topbar.band{background:linear-gradient(120deg,#0E1A33 0%,#14306E 60%,#1D4ED8 130%);color:#fff}
+body:not([data-sec]) .band .backlink,body[data-sec=""] .band .backlink,
+body:not([data-sec]) .band .bandsub,body[data-sec=""] .band .bandsub,
+body:not([data-sec]) .band .btn,body[data-sec=""] .band .btn,
+body:not([data-sec]) .band .topnav a,body[data-sec=""] .band .topnav a{color:#fff}
+body:not([data-sec]) .band .bandsub,body[data-sec=""] .band .bandsub{color:rgba(255,255,255,.78)}
+body:not([data-sec]) .band .btn.icon,body[data-sec=""] .band .btn.icon{background:rgba(255,255,255,.14)!important}
+body:not([data-sec]) .band .topnav a.on,body[data-sec=""] .band .topnav a.on{box-shadow:inset 0 -3px 0 #fff}
+body:not([data-sec]) .band .topnav a:hover,body[data-sec=""] .band .topnav a:hover{background:rgba(255,255,255,.1)}
+body:not([data-sec]) .band .avatarbtn,body[data-sec=""] .band .avatarbtn{box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+/* Staff */
+.staffgrid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr);align-items:start}
+@media (min-width:900px){.staffgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.face{width:42px;height:42px;border-radius:50%;background:#0E1A33;color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex:none}
+.face.admin{background:#1D4ED8}.face.coach{background:#2563EB}.face.viewer{background:#8A8F99}
+#members .gr{gap:12px;min-height:66px}
+.tband.lite{background:var(--surface);color:var(--text);border:1px solid var(--line)}
+.tband.lite .small{color:var(--text2)}
+.tband.lite .tstat{background:var(--bg)}
+.tband.lite .tstat .n{color:#1D4ED8}
+.tband.lite .tstat .l{color:var(--muted)}

@@ -99,6 +99,8 @@ const BACK_WORD = h => (h || '').startsWith('#/training') || h === '#/ideas' ? '
 
 // On a laptop or iPad the main menu sits in the top bar, so it never scrolls away or slides under it.
 const topNav = () => { const on = (ROUTES[current.name] || {}).nav; return `<nav class="topnav" aria-label="Main">${NAV.map(([k, lab, ic, href]) => `<a href="${href}" class="${k} ${on === k ? 'on' : ''}" ${on === k ? 'aria-current="page"' : ''} title="${lab}">${icon(ic)}<span>${lab}</span></a>`).join('')}</nav>`; };
+// Team and settings screens carry the club's navy and badge; the other areas have their own colour.
+const clubBand = () => !(ROUTES[current.name] || {}).sec;
 function renderTop() {
   const t = S.team(); const c = S.coach(); const tb = $('#topbar');
   const guide = top.home ? `<button type="button" class="btn guide-btn" data-act="guide" id="guideBtn">Start here guide</button>` : '';
@@ -110,8 +112,9 @@ function renderTop() {
     const others = cloud.othersHere(here());
     const chips = others.length ? `<span class="here" id="hereChips" title="${esc(others.map(o => o.name).join(', '))} ${others.length > 1 ? 'are' : 'is'} here too">${others.slice(0, 3).map(o => `<span class="herec">${esc(((o.name || '?').trim()[0] || '?').toUpperCase())}</span>`).join('')}<span class="sr">${esc(others.map(o => o.name).join(', '))} ${others.length > 1 ? 'are' : 'is'} looking at this too</span></span>` : '';
     tb.innerHTML = `<div class="bandrow"><a class="backlink" href="${top.back}">${icon('back')}<span class="sr">Back to </span>${esc(word)}</a><span class="grow"></span>${topNav()}<span class="grow"></span>${chips}${right}</div>
-      ${top.bug ? top.bug : `<div class="bandtitle" id="bandTitle">${esc(top.title || '')}</div>`}
-      ${top.sub ? (top.onSub ? `<button type="button" class="bandsub" id="bandSub" aria-label="${esc(top.sub)}. Edit the details">${esc(top.sub)} ›</button>` : `<div class="bandsub">${esc(top.sub)}</div>`) : ''}`;
+      ${top.bug ? top.bug : `<div class="bandmain">${clubBand() ? `<span class="bandbadge">${teamBadge(t, 44, 20)}</span>` : ''}<div class="bandtext"><div class="bandtitle" id="bandTitle">${esc(top.title || '')}</div>
+      ${top.sub ? (top.onSub ? `<button type="button" class="bandsub" id="bandSub" aria-label="${esc(top.sub)}. Edit the details">${esc(top.sub)} ›</button>` : `<div class="bandsub">${esc(top.sub)}</div>`) : ''}</div></div>`}
+      ${top.bug && top.sub ? (top.onSub ? `<button type="button" class="bandsub" id="bandSub" aria-label="${esc(top.sub)}. Edit the details">${esc(top.sub)} ›</button>` : `<div class="bandsub">${esc(top.sub)}</div>`) : ''}`;
   } else {
     tb.innerHTML = `<button class="team-switch hometitle" data-act="team" aria-label="Switch team: ${esc(t?.name || 'Add a team')}"><span class="hbadge">${teamBadge(t, 46, 20)}</span><span class="htext"><span class="tm"><span class="tmn">${esc(t?.name || 'Add a team')}${t?.season ? ' · ' + esc(t.season) : ''}</span>${icon('down')}</span><span class="bn">Coaching Room</span></span></button><div class="grow"></div>${topNav()}<div class="grow"></div>${right}`;
   }

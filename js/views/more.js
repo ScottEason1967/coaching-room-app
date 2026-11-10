@@ -2,7 +2,7 @@
 import * as S from '../store.js';
 import * as cloud from '../cloud.js';
 import { CPD_TYPES, PHASES } from '../store.js';
-import { esc, icon, uid, today, fmtD, fmtDY, fmtAgo, bindFields, actions, debounce, confirmSheet, toast, sheet, closeSheet, shareFile, pickImage, avatar, logoImg, teamBadge } from '../util.js';
+import { esc, icon, uid, today, fmtD, fmtDY, fmtAgo, bindFields, actions, debounce, confirmSheet, toast, sheet, closeSheet, shareFile, pickImage, avatar, logoImg, teamBadge, badgeSrc } from '../util.js';
 import { FORMATIONS } from '../pitch.js';
 import { sessionStats } from '../challenges.js';
 
@@ -181,7 +181,7 @@ export function teamView(el, [id], ctx) {
   const counts = ['player', 'principle', 'board', 'session', 'match', 'review'].map(k => [k, S.all(k, t.id).length]);
   el.innerHTML = `<div class="stack" style="max-width:620px"><div class="card stack">
     <div class="row nowrap" style="gap:14px" id="teamLogo">${teamBadge(t, 72, 30)}
-      <div class="stack tight grow"><div class="label">Club badge</div><div class="row" style="gap:8px"><button class="btn sm" data-act="logo">${t.logo ? 'Change badge' : 'Add the club badge'}</button>${t.logo ? '<button class="btn sm" data-act="unlogo">Remove</button>' : ''}</div><div class="tiny muted">Shows on the team switcher, printouts and the player and staff pages. A PNG with a see-through background looks best.</div></div></div>
+      <div class="stack tight grow"><div class="label">Club badge</div><div class="row" style="gap:8px"><button class="btn sm" data-act="logo">${t.logo || badgeSrc(t) ? 'Change badge' : 'Add the club badge'}</button>${t.logo ? '<button class="btn sm" data-act="unlogo">Remove</button>' : ''}</div><div class="tiny muted">Shows on the team switcher, printouts and the player and staff pages. A PNG with a see-through background looks best.</div></div></div>
     <label class="field"><span>Team name</span><input type="text" data-f="name"></label>
     <div class="grid2"><label class="field"><span>Short name</span><input type="text" data-f="short"></label><label class="field"><span>Club</span><input type="text" data-f="club"></label></div>
     <div class="grid2"><label class="field"><span>Season</span><input type="text" data-f="season"></label><label class="field"><span>Base formation</span><select data-f="formation">${Object.keys(FORMATIONS).map(f => `<option ${f === t.formation ? 'selected' : ''}>${esc(f)}</option>`).join('')}</select></label></div>
