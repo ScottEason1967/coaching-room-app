@@ -219,7 +219,8 @@ export async function shareInfo(token) {
 /* ---------- Coaching staff: members, invitations, live updates, who's here ---------- */
 async function pullMembers() {
   const { data, error } = await sb.from('team_members').select('team_id,user_id,role,name,email,added_at').order('added_at', { ascending: true });
-  if (error) { console.warn('members', error.message); return; }   // missing until the updated schema.sql is run
+  if (error) { console.warn('members', error.message); store.setMeta('membersErr', [error.code, error.message].filter(Boolean).join(': ')); return; }
+  store.setMeta('membersErr', null);
   store.setMembers(data || [], user.id);
   watch();
 }

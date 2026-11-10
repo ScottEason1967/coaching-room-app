@@ -469,3 +469,12 @@ do $$ begin
     end if;
   end if;
 end $$;
+
+-- Permissions for the staff tables, stated outright rather than relying on Supabase's defaults
+-- (newer projects don't always open new tables to signed-in users). The rules above still decide
+-- which rows each person can see or change. Then tell the API to pick up the new tables.
+grant select, update, delete on public.team_members to authenticated;
+grant select, insert, delete on public.invites to authenticated;
+grant execute on function public.team_role(text), public.can_see(text), public.can_edit(text),
+  public.can_admin(text), public.colleague(uuid, boolean), public.team_unclaimed(text) to authenticated;
+notify pgrst, 'reload schema';

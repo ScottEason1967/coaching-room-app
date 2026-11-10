@@ -40,7 +40,7 @@ export default function staffView(el, params, ctx) {
     el.innerHTML = `<div class="empty">Working with other coaches needs cloud sync and a sign-in. <a href="#/cloud">Cloud sync</a></div>`; return;
   }
   if (!S.meta().members) {
-    el.innerHTML = `<div class="card stack tight"><div class="h3">Not switched on yet</div><p class="small" style="margin:0">The database needs its update before you can invite anyone. Run the latest supabase/schema.sql in Supabase (SQL Editor), then come back here.</p><button class="btn sm" data-act="retry">Check again</button></div>`;
+    el.innerHTML = `<div class="card stack tight"><div class="h3">Not switched on yet</div><p class="small" style="margin:0">The app couldn't read the staff list from the database, so inviting is off for now. Tap Check again. If this stays, send the line below to whoever set up the database.</p><p class="small mono" style="margin:0;word-break:break-word">${esc(S.meta().membersErr || (navigator.onLine ? 'No answer from the database yet.' : 'This device is offline.'))}</p><button class="btn sm" data-act="retry">Check again</button></div>`;
     actions(el, { retry: async () => { await cloud.refreshMembers(); ctx.refresh(); } }); return;
   }
   const me = cloud.myId(); const mine = S.roleIn(T); const admin = mine === 'owner' || mine === 'admin';
