@@ -113,7 +113,7 @@ function renderTop() {
       ${top.bug ? top.bug : `<div class="bandtitle" id="bandTitle">${esc(top.title || '')}</div>`}
       ${top.sub ? (top.onSub ? `<button type="button" class="bandsub" id="bandSub" aria-label="${esc(top.sub)}. Edit the details">${esc(top.sub)} ›</button>` : `<div class="bandsub">${esc(top.sub)}</div>`) : ''}`;
   } else {
-    tb.innerHTML = `<button class="team-switch hometitle" data-act="team" aria-label="Switch team: ${esc(t?.name || 'Add a team')}"><span class="tm">${teamBadge(t, 18, 10)}<span class="tmn">${esc(t?.name || 'Add a team')}${t?.season ? ' · ' + esc(t.season) : ''}</span>${icon('down')}</span><span class="bn">Coaching Room</span></button><div class="grow"></div>${topNav()}<div class="grow"></div>${right}`;
+    tb.innerHTML = `<button class="team-switch hometitle" data-act="team" aria-label="Switch team: ${esc(t?.name || 'Add a team')}"><span class="hbadge">${teamBadge(t, 46, 20)}</span><span class="htext"><span class="tm"><span class="tmn">${esc(t?.name || 'Add a team')}${t?.season ? ' · ' + esc(t.season) : ''}</span>${icon('down')}</span><span class="bn">Coaching Room</span></span></button><div class="grow"></div>${topNav()}<div class="grow"></div>${right}`;
   }
   const b = tb.querySelector('[data-act="team"]'); if (b) b.onclick = teamSwitcher;
   const gb = tb.querySelector('[data-act="guide"]'); if (gb) gb.onclick = openStartHere;

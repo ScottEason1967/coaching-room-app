@@ -2,7 +2,7 @@
 // individual instructions, boards, and the challenge that asks what will win it.
 import * as S from '../store.js';
 import { PHASES, TAGS } from '../store.js';
-import { esc, icon, today, fmtD, fmtAgo, lines, bindFields, actions, debounce, confirmSheet, toast, sheet, closeSheet } from '../util.js';
+import { esc, icon, today, fmtD, fmtAgo, lines, bindFields, actions, debounce, confirmSheet, toast, sheet, closeSheet, badgeSrc } from '../util.js';
 import { frameSvg } from '../pitch.js';
 import { matchChallenges, openCount, threatened, chalJump, paintChal, focusField } from '../challenges.js';
 import { printMatch, printInstructionCards } from '../print.js';
@@ -38,7 +38,7 @@ export default function matchView(el, [id], ctx) {
   const us = (S.team().name || 'Us').split(' ')[0];
   const summary = () => m.date || m.ko || m.venue ? [m.date ? fmtD(m.date) : 'No date', m.ko ? 'KO ' + m.ko : '', m.venue, m.comp].filter(Boolean).join(' · ') : 'Set the date, kick-off and venue';
   const top = () => ctx.setTop({ back: '#/matches', title: m.opponent ? 'v ' + m.opponent : 'New match plan', sub: summary(),
-    bug: `<h1 class="sr" id="bandTitle">${esc(m.opponent ? 'v ' + m.opponent : 'New match plan')}</h1><div class="scorebug" aria-hidden="true"><span class="us">${esc(us)}</span><span class="vs">V</span><span class="them ${m.opponent ? '' : 'unset'}" id="bugThem">${esc(m.opponent || 'Opponent?')}</span></div>`,
+    bug: `<h1 class="sr" id="bandTitle">${esc(m.opponent ? 'v ' + m.opponent : 'New match plan')}</h1><div class="scorebug" aria-hidden="true"><span class="us">${badgeSrc(S.team()) ? `<img class="sbb" src="${esc(badgeSrc(S.team()))}" alt="">` : ''}<span class="ell">${esc(us)}</span></span><span class="vs">V</span><span class="them ${m.opponent ? '' : 'unset'}" id="bugThem">${esc(m.opponent || 'Opponent?')}</span></div>`,
     onSub: () => { const d = el.querySelector('#matchDetails'); d.open = true; OPEN.add(m.id); d.scrollIntoView({ block: 'start', behavior: 'smooth' }); } });
   top();
   const save = debounce(() => S.put(m), 400);

@@ -483,3 +483,73 @@ body.viewonly .content :is(input,textarea)::placeholder{color:transparent}
   .band .topnav a.on{box-shadow:inset 0 -3px 0 #0B0F19}
 }
 @media (min-width:900px) and (max-width:1180px){ .topnav a span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)} .topnav a{padding:0 10px} }
+
+/* Team page: a banner in the club colour with the headline numbers, then a card per part showing what is in it */
+.tband{background:linear-gradient(135deg,#0E1A33 0%,#1D4ED8 120%);color:#fff;border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:16px}
+.tband .tname{font-family:var(--display);font-weight:700;font-size:30px;line-height:1.05;text-transform:uppercase;letter-spacing:.01em}
+.tband .small{color:rgba(255,255,255,.75)}
+.tband .tedit{color:#fff;font-size:13px;font-weight:600;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.14);text-decoration:none;flex:none}
+.tband .badge-num{background:#fff!important;color:#1D4ED8!important}
+.tstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tstat{background:rgba(255,255,255,.1);border-radius:14px;padding:10px 8px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tstat .n{font-family:var(--mono);font-weight:700;font-size:22px;line-height:1.1}
+.tstat .l{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.7);line-height:1.2}
+.tgrid{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){.tgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tcard{display:flex;flex-direction:column;gap:12px;text-decoration:none;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 16px 18px;transition:border-color .15s,box-shadow .15s}
+.tcard:hover{border-color:var(--line2);box-shadow:0 4px 18px rgba(14,26,51,.07)}
+.tchead{display:flex;align-items:center;gap:10px}
+.tchead svg{width:22px;height:22px;color:#1D4ED8;flex:none}
+.tchead .t{font-family:var(--display);font-weight:700;font-size:22px;text-transform:uppercase;line-height:1;flex:1}
+.tchead .r{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.tchead .chev{color:var(--muted);font-size:20px;line-height:1}
+.tempty{font-size:14px;color:var(--muted);padding:14px;border:1px dashed var(--line2);border-radius:14px}
+.ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tbar{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.tbar span{display:block;height:100%;background:#2FB67A;border-radius:99px}
+.tlist{display:flex;flex-direction:column}
+.trow{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:14px}
+.trow:first-child{border-top:0}
+.trow .dot{width:10px;height:10px;border-radius:50%;flex:none}
+.trow .ok{color:#1E8A55;font-weight:600}
+.tshirts{display:flex;flex-wrap:wrap;gap:6px}
+.shirt{width:30px;height:30px;border-radius:9px;background:#1D4ED8;color:#fff;font-family:var(--mono);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;position:relative}
+.shirt.gk{background:#2FB67A}
+.shirt.capt::after{content:'';position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#FFD34D;border:2px solid var(--surface)}
+.tunits{display:flex;flex-wrap:wrap;gap:6px}
+.tunit{display:inline-flex;align-items:baseline;gap:5px;font-size:12.5px;padding:5px 10px;border-radius:999px;background:var(--surface2);color:var(--text2)}
+.tunit b{font-family:var(--mono);font-size:13px;color:var(--text)}
+.tunit.gk{background:color-mix(in srgb,#2FB67A 16%,transparent)}
+.tunit.none{background:transparent;border:1px dashed var(--line2)}
+.tpeople{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tperson{display:flex;align-items:center;gap:10px;min-width:0}
+.tperson .face{width:38px;height:38px;border-radius:50%;background:#0E1A33;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none}
+.tperson .nm{display:block;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tthumbs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tthumb{display:flex;flex-direction:column;gap:5px;min-width:0}
+.tcta{margin-top:auto;align-self:flex-start;font-size:13px;font-weight:600;color:#1D4ED8;padding:7px 12px;border-radius:999px;background:color-mix(in srgb,#1D4ED8 9%,transparent)}
+.tcard:hover .tcta{background:color-mix(in srgb,#1D4ED8 15%,transparent)}
+.hometitle{flex-direction:row!important;align-items:center!important;gap:12px}
+.hometitle .hbadge{flex:none;display:flex}
+.hometitle .hbadge img,.hometitle .hbadge .badge-num{border-radius:50%}
+.hometitle .htext{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
+img.logo{object-fit:contain}
+
+/* Section banners for Training, Match and Analysis: same colours as the Home tiles */
+.sband{--c:var(--b-training);background:linear-gradient(135deg,var(--c) 0%,color-mix(in srgb,var(--c) 70%,#fff) 100%);color:#0B0F19;border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:16px}
+.sband.match{--c:var(--b-match)} .sband.analysis{--c:var(--b-analysis)}
+.sband .sbic{width:52px;height:52px;border-radius:50%;background:#0B0F19;color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.sband .sbic svg{width:26px;height:26px}
+.sband .sbt{font-family:var(--display);font-weight:700;font-size:34px;line-height:1;text-transform:uppercase;margin:0}
+.sband .sbs{font-size:14px;margin-top:4px;color:rgba(11,15,25,.75);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sband .tstat{background:rgba(255,255,255,.5)}
+.sband .tstat .l{color:rgba(11,15,25,.65)}
+.datetile{width:46px;height:46px;border-radius:12px;background:#0E1A33;color:#fff;font-family:var(--mono);font-weight:700;font-size:16px;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;gap:2px}
+.datetile span{font-family:Inter,sans-serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;opacity:.8}
+.wdl{width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:13px;color:#fff;flex:none}
+.wdl.w{background:#1E8A55}.wdl.d{background:#8A8F99}.wdl.l{background:#C2410C}
+.empty,.empty[class]{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 20px;font-size:14.5px;color:var(--text2);text-align:center}
+@media (max-width:480px){.tstat .n{font-size:19px}.tstat .l{font-size:9.5px}.sband .sbt{font-size:30px}}
+.scorebug .us{display:flex;align-items:center;gap:8px}
+.scorebug .sbb{width:24px;height:24px;object-fit:contain;flex:none;background:#fff;border-radius:50%;padding:1px}
+@media (max-width:600px){.hometitle .bn{font-size:22px;white-space:nowrap}.hometitle .hbadge img,.hometitle .hbadge .badge-num{width:40px!important;height:40px!important}.hometitle{gap:9px}}

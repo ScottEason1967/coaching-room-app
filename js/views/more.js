@@ -180,7 +180,7 @@ export function teamView(el, [id], ctx) {
   const save = debounce(() => S.put(t), 400);
   const counts = ['player', 'principle', 'board', 'session', 'match', 'review'].map(k => [k, S.all(k, t.id).length]);
   el.innerHTML = `<div class="stack" style="max-width:620px"><div class="card stack">
-    <div class="row nowrap" style="gap:14px" id="teamLogo">${t.logo ? logoImg(t.logo, 72, 'border-radius:12px') : `<span class="badge-num" style="width:72px;height:72px;font-size:30px">${esc((t.name || '?')[0])}</span>`}
+    <div class="row nowrap" style="gap:14px" id="teamLogo">${teamBadge(t, 72, 30)}
       <div class="stack tight grow"><div class="label">Club badge</div><div class="row" style="gap:8px"><button class="btn sm" data-act="logo">${t.logo ? 'Change badge' : 'Add the club badge'}</button>${t.logo ? '<button class="btn sm" data-act="unlogo">Remove</button>' : ''}</div><div class="tiny muted">Shows on the team switcher, printouts and the player and staff pages. A PNG with a see-through background looks best.</div></div></div>
     <label class="field"><span>Team name</span><input type="text" data-f="name"></label>
     <div class="grid2"><label class="field"><span>Short name</span><input type="text" data-f="short"></label><label class="field"><span>Club</span><input type="text" data-f="club"></label></div>

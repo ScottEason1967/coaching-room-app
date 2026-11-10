@@ -1,6 +1,6 @@
 // Home: what's next, then big tiles for the week (Training > Match > Analysis) and the team.
 import * as S from '../store.js';
-import { esc, icon, fmtD, today, actions, sheet, closeSheet } from '../util.js';
+import { esc, icon, fmtD, today, actions, sheet, closeSheet, badgeSrc } from '../util.js';
 import { matchChallenges, openCount } from '../challenges.js';
 import { startReview } from './review.js';
 import { newMatch } from './match.js';
@@ -58,9 +58,9 @@ export default function home(el, params, ctx) {
       <div class="small" style="padding:0 14px 8px;color:var(--lamp-text)">Close the loop before you plan anything new. Your next session is built from what you write here.</div>
       ${due.map(d => `<button class="gr" data-act="rev" data-arg="${d.rec.id}"><span class="lbl">${d.kind === 'match' ? 'v ' + esc(d.rec.opponent) : esc(d.rec.theme || 'Session')}<small>${d.kind === 'match' ? 'Match' : 'Session'} · ${fmtD(d.rec.date)}${d.started ? ' · started' : ''}</small></span><span class="btn sm lamp">${d.started ? 'Finish' : 'Start'}</span></button>`).join('')}</section>` : ''}
 
-    ${nm ? `<a class="nextcard" href="#/match/${nm.id}" id="nextMatch" aria-label="Next match: ${esc(t.name)} v ${esc(nm.opponent || 'opponent not set')}"><span class="scorebug"><span class="us">${esc(t.short || t.name.split(' ')[0])}</span><span class="vs">V</span><span class="them ${nm.opponent ? '' : 'unset'}">${esc(nm.opponent || 'Opponent?')}</span></span>
+    ${nm ? `<a class="nextcard" href="#/match/${nm.id}" id="nextMatch" aria-label="Next match: ${esc(t.name)} v ${esc(nm.opponent || 'opponent not set')}"><span class="scorebug"><span class="us">${badgeSrc(t) ? `<img class="sbb" src="${esc(badgeSrc(t))}" alt="">` : ''}<span class="ell">${esc(t.short || t.name.split(' ')[0])}</span></span><span class="vs">V</span><span class="them ${nm.opponent ? '' : 'unset'}">${esc(nm.opponent || 'Opponent?')}</span></span>
         <span class="meta"><span>${nm.date ? fmtD(nm.date) : 'No date yet'}${nm.ko ? ' · ' + esc(nm.ko) : ''}${nm.venue ? ' · ' + esc(nm.venue) : ''}</span><span class="mono ${mOpen ? 'todo' : ''}">${mOpen ? mOpen + ' MUST-DO' : 'PLAN READY'}</span></span></a>`
-      : `<button type="button" class="nextcard" data-act="newMatch" id="nextMatch" aria-label="Next match"><span class="scorebug"><span class="us">${esc(t.short || t.name.split(' ')[0])}</span><span class="vs">V</span><span class="them unset">No fixture</span></span><span class="meta"><span>Add the next fixture</span><span class="chev">›</span></span></button>`}
+      : `<button type="button" class="nextcard" data-act="newMatch" id="nextMatch" aria-label="Next match"><span class="scorebug"><span class="us">${badgeSrc(t) ? `<img class="sbb" src="${esc(badgeSrc(t))}" alt="">` : ''}<span class="ell">${esc(t.short || t.name.split(' ')[0])}</span></span><span class="vs">V</span><span class="them unset">No fixture</span></span><span class="meta"><span>Add the next fixture</span><span class="chev">›</span></span></button>`}
     <div class="gl"><a class="gr" href="${ns ? '#/session/' + ns.id : '#/training/sessions'}" id="nextSession" aria-label="Next session"><span class="lbl">${ns ? esc(ns.theme || 'No theme yet') : 'Next session not planned yet'}<small>${ns ? 'Next session · ' + fmtD(ns.date) + (ns.time ? ' · ' + esc(ns.time) : '') : 'Plan it from your block'}</small></span><span class="chev">›</span></a></div>
 
     <div class="ghead">This week</div>

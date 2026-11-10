@@ -236,4 +236,6 @@ export const avatar = (src, size, fallback = '', style = '') => src
   ? `<img class="avatar" src="${esc(src)}" alt="" width="${size}" height="${size}" style="width:${size}px;height:${size}px;${style}">`
   : fallback;
 export const logoImg = (src, size, style = '') => src ? `<img class="logo" src="${esc(src)}" alt="" style="width:${size}px;height:${size}px;${style}">` : '';
-export const teamBadge = (t, size, fs) => t && t.logo ? logoImg(t.logo, size) : `<span class="badge-num" style="width:${size}px;height:${size}px;font-size:${fs}px;background:var(--c-training);color:#fff">${esc(((t && t.name) || '?')[0])}</span>`;
+// Thornaby's own badge until Joe adds one in Team details.
+export const badgeSrc = t => (t && (t.logo || (/thornaby/i.test(t.name || '') ? 'icons/badge-thornaby.png' : ''))) || '';
+export const teamBadge = (t, size, fs) => badgeSrc(t) ? logoImg(badgeSrc(t), size) : `<span class="badge-num" style="width:${size}px;height:${size}px;font-size:${fs}px;background:var(--c-training);color:#fff">${esc(((t && t.name) || '?')[0])}</span>`;
