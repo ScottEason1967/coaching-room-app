@@ -7,6 +7,7 @@ import home, { openStartHere } from './views/home.js';
 import { teamHome, training, matches, analysis, sketch } from './views/hubs.js';
 import model, { principleView } from './views/model.js';
 import board, { boardList } from './views/board.js';
+import testView from './views/test.js';
 import drill from './views/drill.js';
 import session from './views/session.js';
 import match from './views/match.js';
@@ -27,7 +28,7 @@ const ROUTES = {
   teamhome: { v: teamHome, nav: 'team' },
   model: { v: model, nav: 'team', detail: true }, principle: { v: principleView, nav: 'team', detail: true },
   squad: { v: squad, nav: 'team', detail: true }, staff: { v: staffView, nav: 'team', detail: true }, join: { v: joinView, nav: 'home', detail: true }, player: { v: playerView, nav: 'team', detail: true },
-  sketch: { v: sketch, nav: 'team', detail: true }, board: { v: board, nav: 'team', detail: true },
+  sketch: { v: sketch, nav: 'team', detail: true }, board: { v: board, nav: 'team', detail: true }, test: { v: testView, nav: 'team', detail: true },
   training: { v: training, nav: 'training', sec: 'training' },
   drill: { v: drill, nav: 'training', sec: 'training', detail: true }, session: { v: session, nav: 'training', sec: 'training', detail: true },
   block: { v: blockView, nav: 'training', sec: 'training', detail: true },

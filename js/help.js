@@ -117,6 +117,7 @@ const board = () => ({
     st('**Opponent**, **Ball**, **Label**, **Cone** and **Mannequin** put something on the pitch: pick the tool, then tap where it goes. Opponent, Ball and Label switch back to Move by themselves.', '[data-tool="add:opp"]'),
     st('To show what happens next, tap **Next frame**. It copies the positions into a new frame without the arrows. Move the players to where they go next and draw the new arrows.', '[data-act="addFrame"]'),
     st('Each frame has a **Name**, a **Phase** and **Coaching notes for this moment** under the pitch. Write the notes for players: what they should see and do here.', '#fT'),
+    st('**Test it** runs the play against a defending side and shows where it breaks: passes they get to, free players nobody uses, where you are outnumbered, who is behind the ball if you lose it. Pick the opponent (your next match’s opposition file, or a style) and how sharp they are. Draw your passes with the **Pass** arrow so the test can check each one.', '#testB'),
     st('**Play** runs the frames through one after another so you can see the move. You need at least two frames. On a phone the page moves so the whole pitch is in view while it plays.', '[data-act="play"]'),
     st('**Frame** opens a menu: duplicate this frame, move it earlier or later, clear its arrows, or delete it.', '[data-act="frameMenu"]'),
     st('**Zoom** magnifies the pitch (arrow buttons appear so you can move around it). The button that says **Upright** or **Sideways** turns the pitch the other way. **Undo** takes back your last change.', '[data-act="zoom"]'),
@@ -520,6 +521,21 @@ const mtemplates = params => ({
 });
 
 /* ----------------------------------------------------------------- Staff */
+const test = () => ({
+  title: 'Test it',
+  purpose: 'Your play against a defending side that moves frame by frame. It finds where the play breaks, measures why, and asks what you would change. It is a rules engine, not a guess: every finding is a distance, a time or a count on the pitch.',
+  loop: `Use it while you plan, before the session: ${LOOP}. What it finds is something to coach, and your answers stay with the board.`,
+  steps: [
+    st('**The frames** run along the top. A red dot means a serious problem in that frame, a grey dot something worth a look. Tap a frame to see the opponent move into it. **Play** runs them all.', '#tFrames'),
+    st('**Their players** are the red squares. With a high press their nearest player presses the ball from the side that cuts the pass back to the keeper, and a second screens the nearest short pass. In a mid or low block they hold their lines and shift across to the ball. Man-marking puts their 10 on your 6 wherever she goes. If you put opponents on the board yourself, those are where they start.', '#tPitchWrap'),
+    st('**On the pitch**: a red line and cross is a pass they get to first, a green ring is a free player nobody plays, an orange ring is someone receiving with an opponent on her, and shading is where you are outnumbered or exposed behind the ball.', '.tlegend'),
+    st('**The numbers** at the top: serious problems, ones worth a look, frames with no serious problem, and how many of your drawn passes are on.', '.tband'),
+    st('**Findings**, most dangerous first. Each one gives the measurement behind it, for example how far their player is from the line of the pass and how long she needs to get there against how long the ball takes. **Show me** plays that moment with only that problem marked.', '#tFindings'),
+    st('**Answer the question** under a finding to write what you would change. It is saved with the board, for you and the other coaches.', '#tFindings'),
+    st('**Change opponent** or **Test again** to try another style or sharpness. **Steady** gives them more time to react, **Ruthless** less. **Edit the play** goes back to the board to fix it, then test it again.', '#tChange'),
+    st('What it does not judge: first touch, body shape, whether a player can make that pass under pressure. Use it to challenge a plan, not to replace watching your team.')
+  ]
+});
 const staff = () => ({
   title: 'Staff',
   purpose: 'Who coaches this team with you. Everyone here works on the same game model, squad, sessions, match plans and analysis, and sees each other’s changes within a second or two.',
@@ -541,7 +557,7 @@ const join = () => ({
   steps: [st('Check the team and the role, then tap **Join**. If the invite is for another email address, sign out and open the link again.')]
 });
 
-const GUIDES = { staff, join, mtemplates, ideas, idea, home, teamhome, sketch, training, matches, analysis, model, principle, board, block, drill, session, match, review, squad, player, pathway, logbook, teams, team, cloud: cloudGuide, more };
+const GUIDES = { test, staff, join, mtemplates, ideas, idea, home, teamhome, sketch, training, matches, analysis, model, principle, board, block, drill, session, match, review, squad, player, pathway, logbook, teams, team, cloud: cloudGuide, more };
 
 export function helpFor(routeName, params) {
   const g = GUIDES[routeName]; if (!g) return null;

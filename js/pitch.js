@@ -142,10 +142,10 @@ const ROT_H = 'matrix(0,1,-1,0,105,0)';
 export function boardViewBox(orient) { return orient === 'h' ? '-4 -3 113 74' : '-3 -4 74 113'; }
 
 // Static SVG of one board frame (thumbnails, print, share page).
-export function frameSvg(f, players, { orient = 'v', cls = '', style = '' } = {}) {
+export function frameSvg(f, players, { orient = 'v', cls = '', style = '', overlay = '', hide = null, attrs = '' } = {}) {
   const sc = BOARD_SC; const pf = newPfx();
-  const items = (f.items || []).map(it => `<g transform="translate(${it.x} ${it.y}) rotate(${(it.r || 0) + (orient === 'h' && isText(it) ? -90 : 0)})">${boardItem(it, sc, players)}</g>`).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${boardViewBox(orient)}" class="${cls}" style="background:#16502F;${style}">${arrowDefs(pf)}<g transform="${orient === 'h' ? ROT_H : ''}">${pitchFull()}${(f.arrows || []).map(a => arrowSvg(a, sc, false, pf)).join('')}${items}</g></svg>`;
+  const items = (f.items || []).filter(it => !hide || !hide(it)).map(it => `<g transform="translate(${it.x} ${it.y}) rotate(${(it.r || 0) + (orient === 'h' && isText(it) ? -90 : 0)})">${boardItem(it, sc, players)}</g>`).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${boardViewBox(orient)}" class="${cls}" style="background:#16502F;${style}" ${attrs}>${arrowDefs(pf)}<g transform="${orient === 'h' ? ROT_H : ''}">${pitchFull()}${(f.arrows || []).map(a => arrowSvg(a, sc, false, pf)).join('')}${items}${overlay}</g></svg>`;
 }
 export function drillSvg(d, { cls = '', style = '' } = {}) {
   const sc = drillScale(d.w, d.h); const pf = newPfx();

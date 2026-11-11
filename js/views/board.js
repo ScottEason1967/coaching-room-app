@@ -4,6 +4,7 @@ import { PHASES } from '../store.js';
 import { esc, icon, uid, clone, actions, sheet, closeSheet, confirmSheet, toast, debounce, shareFile, fmtAgo } from '../util.js';
 import { Canvas, FORMATIONS, OPP_SHAPES, BOARD_SC, boardItem, pitchFull, frameSvg, boardViewBox, ARROWS, svgToPng } from '../pitch.js';
 import { printBoard } from '../print.js';
+import { testSheet } from './test.js';
 import { shareSheet } from './sharing.js';
 import { saveBoardSketch } from './sketch.js';
 
@@ -101,6 +102,7 @@ export default function boardView(el, [id], ctx) {
         <div class="pitchwrap" style="display:flex;justify-content:center;background:transparent"><svg class="pitch" id="pitch" role="img" aria-label="Tactics board"></svg></div>
         <div class="row" style="gap:8px">
           <button class="btn sm" data-act="undo" id="undoB" disabled>${icon('rotate', 'style="transform:scaleX(-1)"')}Undo</button>
+          <button class="btn sm pri" data-act="test" id="testB">${icon('analysis')}Test it</button>
           <button class="btn sm" data-act="play">${icon('play')}Play</button>
           <button class="btn sm" data-act="orient">${icon('rotate')}<span id="oLab"></span></button>
           <button class="btn sm" data-act="shape">${icon('squad')}Shapes</button>
@@ -303,6 +305,7 @@ export default function boardView(el, [id], ctx) {
     frameMenu: () => frameMenu(),
     png: async () => { if (cv.zoom) { cv.setZoom(false); el.querySelector('#zoomB').classList.remove('on'); el.querySelector('#panB').style.display = 'none'; } try { const blob = await svgToPng(svg); await shareFile(blob, (b.name + ' - ' + (fr().name || 'frame')).replace(/[^\w\- ]+/g, '') + '.png', b.name); } catch (e) { toast('Could not make the image on this device'); } },
     print: () => printBoard(b),
+    test: () => { save.flush(); testSheet(b); },
     share: () => shareSheet('board', b),
     dupBoard: () => { const c = clone(b); c.id = uid(); c.name = b.name + ' (copy)'; delete c.share; S.put(c); location.hash = '#/board/' + c.id; },
     delBoard: async () => { if (await confirmSheet('Delete this board?', 'Match plans that use it will lose it.')) { S.del(b.id); location.hash = '#/sketch'; } }
