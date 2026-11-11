@@ -680,3 +680,7 @@ img.logo{border-radius:0!important;background:transparent!important;padding:0!im
 .tband .tname{font-size:24px}
 .hdr .bandtitle.tlong{font-size:25px}.hdr .bandtitle.tvlong{font-size:20px}
 @media (max-width:600px){.hdr .bandtitle.tlong{font-size:20px}.hdr .bandtitle.tvlong{font-size:17px}}
+/* Keep the scrollbar's space on every page, so the page (and the centred tabs) never changes width
+   when a page is long enough to scroll on a laptop. */
+html{scrollbar-gutter:stable;overflow-y:scroll}
+@supports (scrollbar-gutter:stable){html{overflow-y:auto}}
