@@ -179,16 +179,16 @@ function check(F, sp, out) {
       who: { us: [[c.p.id, `free, ${Math.round(c.near)} m clear`], [fr.carrier.id, 'on the ball']], them: [], spot: c.p } });
   }
   // 3. Outnumbered around the ball.
-  const R = 15; const ours = us.filter(p => !p.gk && d2(p, ball) <= R).length; const theirs = them.filter(o => d2(o, ball) <= R).length;
+  const R = 15; const near = q => d2(q, ball) <= R; const ours = us.filter(near).length; const theirs = opp.filter(near).length;
   if (theirs > ours && theirs >= 2) out.push({ key: 'out', type: 'out', sev: theirs - ours >= 2 ? 'serious' : 'look', frame: k, score: 6 + (theirs - ours) * 2,
-    title: `Outnumbered around the ball: ${ours} v ${theirs}`, measure: `Players within ${R} m of the ball, keepers not counted`,
+    title: `Outnumbered around the ball: ${ours} v ${theirs}`, measure: `Everyone within ${R} m of the ball, keepers included`,
     q: 'Who can come closer to make it even, or should the ball go somewhere else first?', draw: { kind: 'zone', c: ball, r: R, lab: `${ours} v ${theirs}` },
-    who: { us: us.filter(p => !p.gk && d2(p, ball) <= R).map(p => [p.id, '']), them: them.filter(o => d2(o, ball) <= R).map(o => [o.id, '']), spot: ball } });
+    who: { us: us.filter(near).map(p => [p.id, '']), them: opp.filter(near).map(o => [o.id, '']), spot: ball } });
   // 4. Rest defence: if we lose it here, who's behind the ball?
   if (ball.y < 78) {
     const back = us.filter(p => !p.gk && p.y > ball.y + 2).length; const fwd = them.filter(o => o.y > ball.y - 3).length;
     if (fwd > back) out.push({ key: 'rest', type: 'rest', sev: back < fwd - 1 || back <= 1 ? 'serious' : 'look', frame: k, score: 7 + (fwd - back) * 2,
-      title: `If we lose it here: ${back} of ours v ${fwd} of theirs behind the ball`, measure: `Rest defence · ${Math.round(105 - ball.y)} m to our goal`,
+      title: `If we lose it here: ${back} of ours v ${fwd} of theirs behind the ball`, measure: `Rest defence, our keeper not counted · ${Math.round(105 - ball.y)} m to our goal`,
       q: 'Who stays back while we attack, and where do they stand?', draw: { kind: 'rest', y: ball.y, lab: `${back} v ${fwd} behind the ball` },
       who: { us: us.filter(p => !p.gk && p.y > ball.y + 2).map(p => [p.id, '']), them: them.filter(o => o.y > ball.y - 3).map(o => [o.id, '']), spot: { x: 34, y: Math.min(100, ball.y + 8) } } });
   }

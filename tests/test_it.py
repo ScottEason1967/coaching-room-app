@@ -54,6 +54,7 @@ async def main():
         check('low block: no serious problems playing out in our own half', not any(f['sev'] == 'serious' and min(f['frames']) < 3 for f in lo['findings']), [f['title'] for f in lo['findings']])
         mm = await pg.evaluate(SIM, [bid, 'man6', 'sharp'])
         check('man-marking: someone is within 3 m of our 6 in every frame', all(g <= 3 for g in mm['sixGap']), [round(g, 1) for g in mm['sixGap']])
+        check('outnumbered counts the keeper on the ball: never "0 v" while we have the ball', not any(f['title'].startswith('Outnumbered around the ball: 0 v') for f in hi['findings']), [f['title'] for f in hi['findings'] if f['type'] == 'out'])
         check('a finding never repeats: the same problem over frames is listed once', len({f['title'] for f in hi['findings']}) == len(hi['findings']))
         # The screens
         await pg.evaluate("""import('./js/store.js').then(async S => { const M = await import('./js/views/match.js'); const T = S.team().id; const m = M.createMatch(T); m.opponent = 'Chester-le-Street'; m.date = new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10); m.tags = { press: 'mid block', formation: '4-4-2' }; S.put(m); })""")
