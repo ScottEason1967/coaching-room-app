@@ -531,7 +531,7 @@ body.viewonly .content :is(input,textarea)::placeholder{color:transparent}
 .tcard:hover .tcta{background:color-mix(in srgb,#1D4ED8 15%,transparent)}
 .hometitle{flex-direction:row!important;align-items:center!important;gap:12px}
 .hometitle .hbadge{flex:none;display:flex}
-.hometitle .hbadge img,.hometitle .hbadge .badge-num{border-radius:50%}
+.hometitle .hbadge .badge-num{border-radius:50%}
 .hometitle .htext{display:flex;flex-direction:column;align-items:flex-start;min-width:0}
 img.logo{object-fit:contain}
 
@@ -551,7 +551,7 @@ img.logo{object-fit:contain}
 .empty,.empty[class]{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 20px;font-size:14.5px;color:var(--text2);text-align:center}
 @media (max-width:480px){.tstat .n{font-size:19px}.tstat .l{font-size:9.5px}.sband .sbt{font-size:30px}}
 .scorebug .us{display:flex;align-items:center;gap:8px}
-.scorebug .sbb{width:24px;height:24px;object-fit:contain;flex:none;background:#fff;border-radius:50%;padding:1px}
+.scorebug .sbb{width:26px;height:26px;object-fit:contain;flex:none}
 @media (max-width:600px){.hometitle .bn{font-size:22px;white-space:nowrap}.hometitle .hbadge img,.hometitle .hbadge .badge-num{width:40px!important;height:40px!important}.hometitle{gap:9px}}
 /* Narrow screens (forms, settings, staff) sit in the middle, not pinned to the left */
 .content > [style*="max-width"]{margin-left:auto;margin-right:auto}
@@ -560,7 +560,8 @@ img.logo{object-fit:contain}
 .bandmain{display:flex;align-items:center;gap:12px;min-width:0}
 .bandtext{min-width:0;flex:1}
 .bandbadge{flex:none;display:flex;padding-left:8px}
-.bandbadge img,.bandbadge .badge-num{width:48px!important;height:48px!important;border-radius:50%;background:#fff;padding:3px;box-sizing:border-box}
+.bandbadge img,.bandbadge .badge-num{width:52px!important;height:52px!important}
+.bandbadge .badge-num{border-radius:50%;background:#fff;padding:3px;box-sizing:border-box}
 .bandbadge + .bandtext .bandtitle,.bandbadge + .bandtext .bandsub{padding-left:0;margin-left:0}
 /* Team and settings screens: the club's navy */
 body:not([data-sec]) .topbar.band,body[data-sec=""] .topbar.band{background:linear-gradient(120deg,#0E1A33 0%,#14306E 60%,#1D4ED8 130%);color:#fff}
@@ -629,3 +630,6 @@ body:not([data-sec]) .band .avatarbtn,body[data-sec=""] .band .avatarbtn{box-sha
 .wchip.them b{background:#E4572E;border-radius:5px}
 .lg.num{width:18px;height:18px;border-radius:50%;background:#FFD34D;border:2px solid #0B0F19;box-sizing:border-box;font:800 10px Inter,sans-serif;font-style:normal;display:inline-flex;align-items:center;justify-content:center;color:#0B0F19}
 .tnum{background:#FFD34D!important;color:#0B0F19!important;border:2px solid #0B0F19;box-sizing:border-box}
+
+/* Club badges are shown whole, never cropped to a circle */
+img.logo{border-radius:0!important;background:transparent!important;padding:0!important}
