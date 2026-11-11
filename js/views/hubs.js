@@ -24,7 +24,7 @@ const head = (sec, title, sub, right = '') => `<div class="sec-head row nowrap" 
   <div class="grow" style="min-width:0"><div class="h1" style="margin:0">${esc(title)}</div>${sub ? `<div class="small muted">${sub}</div>` : ''}</div>${right}</div>`;
 
 // Section banner: the section's colour (as on the Home tiles), its name and the numbers that matter.
-const band = (sec, title, sub, stats) => `<div class="sband ${sec}"><div class="row nowrap" style="gap:14px"><span class="sbic">${icon(SECTIONS[sec].ic)}</span><div class="grow" style="min-width:0"><h1 class="sbt">${esc(title)}</h1><div class="sbs">${sub}</div></div></div>
+const band = (sec, title, sub, stats) => `<div class="sband ${sec}"><div class="row nowrap" style="gap:12px"><span class="sbic">${icon(SECTIONS[sec].ic)}</span><div class="sbs grow">${sub}</div></div>
   <div class="tstats">${stats.map(([n, l]) => `<div class="tstat"><span class="n">${n}</span><span class="l">${l}</span></div>`).join('')}</div></div>`;
 const hasResult = m => m.result && m.result.us !== '' && m.result.us != null && m.result.them !== '' && m.result.them != null;
 const dayMon = d => d ? new Date(d + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '–';
@@ -47,7 +47,7 @@ const UNIT = { GK: 'gk', RB: 'def', CB: 'def', LB: 'def', FB: 'def', 6: 'mid', 8
 const UNITS = [['gk', 'GK'], ['def', 'Defence'], ['mid', 'Midfield'], ['att', 'Attack']];
 const initials = n => (String(n || '?').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2) || '?').toUpperCase();
 export function teamHome(el, params, ctx) {
-  const t = S.team(); const T = t.id; ctx.setTop({});
+  const t = S.team(); const T = t.id; ctx.setTop({ title: 'Team' });
   const ps = S.principles(T); const agreed = ps.filter(p => p.status === 'agreed').length;
   const pl = S.players(T); const ms = S.members(T); const bs = S.boards(T).filter(b => b.type === 'sketch');
   const pm = S.playerMap(T);
@@ -85,7 +85,7 @@ export function teamHome(el, params, ctx) {
   const card = (id, href, ic, title, right, body, cta) => `<a class="tcard" id="${id}" href="${href}"><div class="tchead">${icon(ic)}<span class="t">${title}</span><span class="r">${right}</span><span class="chev">›</span></div>${body}<span class="tcta">${cta}</span></a>`;
   el.innerHTML = `<div class="stack">
     <div class="tband">
-      <div class="row nowrap" style="gap:14px">${teamBadge(t, 56, 26)}<div class="grow" style="min-width:0"><div class="tname">${esc(t.name)}</div><div class="small">${esc(t.season || '')}${t.formation ? (t.season ? ' · ' : '') + esc(t.formation) : ''}</div></div><a class="tedit" href="#/team/${T}" id="tDetails">Edit</a></div>
+      <div class="row nowrap" style="gap:12px"><div class="grow" style="min-width:0"><div class="tname" style="font-size:20px;text-transform:none;font-family:Inter,sans-serif;font-weight:700">${esc([t.season, t.formation].filter(Boolean).join(' · ') || 'Your team')}</div></div><a class="tedit" href="#/team/${T}" id="tDetails">Team details</a></div>
       <div class="tstats">${stat(pl.length, 'Players')}${stat(ps.length ? agreed + '/' + ps.length : '0', 'Principles agreed')}${stat(ms.length || 1, ms.length === 1 || !ms.length ? 'Coach' : 'Coaches')}${stat(played.length ? wdl.join('-') : '–', played.length ? 'W-D-L' : 'Results')}</div>
     </div>
     <div class="tgrid">
@@ -101,7 +101,7 @@ const TTABS = [['programme', 'Programme'], ['sessions', 'Sessions'], ['drills', 
 export function training(el, [tab], ctx) {
   tab = TTABS.some(t => t[0] === tab) ? tab : (S.meta().trainTab || 'sessions');
   S.setMeta('trainTab', tab);
-  const T = S.team().id; const td = today(); ctx.setTop({});
+  const T = S.team().id; const td = today(); ctx.setTop({ title: 'Training' });
   let body = '';
   if (tab === 'sessions') {
     const all = S.sessions(T); const bs = S.blocks(T);
@@ -144,7 +144,7 @@ export function training(el, [tab], ctx) {
 
 /* ---------- Match ---------- */
 export function matches(el, params, ctx) {
-  const T = S.team().id; const td = today(); ctx.setTop({});
+  const T = S.team().id; const td = today(); ctx.setTop({ title: 'Match' });
   const all = S.matches(T); const up = all.filter(m => !m.date || m.date >= td).reverse(); const past = all.filter(m => m.date && m.date < td);
   const wl = m => { if (!hasResult(m)) return ''; const u = +m.result.us, th = +m.result.them; const k = u > th ? 'w' : u === th ? 'd' : 'l'; return `<span class="wdl ${k}">${k.toUpperCase()}</span>`; };
   const row = m => `<a class="item" href="#/match/${m.id}"><span class="datetile">${m.date ? new Date(m.date + 'T12:00').getDate() : '?'}<span>${m.date ? new Date(m.date + 'T12:00').toLocaleDateString('en-GB', { month: 'short' }) : ''}</span></span><span class="grow"><span class="t" style="display:block">v ${esc(m.opponent || 'Opponent not set')}${m.result && m.result.us !== '' && m.result.us != null ? ` · ${esc(m.result.us)}-${esc(m.result.them)}` : ''}</span><span class="s">${fmtD(m.date)}${m.ko ? ' · ' + esc(m.ko) : ''}${m.venue ? ' · ' + esc(m.venue) : ''}</span></span>${wl(m)}${statusPill(m, td)}</a>`;
@@ -160,7 +160,7 @@ export function matches(el, params, ctx) {
 
 /* ---------- Analysis ---------- */
 export function analysis(el, params, ctx) {
-  const T = S.team().id; ctx.setTop({});
+  const T = S.team().id; ctx.setTop({ title: 'Analysis' });
   const due = S.reviewsDue(T); const rs = S.reviews(T);
   const doneN = rs.filter(reviewComplete).length; const last = rs.find(r => r.change);
   el.innerHTML = `<div class="stack">${band('analysis', 'Analysis', last ? 'Last change: ' + esc(last.change.slice(0, 70)) : 'What worked, what didn’t, and the one thing to change', [

@@ -37,7 +37,7 @@ const daysTo = d => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12
 
 export default function home(el, params, ctx) {
   const t = S.team(); const T = t.id; const td = today();
-  ctx.setTop({ home: true });
+  ctx.setTop({ home: true, title: 'Coaching Room' });
   const due = S.reviewsDue(T);
   const ps = S.principles(T); const agreed = ps.filter(p => p.status === 'agreed').length;
   const nm = S.nextMatch(T); const ns = S.nextSession(T); const lc = S.lastChange(T);

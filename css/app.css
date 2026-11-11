@@ -633,3 +633,50 @@ body:not([data-sec]) .band .avatarbtn,body[data-sec=""] .band .avatarbtn{box-sha
 
 /* Club badges are shown whole, never cropped to a circle */
 img.logo{border-radius:0!important;background:transparent!important;padding:0!important}
+/* ===== One header for every screen (Nov 2026): navy, badge and title left, tabs fixed centre, buttons right ===== */
+#topbar.hdr{display:block;background:linear-gradient(120deg,#0E1A33 0%,#14306E 62%,#1D4ED8 135%)!important;color:#fff;padding:calc(8px + var(--safe-t)) 16px 12px;border:0;flex-direction:initial}
+#topbar.hdr > *{width:100%;max-width:1148px;margin-left:auto;margin-right:auto}
+.hrow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;min-height:60px}
+@media (min-width:900px){.hrow{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}}
+.hleft{display:flex;align-items:center;gap:12px;min-width:0}
+.hbadge{border:0;background:none;padding:0;display:flex;flex:none;cursor:pointer}
+.hbadge img,.hbadge .badge-num{width:50px!important;height:50px!important}
+.htext{display:flex;flex-direction:column;align-items:flex-start;min-width:0;gap:1px}
+.hdr .hline,.hdr .backlink{border:0;background:none;color:rgba(255,255,255,.8);font:500 13.5px Inter,system-ui,sans-serif;padding:0;min-height:22px;display:inline-flex;align-items:center;gap:4px;text-decoration:none;cursor:pointer;max-width:100%;white-space:nowrap}
+.hdr .hline:hover,.hdr .backlink:hover{color:#fff}
+.hdr .hline .tmn{overflow:hidden;text-overflow:ellipsis}
+.hdr .hline svg,.hdr .backlink svg{width:15px;height:15px;margin:0;flex:none}
+.hdr .bandtitle{padding:0;margin:0;font:700 30px/1.02 var(--display);text-transform:uppercase;letter-spacing:.01em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block;-webkit-line-clamp:unset}
+.hright{display:flex;justify-content:flex-end;align-items:center;gap:6px;min-width:0}
+.hdr .btn{color:#fff}
+.hdr .btn.icon{background:rgba(255,255,255,.14)!important;border:0}
+.hdr .guide-btn{background:rgba(255,255,255,.14)!important;border:0;color:#fff;white-space:nowrap}
+.hdr #meBtn{background:#0B0F19!important;color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.5)}
+.hdr .topnav a{color:rgba(255,255,255,.82)!important}
+.hdr .topnav a:hover{background:rgba(255,255,255,.1)!important;color:#fff!important}
+.hdr .topnav a.on{color:#fff!important;box-shadow:inset 0 -3px 0 #fff!important}
+.hdr .topnav a.training.on{box-shadow:inset 0 -3px 0 var(--b-training)!important}
+.hdr .topnav a.match.on{box-shadow:inset 0 -3px 0 var(--b-match)!important}
+.hdr .topnav a.analysis.on{box-shadow:inset 0 -3px 0 var(--b-analysis)!important}
+.hmore{padding-left:62px;margin-top:2px}
+.hdr .bandsub{margin:0;padding:0;border:0;background:none;color:rgba(255,255,255,.82)!important;font:500 14px Inter,system-ui,sans-serif;text-align:left;min-height:24px;cursor:pointer}
+.hdr div.bandsub{cursor:default}
+.hbug{margin-top:10px}
+.hdr .here{margin-right:4px}
+@media (max-width:600px){
+  #topbar.hdr{padding:calc(6px + var(--safe-t)) 12px 10px}
+  .hrow{min-height:52px;gap:8px}
+  .hbadge img,.hbadge .badge-num{width:42px!important;height:42px!important}
+  .hleft{gap:10px}
+  .hdr .bandtitle{font-size:24px}
+  .hmore{padding-left:52px}
+  .hdr .hline,.hdr .backlink{font-size:12.5px;min-height:20px}
+}
+.hdr.compact .bandtitle{font-size:22px}
+/* In-page banners no longer repeat the page title */
+.sband .sbs{font-size:15px;font-weight:500;white-space:normal;color:#0B0F19}
+.sband .sbic{width:40px;height:40px}
+.sband .sbic svg{width:21px;height:21px}
+.tband .tname{font-size:24px}
+.hdr .bandtitle.tlong{font-size:25px}.hdr .bandtitle.tvlong{font-size:20px}
+@media (max-width:600px){.hdr .bandtitle.tlong{font-size:20px}.hdr .bandtitle.tvlong{font-size:17px}}

@@ -94,6 +94,8 @@ function renderNav(on) {
 }
 
 // Where Back goes, in words: the band says "‹ Training", "‹ Match" and so on.
+// A tab's own page: going back there is what the tabs are for.
+const isTabHome = h => h === '#/home' || h === '#/teamhome' || h === '#/' || /^#\/(training|matches|analysis)(\/|$)/.test(h || '');
 const BACK_WORD = h => (h || '').startsWith('#/training') || h === '#/ideas' ? 'Training' : h.startsWith('#/matches') ? 'Match' : h.startsWith('#/mtemplates') ? 'Templates' : h.startsWith('#/analysis') ? 'Analysis'
   : h === '#/teamhome' ? 'Team' : h === '#/staff' ? 'Staff' : h === '#/model' ? 'Game model' : h === '#/squad' ? 'Squad' : h === '#/sketch' ? 'Sketch' : h === '#/more' ? 'Settings' : h === '#/home' ? 'Home'
   : h.startsWith('#/session/') ? 'Session' : h.startsWith('#/match/') ? 'Match plan' : h.startsWith('#/block/') ? 'Block' : h.startsWith('#/principle/') ? 'Principle' : 'Back';
@@ -107,19 +109,22 @@ function renderTop() {
   const guide = top.home ? `<button type="button" class="btn guide-btn" data-act="guide" id="guideBtn">Start here guide</button>` : '';
   const help = helpFor(current.name, current.params) ? `<button type="button" class="btn icon" data-act="help" aria-label="How to use this screen" title="How to use this screen" style="font-weight:700;font-size:17px">?</button>` : '';
   const right = `<div class="row nowrap" style="gap:6px">${top.actions || ''}${guide}${help}<a href="#/cloud" class="btn icon" aria-label="Sync: ${esc(syncLabel())}" title="${esc(syncLabel())}" style="border:0;width:36px;background:transparent!important">${syncDot()}</a><button type="button" class="btn icon" id="meBtn" data-act="me" aria-label="Your profile, pathway and settings" style="font-weight:600;font-size:14px;${c.photo ? 'padding:0;overflow:hidden' : ''}">${avatar(c.photo, 40, esc(c.initials || 'JE'))}</button></div>`;
-  tb.classList.toggle('band', !!top.back); tb.classList.toggle('compact', !!top.compact);
-  if (top.back) {
-    const word = top.backLabel || BACK_WORD(top.back);
-    const others = cloud.othersHere(here());
-    const chips = others.length ? `<span class="here" id="hereChips" title="${esc(others.map(o => o.name).join(', '))} ${others.length > 1 ? 'are' : 'is'} here too">${others.slice(0, 3).map(o => `<span class="herec">${esc(((o.name || '?').trim()[0] || '?').toUpperCase())}</span>`).join('')}<span class="sr">${esc(others.map(o => o.name).join(', '))} ${others.length > 1 ? 'are' : 'is'} looking at this too</span></span>` : '';
-    tb.innerHTML = `<div class="bandrow"><a class="backlink" href="${top.back}">${icon('back')}<span class="sr">Back to </span>${esc(word)}</a><span class="grow"></span>${topNav()}<span class="grow"></span>${chips}${right}</div>
-      ${top.bug ? top.bug : `<div class="bandmain">${clubBand() ? `<span class="bandbadge">${teamBadge(t, 44, 20)}</span>` : ''}<div class="bandtext"><div class="bandtitle" id="bandTitle">${esc(top.title || '')}</div>
-      ${top.sub ? (top.onSub ? `<button type="button" class="bandsub" id="bandSub" aria-label="${esc(top.sub)}. Edit the details">${esc(top.sub)} ›</button>` : `<div class="bandsub">${esc(top.sub)}</div>`) : ''}</div></div>`}
-      ${top.bug && top.sub ? (top.onSub ? `<button type="button" class="bandsub" id="bandSub" aria-label="${esc(top.sub)}. Edit the details">${esc(top.sub)} ›</button>` : `<div class="bandsub">${esc(top.sub)}</div>`) : ''}`;
-  } else {
-    tb.innerHTML = `<button class="team-switch hometitle" data-act="team" aria-label="Switch team: ${esc(t?.name || 'Add a team')}"><span class="hbadge">${teamBadge(t, 46, 20)}</span><span class="htext"><span class="tm"><span class="tmn">${esc(t?.name || 'Add a team')}${t?.season ? ' · ' + esc(t.season) : ''}</span>${icon('down')}</span><span class="bn">Coaching Room</span></span></button><div class="grow"></div>${topNav()}<div class="grow"></div>${right}`;
-  }
-  const b = tb.querySelector('[data-act="team"]'); if (b) b.onclick = teamSwitcher;
+  // One header on every screen: club badge and page title on the left, the tabs fixed in the
+  // middle, your buttons on the right. Only screens deeper than a tab show a way back.
+  tb.classList.add('band', 'hdr'); tb.classList.toggle('compact', !!top.compact);
+  const deep = top.back && !isTabHome(top.back);
+  const others = cloud.othersHere(here());
+  const chips = others.length ? `<span class="here" id="hereChips" title="${esc(others.map(o => o.name).join(', '))} ${others.length > 1 ? 'are' : 'is'} here too">${others.slice(0, 3).map(o => `<span class="herec">${esc(((o.name || '?').trim()[0] || '?').toUpperCase())}</span>`).join('')}<span class="sr">${esc(others.map(o => o.name).join(', '))} ${others.length > 1 ? 'are' : 'is'} looking at this too</span></span>` : '';
+  const line1 = deep ? `<a class="backlink" href="${top.back}">${icon('back')}<span class="sr">Back to </span>${esc(top.backLabel || BACK_WORD(top.back))}</a>`
+    : `<button type="button" class="team-switch hline" data-act="team" aria-label="Switch team: ${esc(t?.name || 'Add a team')}"><span class="tmn">${esc(t?.name || 'Add a team')}${t?.season ? ' · ' + esc(t.season) : ''}</span>${icon('down')}</button>`;
+  const title = top.title || 'Coaching Room';
+  const sub = top.sub ? (top.onSub ? `<button type="button" class="bandsub" id="bandSub" aria-label="${esc(top.sub)}. Edit the details">${esc(top.sub)} ›</button>` : `<div class="bandsub">${esc(top.sub)}</div>`) : '';
+  tb.innerHTML = `<div class="hrow">
+      <div class="hleft"><button type="button" class="hbadge" data-act="team" aria-label="Switch team">${teamBadge(t, 50, 22)}</button><div class="htext">${line1}<div class="bandtitle ${title.length > 18 ? 'tvlong' : title.length > 11 ? 'tlong' : ''}" id="bandTitle">${esc(title)}</div></div></div>
+      ${topNav()}
+      <div class="hright">${chips}${right}</div>
+    </div>${sub ? `<div class="hmore">${sub}</div>` : ''}${top.bug ? `<div class="hbug">${top.bug}</div>` : ''}`;
+  tb.querySelectorAll('[data-act="team"]').forEach(x => x.onclick = teamSwitcher);
   const gb = tb.querySelector('[data-act="guide"]'); if (gb) gb.onclick = openStartHere;
   const sb = tb.querySelector('#bandSub'); if (sb && top.onSub) sb.onclick = top.onSub;
   tb.querySelector('[data-act="me"]').onclick = profileMenu;

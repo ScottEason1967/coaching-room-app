@@ -58,7 +58,7 @@ export function newBoardSheet(T, onMade) {
 }
 
 export function boardList(el, params, ctx) {
-  const T = S.team().id; ctx.setTop({});
+  const T = S.team().id; ctx.setTop({ title: 'Boards' });
   const bs = S.boards(T); const pm = S.playerMap(T);
   el.innerHTML = `<div class="stack"><div class="row between"><div><div class="h1">Tactics board</div><div class="small muted" style="margin-top:4px">Shapes, phases and set pieces for ${esc(S.team().name)}</div></div><button class="btn pri" data-act="new">${icon('plus')}New board</button></div>
     ${bs.length ? `<div class="grid3">${bs.map(b => `<a class="card link stack tight" href="#/board/${b.id}" style="text-decoration:none;display:flex">${frameSvg(b.frames[0] || { items: [], arrows: [] }, pm, { orient: 'h', style: 'width:100%;height:auto;border-radius:12px' })}

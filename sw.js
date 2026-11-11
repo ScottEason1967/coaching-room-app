@@ -1,6 +1,6 @@
 // Offline support. Online: always fetch the latest files (so updates appear
 // straight away) and keep a copy. Offline or slow: use the saved copy.
-const CACHE = 'coaching-room-v36';
+const CACHE = 'coaching-room-v38';
 const SHELL = [
   './',
   'css/app.css',

@@ -55,7 +55,7 @@ async def main():
         check('badge saved as PNG (keeps see-through background)', bool(t.get('logo')) and t['logo'].startswith('data:image/png'))
         print('   badge size', len(t.get('logo') or ''))
         await A.goto(U + 'index.html#/home'); await A.wait_for_timeout(400)
-        check('team switcher shows the badge', await A.query_selector('#topbar .team-switch img.logo') is not None)
+        check('the header shows the badge (tap it to switch team)', await A.query_selector('#topbar .hbadge[data-act="team"] img.logo') is not None)
         await A.screenshot(path='shots/pictures-home.png')
         await A.wait_for_timeout(1800)
         check('badge and photo synced to the cloud', any(v['id'] == 't-thornaby' and v['data'].get('logo') for v in srv.items.values()) and any(v['id'].startswith('coach:') and v['data'].get('photo') for v in srv.items.values()))
