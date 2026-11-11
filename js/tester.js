@@ -155,12 +155,14 @@ function check(F, sp, out) {
     const hit = lane(p.a, p.b, p.to); const who = `${p.from ? usName(p.from) : 'the passer'} to ${p.to ? usName(p.to) : 'space'}`;
     if (hit) out.push({ key: 'pass:' + who, type: 'pass', sev: 'serious', frame: k, score: 10 + hit.margin * 4,
       title: hit.end && p.to ? `Their ${hit.o.lab} gets there before your ${usName(p.to)}` : `The pass from ${who} is cut out`, measure: hit.off <= REACH ? `Their ${hit.o.lab} is already on the line of the pass` : `Their ${hit.o.lab} is ${hit.off} m off the line · ball takes ${hit.tBall} s to get there · she needs ${hit.tThem} s`,
-      q: `What would change so ${p.to ? usName(p.to) : 'she'} can receive?`, draw: { kind: 'cut', a: p.a, b: p.b, o: hit.o.id, P: hit.P } });
+      q: `What would change so ${p.to ? usName(p.to) : 'she'} can receive?`, draw: { kind: 'cut', a: p.a, b: p.b, o: hit.o.id, P: hit.P },
+      who: { us: [[p.from && p.from.id, 'passes'], [p.to && p.to.id, 'receives']].filter(w => w[0]), them: [[hit.o.id, 'gets there first']], spot: hit.P, spotLab: hit.end ? '' : 'Cut out here' } });
     else if (p.to) {
       const near = them.slice().sort((a, b) => d2(a, p.to) - d2(b, p.to))[0];
       if (near && d2(near, p.to) < 2.6) out.push({ key: 'recv:' + p.to.id, type: 'recv', sev: 'look', frame: k, score: 5,
         title: `Your ${usName(p.to)} receives with their ${near.lab} on her`, measure: `${r1(d2(near, p.to))} m away when the ball arrives · she has no time to turn`,
-        q: `How does ${usName(p.to)} get half a yard first: a check away, receiving on the half-turn, or a different target?`, draw: { kind: 'tight', p: p.to.id, o: near.id } });
+        q: `How does ${usName(p.to)} get half a yard first: a check away, receiving on the half-turn, or a different target?`, draw: { kind: 'tight', p: p.to.id, o: near.id },
+        who: { us: [[p.to.id, 'receives']], them: [[near.id, `${r1(d2(near, p.to))} m away`]], spot: p.to } });
     }
   });
   // 2. A free player nobody plays.
@@ -173,19 +175,22 @@ function check(F, sp, out) {
     const c = cand[0];
     if (c) out.push({ key: 'free:' + c.p.id, type: 'free', sev: 'look', frame: k, score: 4 + c.near / 10,
       title: `Your ${usName(c.p)} is free and nobody plays her`, measure: `Nearest opponent ${r1(c.near)} m away · the pass from ${usName(fr.carrier)} is on (${Math.round(c.dist)} m)`,
-      q: `Why isn't ${usName(c.p)} the pass here? Does she need to be seen, or is it the right call to go elsewhere?`, draw: { kind: 'free', p: c.p.id, from: fr.carrier.id } });
+      q: `Why isn't ${usName(c.p)} the pass here? Does she need to be seen, or is it the right call to go elsewhere?`, draw: { kind: 'free', p: c.p.id, from: fr.carrier.id },
+      who: { us: [[c.p.id, `free, ${Math.round(c.near)} m clear`], [fr.carrier.id, 'on the ball']], them: [], spot: c.p } });
   }
   // 3. Outnumbered around the ball.
   const R = 15; const ours = us.filter(p => !p.gk && d2(p, ball) <= R).length; const theirs = them.filter(o => d2(o, ball) <= R).length;
   if (theirs > ours && theirs >= 2) out.push({ key: 'out', type: 'out', sev: theirs - ours >= 2 ? 'serious' : 'look', frame: k, score: 6 + (theirs - ours) * 2,
     title: `Outnumbered around the ball: ${ours} v ${theirs}`, measure: `Players within ${R} m of the ball, keepers not counted`,
-    q: 'Who can come closer to make it even, or should the ball go somewhere else first?', draw: { kind: 'zone', c: ball, r: R, lab: `${ours} v ${theirs}` } });
+    q: 'Who can come closer to make it even, or should the ball go somewhere else first?', draw: { kind: 'zone', c: ball, r: R, lab: `${ours} v ${theirs}` },
+    who: { us: us.filter(p => !p.gk && d2(p, ball) <= R).map(p => [p.id, '']), them: them.filter(o => d2(o, ball) <= R).map(o => [o.id, '']), spot: ball } });
   // 4. Rest defence: if we lose it here, who's behind the ball?
   if (ball.y < 78) {
     const back = us.filter(p => !p.gk && p.y > ball.y + 2).length; const fwd = them.filter(o => o.y > ball.y - 3).length;
     if (fwd > back) out.push({ key: 'rest', type: 'rest', sev: back < fwd - 1 || back <= 1 ? 'serious' : 'look', frame: k, score: 7 + (fwd - back) * 2,
       title: `If we lose it here: ${back} of ours v ${fwd} of theirs behind the ball`, measure: `Rest defence · ${Math.round(105 - ball.y)} m to our goal`,
-      q: 'Who stays back while we attack, and where do they stand?', draw: { kind: 'rest', y: ball.y, lab: `${back} v ${fwd} behind the ball` } });
+      q: 'Who stays back while we attack, and where do they stand?', draw: { kind: 'rest', y: ball.y, lab: `${back} v ${fwd} behind the ball` },
+      who: { us: us.filter(p => !p.gk && p.y > ball.y + 2).map(p => [p.id, '']), them: them.filter(o => o.y > ball.y - 3).map(o => [o.id, '']), spot: { x: 34, y: Math.min(100, ball.y + 8) } } });
   }
   // 5. The gap between our defence and midfield.
   const of = us.filter(p => !p.gk).sort((a, b) => b.y - a.y);
@@ -193,7 +198,8 @@ function check(F, sp, out) {
     const D = of.slice(0, 4), M = of.slice(4, 7); const dy = D.reduce((s, p) => s + p.y, 0) / 4, my = M.reduce((s, p) => s + p.y, 0) / 3; const gap = dy - my;
     if (gap > 22) out.push({ key: 'gap', type: 'gap', sev: gap > 30 ? 'serious' : 'look', frame: k, score: 3 + (gap - 22) / 4,
       title: 'Big gap between your defence and midfield', measure: `${Math.round(gap)} m between the lines · aim for under 20 m`,
-      q: 'Does the back line step up, or does midfield drop? What would you tell them?', draw: { kind: 'gap', y1: dy, y2: my, x: Math.max(...M.map(p => p.x)) + 4 } });
+      q: 'Does the back line step up, or does midfield drop? What would you tell them?', draw: { kind: 'gap', y1: dy, y2: my, x: Math.max(...M.map(p => p.x)) + 4 } ,
+      who: { us: [...D, ...M].map(p => [p.id, '']), them: [], spot: { x: Math.max(...M.map(p => p.x)) + 5, y: (dy + my) / 2 } }});
   }
 }
 
@@ -204,29 +210,83 @@ function merge(list) {
   return [...by.values()].sort((a, b) => (a.sev === b.sev ? 0 : a.sev === 'serious' ? -1 : 1) || b.score - a.score);
 }
 
-// Opponents and markings on top of a frame, in board coordinates. focus: one finding to show alone.
-export function overlaySvg(F, findings, { focus = null, t = 1, orient = 'v', sc = 2.6 } = {}) {
-  const rot = orient === 'h' ? ' rotate(-90)' : '';
+// What goes on the pitch, in board coordinates. Two layers: under our players (their players and
+// shaded areas, so our numbers always show) and over them (lines, rings, the numbered markers).
+// focus: one finding alone, with everything else dimmed and the players involved labelled.
+export function overlaySvg(F, findings, { focus = null, t = 1, orient = 'v', sc = 2.6, numbers = null } = {}) {
+  const H = orient === 'h';
+  const rot = H ? ' rotate(-90)' : '';
+  // A move in screen terms (right, down) as a move on the board.
+  const scr = (x, y, dx, dy) => H ? { x: x + dy, y: y - dx } : { x: x + dx, y: y + dy };
+  const top = (x, y) => H ? x : y;             // distance from the top of the screen
   const pos = (o, i) => !F.from || t >= 1 ? o : { x: F.from[i].x + (o.x - F.from[i].x) * t, y: F.from[i].y + (o.y - F.from[i].y) * t };
+  const oppPos = F.opp.map(pos);
   const usAt = id => F.fr.us.find(p => p.id === id);
-  const oppAt = id => { const i = F.opp.findIndex(o => o.id === id); return i < 0 ? null : pos(F.opp[i], i); };
-  const shown = findings.filter(f => f.frame === F.k || (f.frames || []).includes(F.k)).filter(f => !focus || f.key === focus);
-  const txt = (x, y, s, fill = '#fff', anchor = 'middle') => `<g transform="translate(${x} ${y})${rot}"><text font-size="${sc * .8}" text-anchor="${anchor}" dy=".35em" fill="${fill}" stroke="rgba(0,0,0,.7)" stroke-width="${sc * .25}" paint-order="stroke" font-weight="700" font-family="Inter,Arial,sans-serif">${s}</text></g>`;
-  let marks = '';
+  const oppAt = id => { const i = F.opp.findIndex(o => o.id === id); return i < 0 ? null : { ...F.opp[i], ...oppPos[i] }; };
+  const inFrame = f => f.frame === F.k || (f.frames || []).includes(F.k);
+  const shown = findings.filter(inFrame).filter(f => !focus || f.key === focus);
+  const T = (x, y, s, { fill = '#fff', size = .8, anchor = 'middle', bold = 700 } = {}) => `<g transform="translate(${x} ${y})${rot}"><text font-size="${sc * size}" text-anchor="${anchor}" dy=".35em" fill="${fill}" stroke="rgba(0,0,0,.75)" stroke-width="${sc * .22}" paint-order="stroke" font-weight="${bold}" font-family="Inter,Arial,sans-serif">${esc(s)}</text></g>`;
+  // Labels are laid out at the end so they never cover each other, a lit-up player, or leave the pitch.
+  const req = [];
+  const pill = (x, y, s, col = '#FFD34D', anchorR = 1.5) => { req.push({ x, y, s, col, anchorR }); return ''; };
+  const toS = (x, y) => H ? { x: 105 - y, y: x } : { x, y };
+  const toB = (sx, sy) => H ? { x: sy, y: 105 - sx } : { x: sx, y: sy };
+  const SW = H ? 105 : 68, SH = H ? 68 : 105;
+  const layout = (avoid) => {
+    const placed = []; let out = '';
+    const fs = sc * .74, ph = sc * 1.45;
+    const hits = (r) => placed.some(q => r.x1 < q.x2 && r.x2 > q.x1 && r.y1 < q.y2 && r.y2 > q.y1) || avoid.some(c => r.x1 < c.x + c.r && r.x2 > c.x - c.r && r.y1 < c.y + c.r && r.y2 > c.y - c.r);
+    req.forEach(q => {
+      const a = toS(q.x, q.y); const w = q.s.length * fs * .56 + sc * 1.1; const g = sc * q.anchorR;
+      const cands = [[0, -(g + ph / 2)], [0, g + ph / 2], [g + w / 2, 0], [-(g + w / 2), 0], [g * .7 + w / 2, -(g * .7 + ph / 2)], [-(g * .7 + w / 2), -(g * .7 + ph / 2)], [g * .7 + w / 2, g * .7 + ph / 2], [-(g * .7 + w / 2), g * .7 + ph / 2], [0, -(g + ph * 1.6)], [0, g + ph * 1.6], [g + w / 2 + sc * 2, 0], [-(g + w / 2 + sc * 2), 0], [0, -(g + ph * 2.7)], [0, g + ph * 2.7], [g + w / 2, -(g + ph * 1.6)], [-(g + w / 2), g + ph * 1.6]];
+      let best = null;
+      for (const [dx, dy] of cands) {
+        const cx = Math.max(w / 2 + .5, Math.min(SW - w / 2 - .5, a.x + dx)), cy = Math.max(ph / 2 + .5, Math.min(SH - ph / 2 - .5, a.y + dy));
+        const r = { x1: cx - w / 2, x2: cx + w / 2, y1: cy - ph / 2, y2: cy + ph / 2, cx, cy };
+        if (!hits(r)) { best = r; break; } if (!best) best = r;
+      }
+      placed.push(best); const b = toB(best.cx, best.cy);
+      out += `<g transform="translate(${b.x} ${b.y})${rot}"><rect x="${-w / 2}" y="${-ph / 2}" width="${w}" height="${ph}" rx="${ph / 2}" fill="#0B0F19" fill-opacity=".94" stroke="${q.col}" stroke-width="${sc * .14}"/><text font-size="${fs}" text-anchor="middle" dy=".36em" fill="#fff" font-weight="700" font-family="Inter,Arial,sans-serif">${esc(q.s)}</text></g>`;
+    });
+    return out;
+  };
+  const oppTok = (o, { hot = false, size = .8 } = {}) => { const s = sc * size; return `<g transform="translate(${o.x} ${o.y})${rot}"><rect x="${-s}" y="${-s}" width="${2 * s}" height="${2 * s}" rx="${s * .3}" fill="${o.gk ? '#9B2C1F' : '#E4572E'}" stroke="${hot ? '#FFD34D' : '#fff'}" stroke-width="${sc * (hot ? .32 : .12)}"/><text font-size="${o.lab.length > 2 ? s * .62 : s * .8}" text-anchor="middle" dy=".36em" fill="#fff" font-weight="700" font-family="Inter,Arial,sans-serif">${esc(o.lab)}</text></g>`; };
+  const usTok = p => `<g transform="translate(${p.x} ${p.y})${rot}"><circle r="${sc * 1.45}" fill="none" stroke="#FFD34D" stroke-width="${sc * .3}"/><circle r="${sc}" fill="${p.gk ? '#2FB67A' : '#3D7BFF'}" stroke="#fff" stroke-width="${sc * .14}"/><text font-size="${sc * .85}" text-anchor="middle" dy=".36em" fill="#fff" font-weight="800" font-family="Inter,Arial,sans-serif">${esc(p.num)}</text></g>`;
+  let under = '', marks = '', lit = '', litOpp = '', tags = '', nums = ''; const drawnAt = [];
   shown.forEach(f => {
-    const g = f.draw; const dim = focus ? 1 : .9;
-    if (g.kind === 'cut') { const o = oppAt(g.o); if (o) marks += `<line x1="${o.x}" y1="${o.y}" x2="${g.P.x}" y2="${g.P.y}" stroke="#E4572E" stroke-width="${sc * .32}" opacity="${dim}"/>`;
-      marks += `<g transform="translate(${g.P.x} ${g.P.y})"><circle r="${sc * .75}" fill="#E4572E" stroke="#fff" stroke-width="${sc * .15}"/><path d="M${-sc * .35} ${-sc * .35} L${sc * .35} ${sc * .35} M${sc * .35} ${-sc * .35} L${-sc * .35} ${sc * .35}" stroke="#fff" stroke-width="${sc * .2}"/></g>`; }
-    if (g.kind === 'free') { const p = usAt(g.p), c = usAt(g.from); if (p) marks += `<circle cx="${p.x}" cy="${p.y}" r="${sc * 1.55}" fill="none" stroke="#7FDDA6" stroke-width="${sc * .3}"/>`;
-      if (p && c) marks += `<line x1="${c.x}" y1="${c.y}" x2="${p.x}" y2="${p.y}" stroke="#7FDDA6" stroke-width="${sc * .28}" stroke-dasharray="${sc * .7} ${sc * .5}"/>`;
-      if (p) marks += txt(p.x, p.y - sc * 2.2, 'Free', '#7FDDA6'); }
-    if (g.kind === 'tight') { const p = usAt(g.p); if (p) marks += `<circle cx="${p.x}" cy="${p.y}" r="${sc * 1.55}" fill="none" stroke="#FFB27F" stroke-width="${sc * .3}" stroke-dasharray="${sc * .5} ${sc * .35}"/>`; }
-    if (g.kind === 'zone') marks += `<circle cx="${g.c.x}" cy="${g.c.y}" r="${g.r}" fill="#E4572E" fill-opacity=".16" stroke="#E4572E" stroke-width="${sc * .2}" stroke-dasharray="${sc * .6} ${sc * .45}"/>` + txt(g.c.x, Math.max(3, g.c.y - g.r + 2.5), g.lab);
-    if (g.kind === 'rest') marks += `<rect x="0" y="${g.y}" width="68" height="${105 - g.y}" fill="#E4572E" fill-opacity=".1"/><line x1="0" y1="${g.y}" x2="68" y2="${g.y}" stroke="#E4572E" stroke-width="${sc * .2}" stroke-dasharray="${sc * .8} ${sc * .5}"/>` + txt(4, g.y + 3, g.lab, '#fff', 'start');
-    if (g.kind === 'gap') marks += `<path d="M${g.x} ${g.y1} L${g.x + 1.5} ${g.y1} L${g.x + 1.5} ${g.y2} L${g.x} ${g.y2}" fill="none" stroke="#FFB27F" stroke-width="${sc * .25}"/>` + txt(Math.min(64, g.x + 4), (g.y1 + g.y2) / 2, Math.round(g.y1 - g.y2) + ' m', '#FFB27F');
+    const g = f.draw;
+    if (g.kind === 'zone') under += `<circle cx="${g.c.x}" cy="${g.c.y}" r="${g.r}" fill="#E4572E" fill-opacity=".16"/>`, marks += `<circle cx="${g.c.x}" cy="${g.c.y}" r="${g.r}" fill="none" stroke="#E4572E" stroke-width="${sc * .2}" stroke-dasharray="${sc * .6} ${sc * .45}"/>` + (focus ? pill(g.c.x, g.c.y - g.r, g.lab + ' within 15 m', '#E4572E', .2) : '');
+    if (g.kind === 'rest') under += `<rect x="-3" y="${g.y}" width="74" height="${108 - g.y}" fill="#E4572E" fill-opacity=".12"/>`, marks += `<line x1="0" y1="${g.y}" x2="68" y2="${g.y}" stroke="#E4572E" stroke-width="${sc * .22}" stroke-dasharray="${sc * .8} ${sc * .5}"/>` + (focus ? pill(34, g.y + 2.5, g.lab, '#E4572E', .2) : '');
+    if (g.kind === 'gap') marks += `<path d="M${g.x} ${g.y1} L${g.x + 1.6} ${g.y1} L${g.x + 1.6} ${g.y2} L${g.x} ${g.y2}" fill="none" stroke="#FFB27F" stroke-width="${sc * .28}"/>` + T(Math.min(64, g.x + 4.5), (g.y1 + g.y2) / 2, Math.round(g.y1 - g.y2) + ' m', { fill: '#FFB27F', size: .9 });
+    if (g.kind === 'cut') { const o = oppAt(g.o);
+      marks += `<line x1="${g.a.x}" y1="${g.a.y}" x2="${g.b.x}" y2="${g.b.y}" stroke="#fff" stroke-width="${sc * .3}" stroke-dasharray="${sc * .7} ${sc * .45}" opacity="${focus ? 1 : 0}"/>`;
+      if (o) marks += `<line x1="${o.x}" y1="${o.y}" x2="${g.P.x}" y2="${g.P.y}" stroke="#E4572E" stroke-width="${sc * .34}"/>`;
+      marks += `<g transform="translate(${g.P.x} ${g.P.y})"><circle r="${sc * .8}" fill="#E4572E" stroke="#fff" stroke-width="${sc * .16}"/><path d="M${-sc * .35} ${-sc * .35} L${sc * .35} ${sc * .35} M${sc * .35} ${-sc * .35} L${-sc * .35} ${sc * .35}" stroke="#fff" stroke-width="${sc * .2}"/></g>`; }
+    if (g.kind === 'free') { const p = usAt(g.p), c = usAt(g.from);
+      if (p && c) marks += `<line x1="${c.x}" y1="${c.y}" x2="${p.x}" y2="${p.y}" stroke="#7FDDA6" stroke-width="${sc * .3}" stroke-dasharray="${sc * .7} ${sc * .5}"/>`;
+      if (p) marks += `<circle cx="${p.x}" cy="${p.y}" r="${sc * 1.7}" fill="none" stroke="#7FDDA6" stroke-width="${sc * .32}"/>`; }
+    if (g.kind === 'tight') { const p = usAt(g.p); if (p) marks += `<circle cx="${p.x}" cy="${p.y}" r="${sc * 1.7}" fill="none" stroke="#FFB27F" stroke-width="${sc * .32}" stroke-dasharray="${sc * .5} ${sc * .35}"/>`; }
+    // The players involved, lit up and labelled, when this finding is shown alone.
+    if (focus && f.who) {
+      const ourLit = f.who.us.map(([id]) => usAt(id)).filter(Boolean);
+      f.who.them.forEach(([id, l]) => { let o = oppAt(id); if (o) {
+        // Standing on one of ours: draw her just beside, with a line to where she really is, so both show.
+        const near = ourLit.find(p => d2(p, o) < sc * 2.2);
+        if (near) { const dx = o.x - near.x, dy = o.y - near.y, n = Math.hypot(dx, dy) || 1; const at = { x: near.x + dx / n * sc * 2.4, y: near.y + dy / n * sc * 2.4 };
+          lit += `<line x1="${o.x}" y1="${o.y}" x2="${at.x}" y2="${at.y}" stroke="#FFD34D" stroke-width="${sc * .15}"/>`; o = { ...o, ...at }; }
+        litOpp += oppTok(o, { hot: true, size: .95 }); drawnAt.push(o); if (l) tags += pill(o.x, o.y, `Their ${o.lab} · ${l}`, '#E4572E'); } });
+      f.who.us.forEach(([id, l]) => { const p = usAt(id); if (p) { lit += usTok(p); drawnAt.push(p); if (l) tags += pill(p.x, p.y, `${p.num} · ${l}`, '#FFD34D'); } });
+      if (f.who.spotLab) tags += pill(f.who.spot.x, f.who.spot.y, f.who.spotLab, '#E4572E', 1.1);
+    }
+    // The finding's number from the list, beside where it happens.
+    if (!focus && f.who && numbers) { const n = numbers.get(f.key); if (n) { const c = scr(f.who.spot.x, f.who.spot.y, sc * 1.6, -sc * 1.6);
+      nums += `<g transform="translate(${c.x} ${c.y})${rot}"><circle r="${sc * .95}" fill="#FFD34D" stroke="#0B0F19" stroke-width="${sc * .16}"/><text font-size="${sc * .95}" text-anchor="middle" dy=".36em" fill="#0B0F19" font-weight="800" font-family="Inter,Arial,sans-serif">${n}</text></g>`; } }
   });
-  const s = sc * .95;
-  const opp = F.opp.map((o, i) => { const p = pos(o, i); const hot = shown.some(f => f.draw.o === o.id);
-    return `<g transform="translate(${p.x} ${p.y})${rot}"><rect x="${-s}" y="${-s}" width="${2 * s}" height="${2 * s}" rx="${s * .3}" fill="${o.gk ? '#9B2C1F' : '#E4572E'}" stroke="${hot ? '#FFD34D' : '#fff'}" stroke-width="${sc * (hot ? .3 : .13)}"/><text font-size="${o.lab.length > 2 ? sc * .62 : sc * .8}" text-anchor="middle" dy=".36em" fill="#fff" font-weight="700" font-family="Inter,Arial,sans-serif">${esc(o.lab)}</text></g>`; }).join('');
-  return `<g class="testlayer">${marks}${opp}</g>`;
+  const hot = new Set(shown.flatMap(f => (f.who ? f.who.them : []).map(w => w[0])));
+  under += F.opp.map((o, i) => oppTok({ ...o, ...oppPos[i] }, { hot: !focus && hot.has(o.id) })).join('');
+  const avoid = [];
+  drawnAt.forEach(p => { const c = toS(p.x, p.y); avoid.push({ x: c.x, y: c.y, r: sc * 1.5 }); });
+  tags = layout(avoid);
+  const veil = focus ? `<rect x="-6" y="-6" width="80" height="117" fill="#0B0F19" fill-opacity=".58"/>` : '';
+  return { under: `<g class="testlayer">${under}</g>`, over: `<g class="testmarks">${veil}${focus ? under.replace(/<g transform[^]*$/, '') : ''}${marks}${lit}${litOpp}${tags}${nums}</g>` };
 }

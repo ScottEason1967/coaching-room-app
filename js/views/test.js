@@ -66,12 +66,16 @@ export default function testView(el, [id], ctx) {
   const orient = () => (innerWidth >= 700 && innerWidth > innerHeight) ? 'h' : 'v';
   const pitch = (t = 1) => { const F = R.frames[fi];
     return frameSvg(b.frames[fi], pm, { orient: orient(), cls: 'pitch', style: 'width:100%;height:auto;border-radius:14px;display:block', attrs: 'id="testPitch" role="img" aria-label="Pitch with the opponent"',
-      hide: it => it.kind === 'opp' || it.kind === 'def', overlay: overlaySvg(F, R.findings, { focus, t, orient: orient() }) }); };
+      hide: it => it.kind === 'opp' || it.kind === 'def', ...(o => ({ underlay: o.under, overlay: o.over }))(overlaySvg(F, R.findings, { focus, t, orient: orient(), numbers })) }); };
+  const numbers = new Map(R.findings.map((f, i) => [f.key, i + 1]));
+  const usById = new Map(R.frames.flatMap(F => F.fr.us.map(p => [p.id, p])));
+  const oppById = new Map(R.frames.flatMap(F => F.opp.map(o => [o.id, o])));
+  const chips = f => !f.who ? '' : `<span class="wchips">${f.who.us.filter(w => w[1]).map(([id, l]) => { const p = usById.get(id); return p ? `<span class="wchip us"><b>${esc(p.num)}</b>${esc(l)}</span>` : ''; }).join('')}${f.who.them.filter(w => w[1]).map(([id, l]) => { const o = oppById.get(id); return o ? `<span class="wchip them"><b>${esc(o.lab)}</b>${esc(l)}</span>` : ''; }).join('')}</span>`;
   const card = (f, i) => `<article class="tfind ${f.sev}" data-key="${esc(f.key)}">
       <div class="row nowrap" style="gap:10px;align-items:flex-start">
         <span class="tnum">${i + 1}</span>
         <span class="grow" style="min-width:0"><span class="row nowrap" style="gap:6px;margin-bottom:3px"><span class="tsev">${f.sev === 'serious' ? 'Serious' : 'Worth a look'}</span><span class="tfr">${f.frames.length > 1 ? 'FRAMES ' + f.frames.map(k => k + 1).join(', ') : 'FRAME ' + (f.frame + 1)}</span></span>
-          <span class="tt">${esc(f.title)}</span><span class="tm">${esc(f.measure)}</span></span>
+          <span class="tt">${esc(f.title)}</span>${chips(f)}<span class="tm">${esc(f.measure)}</span></span>
         <button class="btn sm tshow" data-act="show" data-arg="${esc(f.key)}">${icon('play')}Show me</button>
       </div>
       <details class="tans" ${notes[f.key] ? 'open' : ''}><summary>${esc(f.q)}</summary><textarea rows="2" data-note="${esc(f.key)}" aria-label="${esc(f.q)}" placeholder="Your answer, saved with the board">${esc(notes[f.key] || '')}</textarea></details>
@@ -83,7 +87,7 @@ export default function testView(el, [id], ctx) {
         <span class="grow"></span>${n > 1 ? `<button class="btn sm pri" data-act="play" id="tPlay">${icon('play')}Play</button>` : ''}<button class="btn sm" data-act="change" id="tChange">Change opponent</button></div>
       <div id="tPitchWrap">${pitch()}</div>
       <div class="row" id="tFocus" style="gap:8px;display:none"><span class="small grow" id="tFocusLab"></span><button class="btn sm" data-act="all">Show everything</button></div>
-      <div class="tlegend"><span><i class="lg opp"></i>Their players</span><span><i class="lg cut"></i>Gets to the pass</span><span><i class="lg free"></i>Free player</span><span><i class="lg zone"></i>Outnumbered or exposed</span></div>
+      <div class="tlegend"><span><i class="lg num">1</i>Problem number in the list</span><span><i class="lg opp"></i>Their players</span><span><i class="lg cut"></i>Gets to the pass</span><span><i class="lg free"></i>Free player</span><span><i class="lg zone"></i>Outnumbered or exposed</span></div>
       <p class="tiny muted" style="margin:0">${esc(st.sub)}. They move up to ${Math.round(SHARP[st.sharp].speed * 3)} m between frames and react in ${SHARP[st.sharp].react} s.${b.frames.some(f => (f.items || []).some(i => i.kind === 'opp')) ? ' Your opposition players on the board are their starting positions.' : ''}</p>
     </div>
     <div class="stack">
